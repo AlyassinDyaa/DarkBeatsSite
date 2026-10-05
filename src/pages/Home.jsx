@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { brand, commissions, day, events, hero, home, latest, marquee, nameParts, redraws, shows, work } from '../data/site'
+import { brand, commissions, day, events, galleryHome, hero, home, latest, marquee, nameParts, redraws, shows, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Magnetic from '../components/Magnetic'
@@ -9,6 +9,7 @@ import Marquee from '../components/Marquee'
 import Poster from '../components/Poster'
 import PosterWall from '../components/PosterWall'
 import Compare from '../components/Compare'
+import GalleryGrid from '../components/GalleryGrid'
 import Lightbox from '../components/Lightbox'
 
 function Hero({ onOpen }) {
@@ -26,8 +27,8 @@ function Hero({ onOpen }) {
           <motion.p className="hero-tag" {...rise(1.35)}>{brand.tagline}</motion.p>
           <motion.p className="lead" {...rise(1.45)}>{hero.text}</motion.p>
           <motion.div className="hero-actions" {...rise(1.55)}>
-            {shows('pages', 'work') && <Magnetic><Link className="btn" to="/work">See the work <span className="arrow">→</span></Link></Magnetic>}
-            {shows('pages', 'commissions') && <Magnetic><Link className="btn ghost" to="/commissions">Commission a piece</Link></Magnetic>}
+            {shows('pages', 'work') && <Magnetic><Link className="btn" to="/work">{hero.primaryLabel} <span className="arrow">→</span></Link></Magnetic>}
+            {shows('pages', 'commissions') && <Magnetic><Link className="btn ghost" to="/commissions">{hero.secondaryLabel}</Link></Magnetic>}
           </motion.div>
         </div>
         <motion.div className="hero-wall" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1, duration: 1.2 }}>
@@ -85,6 +86,19 @@ export default function Home() {
 
       {shows('home', 'latest') && latest.length > 0 && <Latest onOpen={setSel} />}
 
+      {/* Gallery */}
+      {shows('home', 'gallery') && galleryHome.length > 0 && (
+        <section className="section">
+          <div className="container">
+            <div className="section-head">
+              <div><div className="label accent">{home.galleryLabel}</div><h2 className="display h-lg">{home.galleryTitle}</h2></div>
+              {shows('pages', 'gallery') && <Link className="btn ghost sm" to="/gallery">Full gallery <span className="arrow">→</span></Link>}
+            </div>
+            <GalleryGrid items={galleryHome} />
+          </div>
+        </section>
+      )}
+
       {/* Then and now */}
       {shows('home', 'redraws') && redraws.length > 0 && (
         <section className="section">
@@ -107,9 +121,9 @@ export default function Home() {
             <Reveal className="hire">
               <div className="hire-copy">
                 <div className={`status ${commissions.open ? 'on' : ''}`}><i />{commissions.open ? 'Commissions are open' : 'Commissions are closed right now'}</div>
-                <h2 className="display h-lg">Get something drawn</h2>
+                <h2 className="display h-lg">{home.commissionsTitle}</h2>
                 <p className="lead">{commissions.intro}</p>
-                <Magnetic><Link className="btn" to="/commissions">How it works <span className="arrow">→</span></Link></Magnetic>
+                <Magnetic><Link className="btn" to="/commissions">{home.commissionsButton} <span className="arrow">→</span></Link></Magnetic>
               </div>
               {commissions.tiers.length > 0 && (
                 <ul className="hire-tiers">

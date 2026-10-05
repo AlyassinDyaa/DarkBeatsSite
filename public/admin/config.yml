@@ -55,6 +55,51 @@ collections:
       - { name: featured, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'The home page lists up to six ticked pieces. With none ticked it lists the six newest.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes it off the site but keeps it here, so you can bring it back later.' }
 
+  - name: gallery_sections
+    label: Gallery
+    label_singular: Gallery section
+    description: 'The gallery page. Make sections (Sketches, Commissions, Convention photos...) and add pictures to each.'
+    folder: content/gallery-sections
+    create: true
+    extension: json
+    format: json
+    identifier_field: title
+    slug: '{{slug}}'
+    summary: '{{title}}'
+    sortable_fields: [order, title]
+    fields:
+      - { name: title, label: Section name, widget: string, hint: 'For example Sketches, Commissions, Works in progress.' }
+      - { name: order, label: Order on the gallery page, widget: number, value_type: int, default: 10, hint: 'Lower numbers come first.' }
+      - { name: description, label: Short description, widget: string, required: false }
+      - name: from
+        label: Also show pieces from Work
+        widget: select
+        default: none
+        options:
+          - { label: 'No, only the pictures added below', value: none }
+          - { label: 'Every piece on the Work page', value: all }
+          - { label: 'Heroes', value: Heroes }
+          - { label: 'Villains', value: Villains }
+          - { label: 'Horror', value: Horror }
+          - { label: 'Games', value: Games }
+          - { label: 'Original', value: Original }
+          - { label: 'Commissions', value: Commissions }
+        hint: 'Saves uploading a finished piece twice: the section fills itself from Work, newest first, and the pictures below come after.'
+      - name: items
+        label: Pictures in this section
+        label_singular: picture
+        widget: list
+        collapsed: false
+        required: false
+        summary: '{{fields.title}}'
+        hint: 'Add as many as you like. Drag to reorder. A section shows on the site once it has pictures.'
+        fields:
+          - { name: src, label: Picture, widget: image, choose_url: false, hint: 'Any shape works; it is shown uncropped.' }
+          - { name: title, label: Title, widget: string, required: false }
+          - { name: note, label: A few words about it, widget: text, required: false, hint: 'Optional. Shown beside the picture when it is opened.' }
+          - { name: home, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'The home page shows up to 6 gallery pictures: the ticked ones first.' }
+      - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes it off the site but keeps it here, so you can bring it back later.' }
+
   - name: redraws
     label: Then and now
     label_singular: Set
@@ -108,7 +153,7 @@ collections:
 
   - name: settings
     label: Site settings
-    description: 'Name, contact details, home page text, commissions, the About page, social links, and what is shown or hidden.'
+    description: 'Name, colour, contact details, every heading and button on every page, commissions, social links, and what is shown or hidden.'
     files:
       - name: settings
         label: Site settings
@@ -136,6 +181,8 @@ collections:
             fields:
               - { name: kicker, label: Small line above the name, widget: string, required: false }
               - { name: text, label: Sentence under the tagline, widget: text, required: false }
+              - { name: primaryLabel, label: First button, widget: string, default: 'See the work', hint: 'Goes to the Work page.' }
+              - { name: secondaryLabel, label: Second button, widget: string, default: 'Commission a piece', hint: 'Goes to the Commissions page.' }
           - { name: marquee, label: Words in the moving band, widget: list }
           - name: home
             label: Home page, section headings
@@ -143,16 +190,39 @@ collections:
             fields:
               - { name: latestLabel, label: 'Latest pieces: small label', widget: string, required: false }
               - { name: latestTitle, label: 'Latest pieces: heading', widget: string }
+              - { name: galleryLabel, label: 'Gallery: small label', widget: string, required: false }
+              - { name: galleryTitle, label: 'Gallery: heading', widget: string }
               - { name: redrawLabel, label: 'Then and now: small label', widget: string, required: false }
               - { name: redrawTitle, label: 'Then and now: heading', widget: string }
               - { name: redrawText, label: 'Then and now: text', widget: text, required: false }
+              - { name: commissionsTitle, label: 'Commissions: heading', widget: string }
+              - { name: commissionsButton, label: 'Commissions: button', widget: string }
               - { name: eventsLabel, label: 'Conventions: small label', widget: string, required: false }
               - { name: eventsTitle, label: 'Conventions: heading', widget: string }
+          - name: pages
+            label: Work and Gallery pages
+            widget: object
+            fields:
+              - name: work
+                label: Work page
+                widget: object
+                fields:
+                  - { name: label, label: Small label, widget: string, required: false }
+                  - { name: title, label: Heading, widget: string }
+                  - { name: intro, label: Introduction, widget: text, required: false }
+              - name: gallery
+                label: Gallery page
+                widget: object
+                fields:
+                  - { name: label, label: Small label, widget: string, required: false }
+                  - { name: title, label: Heading, widget: string }
+                  - { name: intro, label: Introduction, widget: text, required: false }
           - name: commissions
-            label: Commissions
+            label: Commissions page
             widget: object
             fields:
               - { name: open, label: Commissions are open, widget: boolean, default: true, hint: 'Switches the green "Commissions open" light in the top bar and on the Commissions page.' }
+              - { name: title, label: Heading, widget: string }
               - { name: intro, label: Introduction, widget: text }
               - name: tiers
                 label: What you offer
@@ -164,14 +234,20 @@ collections:
                   - { name: text, label: Description, widget: text }
                   - { name: price, label: Price, widget: string, required: false, hint: 'Written the way it should read, for example "From $80 AUD". Empty shows "Ask for a quote".' }
                   - { name: includes, label: What is included, widget: list, required: false }
+              - { name: processLabel, label: 'Steps: small label', widget: string, required: false }
+              - { name: processTitle, label: 'Steps: heading', widget: string }
               - name: steps
-                label: How it works
+                label: The steps
                 label_singular: Step
                 widget: list
                 summary: '{{fields.title}}'
                 fields:
                   - { name: title, label: Step, widget: string }
                   - { name: text, label: Description, widget: text }
+              - { name: requestLabel, label: 'Request form: small label', widget: string, required: false }
+              - { name: requestTitle, label: 'Request form: heading while open', widget: string }
+              - { name: closedTitle, label: 'Request form: heading while closed', widget: string }
+              - { name: closedText, label: 'Request form: text while closed', widget: text, required: false }
               - { name: notes, label: Good to know, widget: list, required: false }
           - name: about
             label: About page
@@ -191,7 +267,10 @@ collections:
             label: Contact page
             widget: object
             fields:
+              - { name: label, label: Small label, widget: string, required: false }
+              - { name: title, label: Heading, widget: string }
               - { name: intro, label: Introduction, widget: text }
+              - { name: topics, label: Choices in the "About" drop-down, widget: list, required: false, hint: 'What a visitor can say their message is about. With none, the drop-down is left out.' }
           - name: social
             label: Social links
             label_singular: Link
@@ -206,6 +285,7 @@ collections:
             widget: object
             fields:
               - { name: line, label: Big line across the footer, widget: string, required: false }
+              - { name: fine, label: Small print after the © line, widget: string, required: false }
           - name: visibility
             label: Show or hide parts of the site
             widget: object
@@ -215,6 +295,7 @@ collections:
                 widget: object
                 fields:
                   - { name: work, label: Work, widget: boolean, default: true }
+                  - { name: gallery, label: Gallery, widget: boolean, default: true }
                   - { name: commissions, label: Commissions, widget: boolean, default: true }
                   - { name: about, label: About, widget: boolean, default: true }
                   - { name: contact, label: Contact, widget: boolean, default: true }
@@ -224,6 +305,7 @@ collections:
                 fields:
                   - { name: ticker, label: Moving band of words, widget: boolean, default: true }
                   - { name: latest, label: Latest pieces, widget: boolean, default: true }
+                  - { name: gallery, label: Gallery, widget: boolean, default: true }
                   - { name: redraws, label: Then and now, widget: boolean, default: true }
                   - { name: commissions, label: Commissions, widget: boolean, default: true }
                   - { name: events, label: Conventions, widget: boolean, default: true }

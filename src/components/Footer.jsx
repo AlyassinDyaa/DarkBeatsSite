@@ -39,7 +39,7 @@ export default function Footer() {
           )}
         </div>
         <div className="footer-fine">
-          <span>© {year} {brand.artist || brand.name}. Characters shown in fan art belong to their owners.</span>
+          <span>© {year} {brand.artist || brand.name}. {footer.fine}</span>
           {brand.location && <span>{brand.location}</span>}
         </div>
       </div>

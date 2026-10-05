@@ -19,6 +19,7 @@
   const ICONS = {
     home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
     work: 'M4 5h16v14H4z M4 15l4-4 4 4 3-3 5 5 M9 9h.01',
+    gallery_sections: 'M4 4h7v9H4z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5H4z',
     redraws: 'M4 5h16v14H4z M12 3v18 M8 10l-2 2 2 2 M16 10l2 2-2 2',
     events: 'M5 6h14v14H5z M5 10h14 M9 4v4 M15 4v4',
     settings: 'M4 7h10 M18 7h2 M4 17h4 M12 17h8 M16 5v4 M10 15v4',
@@ -43,9 +44,10 @@
      sit three to a row. Field names are the ones in config.yml. */
   const LAYOUT = {
     work: { groups: { title: 'Piece', src: 'Picture', hue: 'Colour', featured: 'Where it appears' }, half: ['title', 'category', 'date', 'link', 'featured', 'hidden'] },
+    gallery_sections: { groups: { title: 'Section', from: 'Pictures', hidden: 'Advanced' }, half: ['title', 'order'] },
     redraws: { groups: { title: 'Set', stages: 'The drawings, oldest first', order: 'Advanced' }, half: ['title', 'link', 'order', 'hidden'] },
     events: { groups: { name: 'Event', order: 'Advanced' }, half: ['name', 'role', 'place', 'when', 'order', 'hidden'] },
-    settings: { groups: {}, half: [], inner: ['work', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
+    settings: { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
   // ---------- read the sections out of config.yml ----------

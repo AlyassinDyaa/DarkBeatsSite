@@ -19,6 +19,8 @@ const byOrder = (a, b) => (a.order ?? 99) - (b.order ?? 99)
 const live = (list) => list.filter((x) => !x.hidden) // entries ticked "Hide from the site"
 
 export let brand, hero, marquee, home, commissions, about, contact, social, footer
+/* Headings and introductions of the Work and Gallery pages. */
+export let pages
 export let nav
 /* Every piece, newest first; the file name is the piece's id. */
 export let work
@@ -26,6 +28,12 @@ export let work
 export let categories
 /* Home shows up to six: the pieces ticked "Show on the home page", or simply the newest six. */
 export let latest
+/* The gallery: the artist makes sections and adds pictures to each. A section can also pull in
+   pieces from Work, so a finished piece only has to be uploaded once. */
+export let gallerySections, gallery
+/* Up to six pictures for the home page: the ones ticked there, then others the home page is not
+   already showing in its list of latest pieces. */
+export let galleryHome
 /* Then-and-now sets: the same subject drawn again years later. */
 export let redraws
 export let events
@@ -46,20 +54,40 @@ function assemble(content) {
     .filter(([path]) => path.startsWith(`content/${name}/`))
     .map(([path, data]) => ({ ...data, slug: path.split('/').pop().replace(/\.json$/, '') }))
 
+  // Every piece of text has a built-in wording, so a settings file that predates a field still works.
   visibility = settings.visibility || {}
   brand = { name: 'DarkBeats', hue: 312, ...settings.brand }
-  hero = settings.hero || {}
+  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', ...settings.hero }
   marquee = settings.marquee || []
-  home = settings.home || {}
-  commissions = { tiers: [], steps: [], notes: [], ...settings.commissions }
+  home = {
+    latestLabel: 'Fresh ink', latestTitle: 'Latest pieces',
+    galleryLabel: 'The gallery', galleryTitle: 'Up on the wall',
+    redrawLabel: 'Keep drawing', redrawTitle: 'Then and now',
+    commissionsTitle: 'Get something drawn', commissionsButton: 'How it works',
+    eventsLabel: 'In person', eventsTitle: 'Find me at',
+    ...settings.home,
+  }
+  commissions = {
+    title: 'Get something drawn', processLabel: 'The process', processTitle: 'How it works',
+    requestLabel: 'Request', requestTitle: 'Tell me the idea',
+    closedTitle: 'Join the queue', closedText: 'The books are closed for now. Send the idea anyway and you will hear back when a slot opens.',
+    tiers: [], steps: [], notes: [],
+    ...settings.commissions,
+  }
   about = { paragraphs: [], facts: [], ...settings.about }
-  contact = settings.contact || {}
+  contact = { label: 'Say hello', title: 'Get in touch', ...settings.contact }
+  contact.topics = contact.topics || []
+  pages = {
+    work: { label: 'The work', title: 'Everything so far', ...settings.pages?.work },
+    gallery: { label: 'The gallery', title: 'Up on the wall', ...settings.pages?.gallery },
+  }
   social = settings.social || []
-  footer = settings.footer || {}
+  footer = { fine: 'Characters shown in fan art belong to their owners.', ...settings.footer }
 
   nav = [
     { label: 'Home', to: '/' },
     { label: 'Work', to: '/work' },
+    { label: 'Gallery', to: '/gallery' },
     { label: 'Commissions', to: '/commissions' },
     { label: 'About', to: '/about' },
     { label: 'Contact', to: '/contact' },
@@ -71,6 +99,22 @@ function assemble(content) {
   categories = [...new Set(work.map((p) => p.category).filter(Boolean))]
   const picked = work.filter((p) => p.featured)
   latest = (picked.length ? picked : work).slice(0, 6)
+
+  // a section's "also show pieces from Work" choice: none, every piece, or one category
+  const fromWork = (from) => (!from || from === 'none' ? [] : work)
+    .filter((p) => p.src && (from === 'all' || p.category === from))
+    .map((p) => ({ title: p.title, src: p.src, note: p.note, category: p.category, date: p.date, link: p.link, piece: p.slug }))
+  gallerySections = live(folder('gallery-sections'))
+    .map((s) => ({ ...s, items: [...fromWork(s.from), ...(s.items || []).filter((g) => g && g.src)] }))
+    .filter((s) => s.items.length > 0)
+    .sort(byOrder)
+  gallery = gallerySections.flatMap((s) => s.items)
+  const listed = new Set(shows('home', 'latest') ? latest.map((p) => p.slug) : [])
+  const once = new Set()
+  galleryHome = [...gallery.filter((g) => g.home), ...gallery.filter((g) => !g.home && !listed.has(g.piece))]
+    .filter((g) => !once.has(g.src) && once.add(g.src))
+    .slice(0, 6)
+
   redraws = live(folder('redraws'))
     .map((r) => ({ ...r, stages: (r.stages || []).filter((s) => s && s.year) }))
     .filter((r) => r.stages.length > 1)

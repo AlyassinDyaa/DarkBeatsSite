@@ -1,0 +1,34 @@
+{
+  "title": "Keep drawing",
+  "description": "Old drawings next to their redraws.",
+  "order": 2,
+  "from": "none",
+  "hidden": false,
+  "items": [
+    {
+      "src": "/uploads/keep-drawing-the-batman-who-laughs.webp",
+      "title": "The Batman Who Laughs, 2022 and 2026",
+      "home": true
+    },
+    {
+      "src": "/uploads/daredevil-over-the-years.webp",
+      "title": "Daredevil show art over the years",
+      "home": true
+    },
+    {
+      "src": "/uploads/the-batman-who-laughs-2022.webp",
+      "title": "The Batman Who Laughs, 2022",
+      "home": false
+    },
+    {
+      "src": "/uploads/daredevil-2022.webp",
+      "title": "Daredevil, 2022",
+      "home": false
+    },
+    {
+      "src": "/uploads/daredevil-2018.webp",
+      "title": "Daredevil, 2018",
+      "home": false
+    }
+  ]
+}

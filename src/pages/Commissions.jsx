@@ -7,7 +7,7 @@ import Picker from '../components/Picker'
 
 export default function Commissions() {
   const [sent, setSent] = useState(false)
-  const { open, intro, tiers, steps, notes } = commissions
+  const { open, title, intro, tiers, steps, notes, processLabel, processTitle, requestLabel, requestTitle, closedTitle, closedText } = commissions
   const kinds = [...tiers.map((t) => t.name), 'Something else']
   const submit = (e) => {
     if (brand.contactAction) return
@@ -21,7 +21,7 @@ export default function Commissions() {
     <Page title="Commissions">
       <header className="page-head container">
         <div className={`status ${open ? 'on' : ''}`}><i />{open ? 'Commissions are open' : 'Commissions are closed right now'}</div>
-        <h1 className="display h-xl">Get something drawn</h1>
+        <h1 className="display h-xl">{title}</h1>
         <p className="lead">{intro}</p>
       </header>
 
@@ -43,7 +43,7 @@ export default function Commissions() {
       {steps.length > 0 && (
         <section className="section tight">
           <div className="container">
-            <div className="section-head"><div><div className="label accent">The process</div><h2 className="display h-lg">How it works</h2></div></div>
+            <div className="section-head"><div><div className="label accent">{processLabel}</div><h2 className="display h-lg">{processTitle}</h2></div></div>
             <ol className="steps">
               {steps.map((s, i) => (
                 <Reveal as="li" key={s.title} delay={i * 0.08}>
@@ -60,9 +60,9 @@ export default function Commissions() {
       <section className="section" id="request">
         <div className="container request">
           <Reveal>
-            <div className="label accent">Request</div>
-            <h2 className="display h-lg">{open ? 'Tell me the idea' : 'Join the queue'}</h2>
-            {!open && <p className="dim">The books are closed for now. Send the idea anyway and you will hear back when a slot opens.</p>}
+            <div className="label accent">{requestLabel}</div>
+            <h2 className="display h-lg">{open ? requestTitle : closedTitle}</h2>
+            {!open && closedText && <p className="dim">{closedText}</p>}
             {notes.length > 0 && <ul className="notes">{notes.map((n) => <li key={n}>{n}</li>)}</ul>}
           </Reveal>
           <Reveal delay={0.1}>

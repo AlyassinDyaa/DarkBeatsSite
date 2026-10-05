@@ -18,8 +18,9 @@ npm run preview    # serve the production build
 
 | Route | Page |
 |---|---|
-| `/` | Home: the name over a drifting wall of posters, latest pieces, then-and-now comparisons, commissions, conventions |
+| `/` | Home: the name over a drifting wall of posters, latest pieces, gallery, then-and-now comparisons, commissions, conventions |
 | `/work` | Every piece, with category filters; a piece opens large with its details |
+| `/gallery` | Pictures in sections, shown uncropped: finished pieces, redraws, sketches, whatever is added |
 | `/commissions` | What is on offer, how it works, and the request form |
 | `/about` | Who Jordan is, quick facts, where to find him |
 | `/contact` | Contact form, email and social links |
@@ -33,14 +34,15 @@ The site rebuilds itself about a minute later. No code involved.
 | Section | What you control |
 |---|---|
 | Work | Every piece: picture, title, category, date, link to the post, a note, whether it is on the home page |
+| Gallery | Sections of the gallery page and the pictures in each. A section can also fill itself from Work, so a finished piece is only uploaded once. Tick "Show on the home page" on up to 6 pictures |
 | Then and now | Sets of the same subject drawn years apart: a year and a picture for each drawing |
 | Conventions | Events, with dates and where to find the table |
-| Site settings | Name, tagline, contact email, brand colour, home page text, commissions (open or closed, offers, prices, steps), the About page, social links, and **Show or hide parts of the site** |
+| Site settings | Name, tagline, contact email, brand colour, every heading, label and button on every page, commissions (open or closed, offers, prices, steps), the About page, the contact form's topics, social links, footer text, and **Show or hide parts of the site** |
 
 Pictures upload straight from the panel into `public/uploads/`. A piece without a picture gets a
 generated title card, so the site never shows a hole.
 
-Every piece, set and event also has a **Hide from the site** switch, which takes it off the site
+Every piece, gallery section, set and event also has a **Hide from the site** switch, which takes it off the site
 without deleting it.
 
 ### Editing on this computer

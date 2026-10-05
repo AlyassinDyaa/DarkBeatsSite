@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { categories, day, redraws, work } from '../data/site'
+import { categories, day, home, pages, redraws, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
@@ -16,8 +16,9 @@ export default function Work() {
   return (
     <Page title="Work">
       <header className="page-head container">
-        <div className="label accent">The work</div>
-        <h1 className="display h-xl">Everything so far</h1>
+        {pages.work.label && <div className="label accent">{pages.work.label}</div>}
+        <h1 className="display h-xl">{pages.work.title}</h1>
+        {pages.work.intro && <p className="lead">{pages.work.intro}</p>}
         {categories.length > 1 && (
           <div className="filters" role="group" aria-label="Show">
             {['All', ...categories].map((c) => (
@@ -53,7 +54,7 @@ export default function Work() {
         <section className="section">
           <div className="container">
             <div className="section-head">
-              <div><div className="label accent">Keep drawing</div><h2 className="display h-lg">Then and now</h2></div>
+              <div><div className="label accent">{home.redrawLabel}</div><h2 className="display h-lg">{home.redrawTitle}</h2></div>
             </div>
             <div className="compare-grid">
               {redraws.map((r, i) => <Reveal key={r.slug} delay={i * 0.1}><Compare set={r} seed={i} /></Reveal>)}

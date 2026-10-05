@@ -14,7 +14,9 @@
   },
   "hero": {
     "kicker": "Jordan Beattie · Gold Coast, Australia",
-    "text": "Heroes, villains and horror icons, painted loud on a black page."
+    "text": "Heroes, villains and horror icons, painted loud on a black page.",
+    "primaryLabel": "See the work",
+    "secondaryLabel": "Commission a piece"
   },
   "marquee": [
     "Heroes",
@@ -27,14 +29,19 @@
   "home": {
     "latestLabel": "Fresh ink",
     "latestTitle": "Latest pieces",
+    "galleryLabel": "The gallery",
+    "galleryTitle": "Up on the wall",
     "redrawLabel": "Keep drawing",
     "redrawTitle": "Then and now",
     "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
+    "commissionsTitle": "Get something drawn",
+    "commissionsButton": "How it works",
     "eventsLabel": "In person",
     "eventsTitle": "Find me at"
   },
   "commissions": {
     "open": true,
+    "title": "Get something drawn",
     "intro": "Want your favourite character, your own character or yourself drawn in this style? Tell me what you have in mind.",
     "tiers": [
       {
@@ -68,6 +75,8 @@
         ]
       }
     ],
+    "processLabel": "The process",
+    "processTitle": "How it works",
     "steps": [
       {
         "title": "Send the idea",
@@ -86,6 +95,10 @@
         "text": "A high-resolution file lands in your inbox, ready to print or post."
       }
     ],
+    "requestLabel": "Request",
+    "requestTitle": "Tell me the idea",
+    "closedTitle": "Join the queue",
+    "closedText": "The books are closed for now. Send the idea anyway and you will hear back when a slot opens.",
     "notes": [
       "Personal use unless we agree otherwise.",
       "Fan art and original characters are both welcome.",
@@ -118,7 +131,16 @@
     ]
   },
   "contact": {
-    "intro": "Commissions, conventions, collaborations, or just to say you liked a piece."
+    "label": "Say hello",
+    "title": "Get in touch",
+    "intro": "Commissions, conventions, collaborations, or just to say you liked a piece.",
+    "topics": [
+      "Just saying hi",
+      "Conventions and events",
+      "Collaboration",
+      "Prints",
+      "Something else"
+    ]
   },
   "social": [
     {
@@ -133,11 +155,13 @@
     }
   ],
   "footer": {
-    "line": "Keep drawing."
+    "line": "Keep drawing.",
+    "fine": "Characters shown in fan art belong to their owners."
   },
   "visibility": {
     "pages": {
       "work": true,
+      "gallery": true,
       "commissions": true,
       "about": true,
       "contact": true
@@ -145,9 +169,21 @@
     "home": {
       "ticker": true,
       "latest": true,
+      "gallery": true,
       "redraws": true,
       "commissions": true,
       "events": true
+    }
+  },
+  "pages": {
+    "work": {
+      "label": "The work",
+      "title": "Everything so far"
+    },
+    "gallery": {
+      "label": "The gallery",
+      "title": "Up on the wall",
+      "intro": "Finished pieces, redraws and whatever else comes off the tablet."
     }
   }
 }

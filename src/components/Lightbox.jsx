@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { commissions, day, shows } from '../data/site'
+import { asset, commissions, day, shows } from '../data/site'
 import { useFinePointer } from '../hooks/useMedia'
 import Poster from './Poster'
 
-/* One piece, large, with its details beside it. Browse with a sideways swipe, the arrow buttons or the arrow keys; a tap outside the
+/* One piece, large and uncropped, with its details beside it. Browse with a sideways swipe, the arrow buttons or the arrow keys; a tap outside the
    picture, the × or Escape closes it. `sel` is the index of the open piece in `items`, or null. */
 export default function Lightbox({ items, sel, setSel }) {
   const [dx, setDx] = useState(0) // how far a finger has pulled the open picture sideways
@@ -72,16 +72,18 @@ export default function Lightbox({ items, sel, setSel }) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div ref={box} className="lightbox" role="dialog" aria-modal="true" aria-label={piece.title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} onClick={() => setSel(null)} data-lenis-prevent>
+        <motion.div ref={box} className="lightbox" role="dialog" aria-modal="true" aria-label={piece.title || 'Picture'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} onClick={() => setSel(null)} data-lenis-prevent>
           <div className="lightbox-inner" onClick={(e) => e.stopPropagation()}>
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={piece.slug || sel} className="lightbox-art" style={{ x: dx }} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
-                <Poster title={piece.title} hue={piece.hue} src={piece.src} seed={sel} eager />
+              <motion.div key={piece.slug || sel} className={`lightbox-art ${piece.src ? '' : 'is-card'}`} style={{ x: dx }} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
+                {piece.src
+                  ? <img src={asset(piece.src)} alt={piece.title || ''} draggable="false" />
+                  : <Poster title={piece.title} hue={piece.hue} seed={sel} />}
               </motion.div>
             </AnimatePresence>
             <div className="lightbox-info">
-              <div className="label accent">{[piece.category, day(piece.date)].filter(Boolean).join(' · ')}</div>
-              <h2 className="display h-md">{piece.title}</h2>
+              {(piece.category || piece.date) && <div className="label accent">{[piece.category, day(piece.date)].filter(Boolean).join(' · ')}</div>}
+              {piece.title && <h2 className="display h-md">{piece.title}</h2>}
               {piece.note && <p className="dim">{piece.note}</p>}
               <div className="lightbox-actions">
                 {piece.link && <a className="btn ghost sm" href={piece.link} target="_blank" rel="noreferrer">See the post <span className="arrow">↗</span></a>}

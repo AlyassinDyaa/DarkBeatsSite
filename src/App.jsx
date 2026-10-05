@@ -3,13 +3,14 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useLenis } from './hooks/useLenis'
 import { applyBrandHue } from './hooks/useHue'
-import { previewing, shows } from './data/site'
+import { brand, previewing, shows } from './data/site'
 import { useReducedMotion } from './hooks/useMedia'
 import Preloader from './components/Preloader'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 import Home from './pages/Home'
 import Work from './pages/Work'
+import Gallery from './pages/Gallery'
 import Commissions from './pages/Commissions'
 import About from './pages/About'
 import Contact from './pages/Contact'
@@ -21,6 +22,8 @@ export default function App() {
   const [ready, setReady] = useState(false)
   useLenis(!reduced)
   useEffect(applyBrandHue, [])
+  // what search engines and link previews say about the site: the blurb from Site settings
+  useEffect(() => { if (brand.blurb) document.querySelector('meta[name="description"]')?.setAttribute('content', brand.blurb) }, [])
   return (
     <>
       <Preloader onDone={() => setReady(true)} />
@@ -37,6 +40,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           {/* a page the admin has hidden has no route, so its address shows "not found" */}
           {shows('pages', 'work') && <Route path="/work" element={<Work />} />}
+          {shows('pages', 'gallery') && <Route path="/gallery" element={<Gallery />} />}
           {shows('pages', 'commissions') && <Route path="/commissions" element={<Commissions />} />}
           {shows('pages', 'about') && <Route path="/about" element={<About />} />}
           {shows('pages', 'contact') && <Route path="/contact" element={<Contact />} />}
