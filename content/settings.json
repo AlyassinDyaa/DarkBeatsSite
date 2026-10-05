@@ -172,9 +172,9 @@
       "src": "/uploads/hero-bust.webp",
       "layer": "behind",
       "ground": false,
-      "size": 104,
-      "x": 30,
-      "y": -29
+      "size": 118,
+      "x": -19,
+      "y": -44
     }
   },
   "footer": {

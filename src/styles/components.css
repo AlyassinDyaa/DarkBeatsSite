@@ -102,11 +102,14 @@ a.nav-status:hover { border-color: var(--fg); }
 
 /* ---------- hero ---------- */
 .hero { position: relative; overflow: hidden; }
-.hero-inner { position: relative; display: grid; align-content: center; min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; }
-.hero-copy { position: relative; z-index: 2; max-width: 54%; perspective: 1400px; --name: clamp(5.5rem, 15.5vw, 17rem); }
+/* --name is the letter size of the big name. The poster wall starts a fixed number of letters to
+   the right of it (--wall), so the two keep their distance at every screen width, including
+   screens wider than the page column. */
+.hero-inner { position: relative; display: grid; align-content: center; min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; --name: clamp(5.5rem, 15.5vw, 17rem); --wall: calc(var(--name) * 2.95); }
+.hero-inner:has(.has-figure) { --name: clamp(4.6rem, 12.8vw, 14rem); --wall: calc(var(--name) * 4.3); }
+.hero-copy { position: relative; z-index: 2; max-width: calc(var(--wall) + 3rem); perspective: 1400px; }
 /* with a character at its left, the whole column steps aside for it; the name is a little smaller so both fit beside the wall */
-.hero-copy.has-figure { --name: clamp(4.6rem, 12.8vw, 14rem); max-width: 58%; padding-left: calc(var(--name) * 1.4); }
-.hero:has(.has-figure) .hero-wall { left: 57%; width: 46vw; }
+.hero-copy.has-figure { padding-left: calc(var(--name) * 1.4); }
 .hero-copy .label { margin-bottom: 22px; }
 .hero-name { font-family: var(--display); font-size: var(--name); line-height: 0.86; letter-spacing: 0.005em; text-transform: uppercase; transform-style: preserve-3d; }
 /* The name in depth (see Hero in pages/Home.jsx): first word at the back, second word at the
@@ -149,7 +152,7 @@ a.nav-status:hover { border-color: var(--fg); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
 /* the wall hangs off the right edge of the screen and fades out toward the text */
 .hero-wall {
-  position: absolute; z-index: 1; top: 0; bottom: 0; left: 52%; width: 50vw;
+  position: absolute; z-index: 1; top: 0; bottom: 0; left: var(--wall); right: calc((100% - 100vw) / 2);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 22%), linear-gradient(transparent 5%, #000 22%, #000 80%, transparent); -webkit-mask-composite: source-in;
   mask-image: linear-gradient(90deg, transparent, #000 22%), linear-gradient(transparent 5%, #000 22%, #000 80%, transparent); mask-composite: intersect;
 }
@@ -164,17 +167,17 @@ a.nav-status:hover { border-color: var(--fg); }
 .wall-item:hover, .wall-item:focus-visible { transform: translate(-5px, -5px); box-shadow: 9px 9px 0 var(--accent); outline: 0; }
 @media (max-width: 899px) {
   .hero-inner { min-height: 0; padding-bottom: 0; }
+  .hero-inner { --name: 31vw; }
+  .hero-inner:has(.has-figure) { --name: 21vw; }
   .hero-copy { max-width: none; }
-  .hero-copy { --name: 31vw; }
   /* on a phone only the name steps aside; the text below it runs the full width, so the character fades out at the knee before it */
-  .hero-copy.has-figure { --name: 21vw; max-width: none; padding-left: 0; }
+  .hero-copy.has-figure { padding-left: 0; }
   .has-figure .hero-name { margin-left: 1.3em; }
-  .hero:has(.has-figure) .hero-wall { left: auto; width: 100vw; }
-  .hero-figure { left: calc(-1.75em + var(--fig-x, 0) * 0.01em); }
+  .hero-figure { left: calc(-1.5em + var(--fig-x, 0) * 0.01em); }
   .has-ground .hero-figure > span { -webkit-mask-image: none; mask-image: none; }
   .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 58%, transparent 74%); mask-image: linear-gradient(#000 58%, transparent 74%); }
   .hero-copy.has-figure:not(.has-ground) .hero-tag { margin-top: calc(var(--name) * 0.55); }
-  .hero-wall { position: relative; left: auto; width: 100vw; height: 64svh; margin: 36px calc(var(--gutter) * -1) 0; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
+  .hero-wall { position: relative; left: auto; right: auto; width: 100vw; height: 64svh; margin: 36px calc(var(--gutter) * -1) 0; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
   .wall-tilt { gap: 12px; transform: rotate(-9deg) scale(1.3); }
   .wall-track { gap: 12px; }
 }
