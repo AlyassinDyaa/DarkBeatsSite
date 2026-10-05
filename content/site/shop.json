@@ -1,0 +1,16 @@
+{
+  "enabled": false,
+  "currency": "aud",
+  "note": "A3 print, signed.",
+  "buttonLabel": "Buy this print",
+  "shipping": true,
+  "countries": [
+    "AU",
+    "NZ",
+    "US",
+    "CA",
+    "GB"
+  ],
+  "thanksTitle": "Thank you.",
+  "thanksText": "Your order is in. A receipt is on its way to your email."
+}

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { asset, commissions, day, shows } from '../data/site'
 import { useFinePointer } from '../hooks/useMedia'
 import Poster from './Poster'
+import Buy from './Buy'
 
 /* One piece, large and uncropped, with its details beside it. Browse with a sideways swipe, the arrow buttons or the arrow keys; a tap outside the
    picture, the × or Escape closes it. `sel` is the index of the open piece in `items`, or null. */
@@ -85,6 +86,7 @@ export default function Lightbox({ items, sel, setSel }) {
               {(piece.category || piece.date) && <div className="label accent">{[piece.category, day(piece.date)].filter(Boolean).join(' · ')}</div>}
               {piece.title && <h2 className="display h-md">{piece.title}</h2>}
               {piece.note && <p className="dim">{piece.note}</p>}
+              <Buy key={piece.slug || sel} piece={piece} />
               <div className="lightbox-actions">
                 {piece.link && <a className="btn ghost sm" href={piece.link} target="_blank" rel="noreferrer">See the post <span className="arrow">↗</span></a>}
                 {shows('pages', 'commissions') && commissions.open && <Link className="btn sm" to="/commissions" onClick={() => setSel(null)}>Commission one like it</Link>}

@@ -327,6 +327,17 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .gallery-group-head p { flex: 1 1 280px; margin: 0; }
 .gallery-group-head span { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-mute); white-space: nowrap; }
 
+/* ---------- buying (components/Buy.jsx) ---------- */
+.tile-cap em { display: block; margin-top: 8px; font-style: normal; font-family: var(--display); font-size: 1.25rem; letter-spacing: 0.02em; color: var(--accent); }
+.buy { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line-strong); }
+.buy-price { font-family: var(--display); font-size: 2.4rem; line-height: 1; color: var(--accent); transform: skewX(var(--slant)); transform-origin: 0 100%; }
+.buy-what { margin: 8px 0 0; font-size: 0.92rem; color: var(--fg-dim); }
+.buy .btn { margin-top: 16px; }
+.buy .btn:disabled { opacity: 0.6; cursor: default; }
+.buy-note { margin: 12px 0 0; font-size: 0.88rem; color: #ff9aa8; max-width: 34ch; }
+.thanks { margin-top: 26px; padding: 16px 20px; max-width: 62ch; border: 1px solid var(--open); background: oklch(0.82 0.2 150 / 0.08); color: var(--fg-dim); }
+.thanks strong { color: var(--fg); }
+
 /* ---------- a piece, opened ---------- */
 .lightbox { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 28px clamp(16px, 6vw, 88px); overflow-y: auto; background: rgba(9, 7, 13, 0.95); backdrop-filter: blur(16px); }
 .lightbox-inner { display: grid; grid-template-columns: auto minmax(220px, 340px); align-items: end; gap: clamp(24px, 4vw, 56px); max-width: 100%; }

@@ -1,69 +1,56 @@
-import { useMemo, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { categories, day, home, pages, redraws, work } from '../data/site'
+import { useState } from 'react'
+import { brand, gallerySections, pages } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
-import Poster from '../components/Poster'
-import Compare from '../components/Compare'
-import Lightbox from '../components/Lightbox'
+import GalleryGrid from '../components/GalleryGrid'
+import ViewSwitch from '../components/ViewSwitch'
+import { useGalleryView } from '../hooks/useGalleryView'
 
+/* The Work page: every picture, in the sections made in the admin panel. A section with nothing in it stays hidden. */
 export default function Work() {
-  const [filter, setFilter] = useState('All')
-  const [sel, setSel] = useState(null)
-  const shown = useMemo(() => (filter === 'All' ? work : work.filter((p) => p.category === filter)), [filter])
-  const count = (c) => (c === 'All' ? work.length : work.filter((p) => p.category === c).length)
-  const choose = (c) => { setSel(null); setFilter(c) }
+  const [on, setOn] = useState('all')
+  const [view, setView] = useGalleryView()
+  const shown = on === 'all' ? gallerySections : gallerySections.filter((s) => s.slug === on)
+  const { label, title, intro } = pages.gallery
   return (
     <Page title="Work">
       <header className="page-head container">
-        {pages.work.label && <div className="label accent">{pages.work.label}</div>}
-        <h1 className="display h-xl">{pages.work.title}</h1>
-        {pages.work.intro && <p className="lead">{pages.work.intro}</p>}
-        {categories.length > 1 && (
-          <div className="filters" role="group" aria-label="Show">
-            {['All', ...categories].map((c) => (
-              <button key={c} type="button" className={`chip ${filter === c ? 'on' : ''}`} aria-pressed={filter === c} onClick={() => choose(c)}>
-                {c}<small>{count(c)}</small>
-              </button>
-            ))}
+        {label && <div className="label accent">{label}</div>}
+        <h1 className="display h-xl">{title}</h1>
+        {intro && <p className="lead">{intro}</p>}
+        <div className="filters-row">
+          {gallerySections.length > 1 && (
+            <div className="filters" role="group" aria-label="Show">
+              <button type="button" className={`chip ${on === 'all' ? 'on' : ''}`} aria-pressed={on === 'all'} onClick={() => setOn('all')}>All</button>
+              {gallerySections.map((s) => (
+                <button key={s.slug} type="button" className={`chip ${on === s.slug ? 'on' : ''}`} aria-pressed={on === s.slug} onClick={() => setOn(s.slug)}>
+                  {s.title}<small>{s.items.length}</small>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="section-tools">
+            <ViewSwitch view={view} onChange={setView} />
+            {brand.instagram && <a className="btn ghost sm" href={brand.instagram} target="_blank" rel="noreferrer">More on Instagram <span className="arrow">↗</span></a>}
           </div>
-        )}
+        </div>
       </header>
 
       <section className="section tight">
         <div className="container">
-          <motion.ul className="grid" layout>
-            <AnimatePresence mode="popLayout" initial={false}>
-              {shown.map((p, i) => (
-                <motion.li key={p.slug} layout initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
-                  <button type="button" className="tile" onClick={() => setSel(i)}>
-                    <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={i < 4} />
-                    <span className="tile-cap">
-                      <strong>{p.title}</strong>
-                      <small>{[p.category, day(p.date)].filter(Boolean).join(' · ')}</small>
-                    </span>
-                  </button>
-                </motion.li>
-              ))}
-            </AnimatePresence>
-          </motion.ul>
+          {shown.map((s) => (
+            <div className="gallery-group" key={s.slug}>
+              <Reveal className="gallery-group-head">
+                <h2 className="display h-md">{s.title}</h2>
+                {s.description && <p className="dim">{s.description}</p>}
+                <span>{s.items.length} {s.items.length === 1 ? 'picture' : 'pictures'}</span>
+              </Reveal>
+              <GalleryGrid items={s.items} view={view} />
+            </div>
+          ))}
+          {gallerySections.length === 0 && <p className="dim">Pictures are on their way.</p>}
         </div>
       </section>
-
-      {redraws.length > 0 && filter === 'All' && (
-        <section className="section">
-          <div className="container">
-            <div className="section-head">
-              <div><div className="label accent">{home.redrawLabel}</div><h2 className="display h-lg">{home.redrawTitle}</h2></div>
-            </div>
-            <div className="compare-grid">
-              {redraws.map((r, i) => <Reveal key={r.slug} delay={i * 0.1}><Compare set={r} seed={i} /></Reveal>)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <Lightbox items={shown} sel={sel} setSel={setSel} />
     </Page>
   )
 }

@@ -27,7 +27,7 @@ export default function About() {
             )}
             <Reveal className="about-actions" delay={0.2}>
               {shows('pages', 'commissions') && <Link className="btn" to="/commissions">Commission a piece <span className="arrow">→</span></Link>}
-              {shows('pages', 'work') && <Link className="btn ghost" to="/work">See the work</Link>}
+              {shows('pages', 'gallery') && <Link className="btn ghost" to="/work">See the work</Link>}
             </Reveal>
           </div>
           {first && (

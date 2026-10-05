@@ -4,10 +4,25 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "redirects": [
-    { "source": "/admin", "destination": "/admin/", "permanent": false }
+    {
+      "source": "/admin",
+      "destination": "/admin/",
+      "permanent": false
+    }
   ],
   "rewrites": [
-    { "source": "/api/gh/:path*", "destination": "/api/gh" },
-    { "source": "/((?!api/|admin/).*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/api/gh/:path*",
+      "destination": "/api/gh"
+    },
+    {
+      "source": "/((?!api/|admin/).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/checkout.js": {
+      "includeFiles": "content/**"
+    }
+  }
 }

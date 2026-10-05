@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useLenis } from './hooks/useLenis'
 import { applyBrandHue } from './hooks/useHue'
@@ -9,8 +9,8 @@ import Preloader from './components/Preloader'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
 import Home from './pages/Home'
+import Shop from './pages/Shop'
 import Work from './pages/Work'
-import Gallery from './pages/Gallery'
 import Commissions from './pages/Commissions'
 import About from './pages/About'
 import Contact from './pages/Contact'
@@ -40,8 +40,10 @@ export default function App() {
         <Routes location={loc} key={loc.pathname}>
           <Route path="/" element={<Home />} />
           {/* a page the admin has hidden has no route, so its address shows "not found" */}
-          {shows('pages', 'work') && <Route path="/work" element={<Work />} />}
-          {shows('pages', 'gallery') && <Route path="/gallery" element={<Gallery />} />}
+          {shows('pages', 'work') && <Route path="/shop" element={<Shop />} />}
+          {shows('pages', 'gallery') && <Route path="/work" element={<Work />} />}
+          {/* the Work page's first address */}
+          <Route path="/gallery" element={<Navigate to="/work" replace />} />
           {shows('pages', 'commissions') && <Route path="/commissions" element={<Commissions />} />}
           {shows('pages', 'about') && <Route path="/about" element={<About />} />}
           {shows('pages', 'contact') && <Route path="/contact" element={<Contact />} />}

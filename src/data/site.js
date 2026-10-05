@@ -19,12 +19,16 @@ const byOrder = (a, b) => (a.order ?? 99) - (b.order ?? 99)
 const live = (list) => list.filter((x) => !x.hidden) // entries ticked "Hide from the site"
 
 export let brand, hero, marquee, home, commissions, about, contact, social, footer
+/* Selling: whether online purchases are on, the currency, what a buyer gets. */
+export let shop
 /* The Support page: the artist's own project, and the ways to back it. */
 export let support
 /* Headings and introductions of the Work and Gallery pages. */
 export let pages
 export let nav
-/* Every piece, newest first; the file name is the piece's id. */
+/* Every piece, newest first; the file name is the piece's id. They are shown on the Shop page.
+   (The folders and the show/hide switches keep their first names: "work" is the Shop page and
+   its pieces, "gallery" is the Work page and its sections.) */
 export let work
 /* The categories that have at least one piece, in the order they first appear. */
 export let categories
@@ -99,19 +103,24 @@ function assemble(content) {
     paragraphs: [], facts: [], art: [], tiers: [], notes: [],
     ...given(page('support')),
   }
+  shop = {
+    enabled: false, currency: 'aud', buttonLabel: 'Buy', shipping: true,
+    thanksTitle: 'Thank you.', thanksText: 'Your order is in. A receipt is on its way to your email.',
+    ...given(site('shop')),
+  }
   social = links || []
   brand.instagram = social.find((s) => /instagram/i.test(s.label || ''))?.url
   footer = { fine: 'Characters shown in fan art belong to their owners.', ...given({ line: footerLine, fine: footerFine }) }
 
   nav = [
     { label: 'Home', to: '/' },
-    { label: 'Work', to: '/work' },
-    { label: 'Gallery', to: '/gallery' },
+    { label: 'Shop', to: '/shop', key: 'work' },
+    { label: 'Work', to: '/work', key: 'gallery' },
     { label: 'Commissions', to: '/commissions' },
     { label: 'About', to: '/about' },
     { label: 'Contact', to: '/contact' },
     { label: 'Support', to: '/support' },
-  ].filter((n) => n.to === '/' || shows('pages', n.to.slice(1)))
+  ].filter((n) => n.to === '/' || shows('pages', n.key || n.to.slice(1)))
 
   work = live(folder('work'))
     .filter((p) => p.title)
@@ -123,7 +132,7 @@ function assemble(content) {
   // a section's "also show pieces from Work" choice: none, every piece, or one category
   const fromWork = (from) => (!from || from === 'none' ? [] : work)
     .filter((p) => p.src && (from === 'all' || p.category === from))
-    .map((p) => ({ title: p.title, src: p.src, note: p.note, category: p.category, date: p.date, link: p.link, piece: p.slug }))
+    .map((p) => ({ title: p.title, src: p.src, note: p.note, category: p.category, date: p.date, link: p.link, piece: p.slug, slug: p.slug, price: p.price }))
   gallerySections = live(folder('gallery-sections'))
     .map((s) => ({ ...s, items: [...fromWork(s.from), ...(s.items || []).filter((g) => g && g.src)] }))
     .filter((s) => s.items.length > 0)
@@ -158,6 +167,14 @@ export function showLatest({ content = {}, media = {} }) {
 
 /* Uploaded images are stored as "/uploads/x.jpg". Prefix the deploy base path. */
 export const asset = (url) => newPictures[url] || (url && url.startsWith('/') ? import.meta.env.BASE_URL.replace(/\/$/, '') + url : url)
+
+/* A piece can be bought while online purchases are switched on and it has a price. */
+export const buyable = (piece) => Boolean(shop.enabled && piece && piece.slug && Number(piece.price) > 0)
+/* 40 -> "A$40", 12.5 -> "A$12.50", in the shop's currency. */
+export const money = (amount) => {
+  const n = Number(amount)
+  try { return new Intl.NumberFormat('en', { style: 'currency', currency: String(shop.currency || 'aud').toUpperCase(), minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n) } catch { return String(amount) }
+}
 
 /* An address typed into the admin is only ever used as a link when it is an ordinary web address. */
 export const safeUrl = (url) => (/^https?:\/\//i.test(String(url || '').trim()) ? String(url).trim() : null)

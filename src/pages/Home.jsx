@@ -65,7 +65,7 @@ function Hero({ onOpen }) {
           <motion.p className="hero-tag" {...rise(1.35)}>{brand.tagline}</motion.p>
           <motion.p className="lead" {...rise(1.45)}>{hero.text}</motion.p>
           <motion.div className="hero-actions" {...rise(1.55)}>
-            {shows('pages', 'work') && <Magnetic><Link className="btn" to="/work">{hero.primaryLabel} <span className="arrow">→</span></Link></Magnetic>}
+            {shows('pages', 'gallery') && <Magnetic><Link className="btn" to="/work">{hero.primaryLabel} <span className="arrow">→</span></Link></Magnetic>}
             {shows('pages', 'commissions') && <Magnetic><Link className="btn ghost" to="/commissions">{hero.secondaryLabel}</Link></Magnetic>}
           </motion.div>
         </div>
@@ -87,7 +87,7 @@ function Latest({ onOpen }) {
       <div className="container">
         <div className="section-head">
           <div><div className="label accent">{home.latestLabel}</div><h2 className="display h-lg">{home.latestTitle}</h2></div>
-          {shows('pages', 'work') && <Link className="btn ghost sm" to="/work">All {work.length} pieces <span className="arrow">→</span></Link>}
+          {shows('pages', 'work') && <Link className="btn ghost sm" to="/shop">All {work.length} pieces <span className="arrow">→</span></Link>}
         </div>
         <div className="index">
           <div className="index-stage" aria-hidden="true">
@@ -133,7 +133,7 @@ export default function Home() {
               <div><div className="label accent">{home.galleryLabel}</div><h2 className="display h-lg">{home.galleryTitle}</h2></div>
               <div className="section-tools">
                 <ViewSwitch view={view} onChange={setView} />
-                {shows('pages', 'gallery') && <Link className="btn ghost sm" to="/gallery">Full gallery <span className="arrow">→</span></Link>}
+                {shows('pages', 'gallery') && <Link className="btn ghost sm" to="/work">All the work <span className="arrow">→</span></Link>}
               </div>
             </div>
             <GalleryGrid items={galleryHome} view={view} />

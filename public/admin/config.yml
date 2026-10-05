@@ -3,7 +3,9 @@
 # Changes are saved as commits to the repository; the site rebuilds automatically.
 #
 # The panel has three kinds of section (public/admin/shell.js groups them in the navigation):
-#   1. things that are added to over time: Work, Gallery, Then and now, Conventions;
+#   1. things that are added to over time: Shop, Work, Then and now, Conventions;
+#      (the Shop's pieces live in content/work and the Work page's sections in
+#      content/gallery-sections: the folders keep the names the pages had first)
 #   2. the words on each page: one short form per page ("pages" below);
 #   3. things that apply to the whole site: name and colour, and what is shown or hidden ("site").
 
@@ -39,9 +41,9 @@ editor:
 collections:
   # ------------------------------------------------------------------ 1. added to over time
   - name: work
-    label: Work
+    label: Shop
     label_singular: Piece
-    description: 'Your finished pieces. Add a new one here and it appears on the Work page, the home page and the gallery.'
+    description: 'Your finished pieces, with a price each. A new one appears on the Shop page, the home page and the Work page.'
     folder: content/work
     create: true
     extension: json
@@ -52,18 +54,19 @@ collections:
     sortable_fields: [date, title, category]
     fields:
       - { name: title, label: Title, widget: string }
-      - { name: category, label: Category, widget: select, options: [Heroes, Villains, Horror, Games, Original, Commissions], default: Heroes, hint: 'The Work page gets a filter button for every category in use.' }
+      - { name: category, label: Category, widget: select, options: [Heroes, Villains, Horror, Games, Original, Commissions], default: Heroes, hint: 'The Shop page gets a filter button for every category in use.' }
       - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, hint: 'Newest pieces come first.' }
       - { name: link, label: Link to the post, widget: string, required: false, hint: 'The Instagram post, if there is one.' }
+      - { name: price, label: Price, widget: number, value_type: float, min: 0, required: false, hint: 'A number, in the currency set under "Shop & payments". Only shown, with its Buy button, while online purchases are switched on there. Leave empty for a piece that is not for sale.' }
       - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7 (for example 1500×2100px).' }
       - { name: note, label: A few words about it, widget: text, required: false, hint: 'Shown beside the picture when it is opened.' }
       - { name: featured, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'Up to six ticked pieces are listed on the home page. With none ticked, the six newest are.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes it off the site but keeps it here.' }
 
   - name: gallery_sections
-    label: Gallery
-    label_singular: Gallery section
-    description: 'The gallery page, in sections you name yourself (Sketches, Commissions, Convention photos...). Open a section to add pictures.'
+    label: Work
+    label_singular: Section
+    description: 'The Work page, in sections you name yourself (Sketches, Commissions, Convention photos...). Open a section to add pictures.'
     folder: content/gallery-sections
     create: true
     extension: json
@@ -77,12 +80,12 @@ collections:
       - { name: order, label: Order on the page, widget: number, value_type: int, default: 10, hint: 'Lower numbers come first.' }
       - { name: description, label: Short description, widget: string, required: false }
       - name: from
-        label: Fill it from Work
+        label: Fill it from the Shop
         widget: select
         default: none
         options:
           - { label: 'No, only the pictures added below', value: none }
-          - { label: 'Every piece on the Work page', value: all }
+          - { label: 'Every piece in the Shop', value: all }
           - { label: 'Heroes', value: Heroes }
           - { label: 'Villains', value: Villains }
           - { label: 'Horror', value: Horror }
@@ -102,7 +105,7 @@ collections:
           - { name: src, label: Picture, widget: image, choose_url: false, hint: 'Any shape; it is shown uncropped.' }
           - { name: title, label: Title, widget: string, required: false }
           - { name: note, label: A few words about it, widget: text, required: false }
-          - { name: home, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'The home page shows up to six gallery pictures, ticked ones first.' }
+          - { name: home, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'The home page shows up to six of these pictures, ticked ones first.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes the whole section off the site but keeps it here.' }
 
   - name: redraws
@@ -199,7 +202,7 @@ collections:
               - { label: 'Grid: even tiles', value: grid }
               - { label: 'Strip: one row you scroll sideways', value: strip }
               - { label: 'Spotlight: one big picture with the rest beside it', value: spotlight }
-            hint: 'Visitors can switch between these four; this is the one they see first, on the home page and the Gallery page.'
+            hint: 'Visitors can switch between these four; this is the one they see first, on the home page and the Work page.'
           - { name: redrawLabel, label: Small label, widget: string, required: false }
           - { name: redrawTitle, label: Heading, widget: string }
           - { name: redrawText, label: Text, widget: text, required: false }
@@ -209,7 +212,7 @@ collections:
           - { name: eventsTitle, label: Heading, widget: string }
 
       - name: lists
-        label: Work and Gallery pages
+        label: Shop and Work pages
         file: content/pages/lists.json
         fields:
           - { name: workLabel, label: Small label, widget: string, required: false }
@@ -392,6 +395,19 @@ collections:
           - { name: footerLine, label: Big line across the footer, widget: string, required: false }
           - { name: footerFine, label: Small print after the © line, widget: string, required: false }
 
+      - name: shop
+        label: Shop and payments
+        file: content/site/shop.json
+        fields:
+          - { name: enabled, label: Online purchases, widget: boolean, default: false, hint: 'On: every piece with a price shows it, with a Buy button that opens a Stripe payment page. Off: no prices and no buttons anywhere.' }
+          - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
+          - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'One line under every price and on the payment page, for example "A3 print, signed."' }
+          - { name: buttonLabel, label: Wording of the Buy button, widget: string }
+          - { name: shipping, label: Ask for a delivery address, widget: boolean, default: true, required: false, hint: 'On for anything you post. Off for downloads.' }
+          - { name: countries, label: Countries you post to, widget: list, required: false, hint: 'Two-letter country codes, separated by commas: AU, NZ, US, CA, GB.' }
+          - { name: thanksTitle, label: Heading, widget: string, required: false }
+          - { name: thanksText, label: Text, widget: string, required: false }
+
       - name: visibility
         label: Show or hide
         file: content/site/visibility.json
@@ -402,8 +418,8 @@ collections:
             collapsed: false
             hint: 'A page that is switched off also leaves the menu.'
             fields:
-              - { name: work, label: Work, widget: boolean, default: true }
-              - { name: gallery, label: Gallery, widget: boolean, default: true }
+              - { name: work, label: Shop, widget: boolean, default: true }
+              - { name: gallery, label: Work, widget: boolean, default: true }
               - { name: commissions, label: Commissions, widget: boolean, default: true }
               - { name: about, label: About, widget: boolean, default: true }
               - { name: contact, label: Contact, widget: boolean, default: true }
@@ -415,7 +431,7 @@ collections:
             fields:
               - { name: ticker, label: Moving band of words, widget: boolean, default: true }
               - { name: latest, label: Latest pieces, widget: boolean, default: true }
-              - { name: gallery, label: Gallery, widget: boolean, default: true }
+              - { name: gallery, label: Work, widget: boolean, default: true }
               - { name: redraws, label: Then and now, widget: boolean, default: true }
               - { name: commissions, label: Commissions, widget: boolean, default: true }
               - { name: support, label: Your own project (Support), widget: boolean, default: true }

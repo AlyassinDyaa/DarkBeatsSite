@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { spawn } from 'node:child_process'
 import { connect } from 'node:net'
 
@@ -74,6 +75,19 @@ const adminBundle = () => ({
   name: 'admin-bundle',
   configureServer(server) {
     startAdminBackend(server)
+    // The checkout function runs on Vercel. While developing, the same file answers here, so the
+    // Buy button behaves as it will live (with no STRIPE_SECRET_KEY set it says so).
+    server.middlewares.use('/api/checkout', async (req, res) => {
+      const chunks = []
+      for await (const chunk of req) chunks.push(chunk)
+      try { req.body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch { req.body = {} }
+      res.status = (code) => { res.statusCode = code; return res }
+      res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }
+      try {
+        const { default: handler } = await import(`${pathToFileURL(resolve('api/checkout.js')).href}?t=${Date.now()}`)
+        await handler(req, res)
+      } catch (e) { res.status(500).json({ message: `The checkout function failed: ${e.message}` }) }
+    })
     server.middlewares.use('/admin', (req, res, next) => {
       const path = (req.originalUrl || '').split('?')[0]
       const name = (req.url || '').split('?')[0].replace(/^\//, '')

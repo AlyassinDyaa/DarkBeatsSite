@@ -18,9 +18,9 @@ npm run preview    # serve the production build
 
 | Route | Page |
 |---|---|
-| `/` | Home: the name over a drifting wall of posters, latest pieces, gallery, then-and-now comparisons, commissions, conventions |
-| `/work` | Every piece, with category filters; a piece opens large with its details |
-| `/gallery` | Pictures in sections, shown uncropped: finished pieces, redraws, sketches, whatever is added |
+| `/` | Home: the name over a drifting wall of posters, latest pieces, work, then-and-now comparisons, commissions, conventions |
+| `/shop` | Every piece, with category filters; a piece opens large with its details, and its price and Buy button while online purchases are on |
+| `/work` | Pictures in sections, shown uncropped: finished pieces, redraws, sketches, whatever is added |
 | `/commissions` | What is on offer, how it works, and the request form |
 | `/about` | Who Jordan is, quick facts, where to find him |
 | `/contact` | Contact form, email and social links |
@@ -34,19 +34,20 @@ The site rebuilds itself about a minute later. No code involved.
 
 | Section | What you control |
 |---|---|
-| Work | Every piece: picture, title, category, date, link to the post, a note, whether it is on the home page |
-| Gallery | Sections of the gallery page and the pictures in each. A section can also fill itself from Work, so a finished piece is only uploaded once. Tick "Show on the home page" on up to 6 pictures |
+| Shop | Every piece: picture, title, category, date, price, link to the post, a note, whether it is on the home page |
+| Work | Sections of the Work page and the pictures in each. A section can also fill itself from the Shop, so a finished piece is only uploaded once. Tick "Show on the home page" on up to 6 pictures |
 | Then and now | Sets of the same subject drawn years apart: a year and a picture for each drawing |
 | Conventions | Events, with dates and where to find the table |
-| Home page, Work and Gallery pages, Commissions page, About page, Contact page | The words on each page, one short form per page: headings, introductions, buttons. The Home page form also holds the character beside the name and which layout the gallery opens in; the Commissions form holds open or closed, the offers and prices |
+| Home page, Shop and Work pages, Commissions page, About page, Contact page | The words on each page, one short form per page: headings, introductions, buttons. The Home page form also holds the character beside the name and which layout the gallery opens in; the Commissions form holds open or closed, the offers and prices |
 | Support page | The project's name, logo, character picture, text and art; the amounts fans can give and the **payment link** behind each; an optional goal bar; the short invitation on the home page |
 | Name, colour and contact | Site name, tagline, brand colour, logo, email, social links, footer text |
+| Shop and payments | Online purchases on or off, currency, what the buyer gets, delivery countries |
 | Show or hide | Switch whole pages, or parts of the home page, on and off |
 
 Pictures upload straight from the panel into `public/uploads/`. A piece without a picture gets a
 generated title card, so the site never shows a hole.
 
-Every piece, gallery section, set and event also has a **Hide from the site** switch, which takes it off the site
+Every piece, Work section, set and event also has a **Hide from the site** switch, which takes it off the site
 without deleting it.
 
 ### Editing on this computer
@@ -62,6 +63,17 @@ Then open http://localhost:5174/admin/ and edit; changes land directly in `conte
 
 Everything the panel edits is plain JSON under `content/`. Editing those files and pushing
 has the same effect as using the panel.
+
+## Selling pieces online (Stripe)
+
+The Shop page can sell its pieces through Stripe Checkout. It is off until two things are done:
+
+1. On Vercel: project **Settings → Environment Variables**, add `STRIPE_SECRET_KEY` (from the Stripe dashboard: *Developers → API keys → Secret key*; use the `sk_test_...` key first to try it with Stripe's test cards), then redeploy.
+2. In the admin: **Shop & payments → Online purchases** on. Each piece needs a **Price** (Shop → the piece).
+
+With purchases on, every priced piece shows its price and a Buy button; the button opens a payment page on Stripe (`api/checkout.js`). The price is read on the server from the site's content, not from the browser, and the key never leaves Vercel. With purchases off, no prices or buttons are shown anywhere.
+
+Orders and buyers' delivery addresses arrive in the Stripe dashboard (and by email from Stripe, if that is switched on there). Never put the secret key into the admin: everything typed there is saved to this repository.
 
 ## Taking support payments
 
@@ -80,7 +92,7 @@ Never put a secret key from a payment service into the admin: everything typed t
 
 - Tokens (colours, type, spacing) are at the top of `src/styles/global.css`.
 - The whole site is tinted by one hue, `--h`, set from **Name, colour and contact → Brand colour**.
-- Wherever a set of pictures is shown (the home page gallery, the Gallery page) visitors can switch between four layouts: wall, grid, strip and spotlight.
+- Wherever a set of pictures is shown (the home page, the Work page) visitors can switch between four layouts: wall, grid, strip and spotlight.
 - The browser icon, the icon a phone uses when the site is added to its home screen (`public/manifest.webmanifest`) and the mark in the top bar are all the logo.
 - Everything respects `prefers-reduced-motion`: smooth scroll, the poster wall and the moving band switch off.
 
