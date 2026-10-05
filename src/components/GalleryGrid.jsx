@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { asset } from '../data/site'
+import { useMedia } from '../hooks/useMedia'
 import Reveal from './Reveal'
 import Lightbox from './Lightbox'
 
@@ -71,21 +72,29 @@ function Spotlight({ items, open }) {
 export default function GalleryGrid({ items, view = 'wall' }) {
   const [sel, setSel] = useState(null)
   const tiles = view === 'grid'
+  // The wall: four columns on a wide screen, three on a middling one, two on a phone. The
+  // pictures are dealt out across the columns in turn, so they read left to right in the order
+  // the artist put them in and no column is left empty when there are only a few.
+  const wide = useMedia('(min-width: 1200px)'), mid = useMedia('(min-width: 700px)')
+  const count = wide ? 4 : mid ? 3 : 2
+  const columns = Array.from({ length: count }, (_, c) => items.map((g, i) => ({ g, i })).filter((x) => x.i % count === c))
+  const shot = (g, i) => (
+    <Reveal as="li" key={`${g.src}-${i}`} delay={Math.min(i, 8) * 0.05} y={20}>
+      <button type="button" className="shot" onClick={() => setSel(i)} aria-label={`Open ${g.title || 'picture'}`}>
+        <Shot g={g} eager={i < 4} />
+        {g.title && <span className="shot-cap">{g.title}</span>}
+      </button>
+    </Reveal>
+  )
   return (
     <>
       {view === 'strip' && <Strip items={items} open={setSel} />}
       {view === 'spotlight' && <Spotlight items={items} open={setSel} />}
-      {view !== 'strip' && view !== 'spotlight' && (
-        <ul className={tiles ? 'tiles' : 'masonry'}>
-          {items.map((g, i) => (
-            <Reveal as="li" key={`${g.src}-${i}`} delay={Math.min(i, 8) * 0.05} y={20}>
-              <button type="button" className="shot" onClick={() => setSel(i)} aria-label={`Open ${g.title || 'picture'}`}>
-                <Shot g={g} eager={i < 3} />
-                {g.title && <span className="shot-cap">{g.title}</span>}
-              </button>
-            </Reveal>
-          ))}
-        </ul>
+      {tiles && <ul className="tiles">{items.map(shot)}</ul>}
+      {view !== 'strip' && view !== 'spotlight' && !tiles && (
+        <div className="masonry" style={{ '--columns': count }}>
+          {columns.map((column, c) => <ul key={c}>{column.map(({ g, i }) => shot(g, i))}</ul>)}
+        </div>
       )}
       <Lightbox items={items} sel={sel} setSel={setSel} />
     </>
