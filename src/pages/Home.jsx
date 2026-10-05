@@ -13,9 +13,9 @@ import GalleryGrid from '../components/GalleryGrid'
 import Lightbox from '../components/Lightbox'
 import { useFinePointer, useReducedMotion } from '../hooks/useMedia'
 
-/* The name is built in depth. A cut-out character stands at its left: the first word is behind
-   the character (the sword crosses in front of it) and the second word runs in front of the
-   character, so the two are woven together. The three layers really are at different distances
+/* The name is built in depth, with a cut-out character at its left. The character is either the
+   back layer, with both words of the name in front of it, or the middle one, standing between
+   the first word and the second (the admin chooses). The three layers really are at different distances
    (translateZ under one perspective), so when the whole name tilts toward the pointer they slide
    past each other the way near and far things do. The poster wall drifts the other way, as the
    furthest thing back. Without a mouse, or with reduced motion, the layers simply hold still. */
@@ -40,7 +40,7 @@ function Hero({ onOpen }) {
   return (
     <section ref={ref} className="hero" onMouseMove={move} onMouseLeave={rest}>
       <div className="container hero-inner">
-        <div className={`hero-copy ${figure ? 'has-figure' : ''} ${figure?.ground ? 'has-ground' : ''}`}>
+        <div className={`hero-copy ${figure ? 'has-figure' : ''} ${figure?.ground ? 'has-ground' : ''} ${figure?.layer === 'behind' ? 'is-behind' : ''}`}>
           <motion.div className="label accent" {...rise(1.0)}>{hero.kicker}</motion.div>
           <motion.h1
             className="hero-name"

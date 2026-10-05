@@ -133,12 +133,19 @@ a.nav-status:hover { border-color: var(--fg); }
   mask-image: linear-gradient(#000 60%, transparent 60%), linear-gradient(90deg, #000 68%, transparent 84%);
 }
 @keyframes figure-float { 50% { transform: translateY(-0.035em); } }
+/* "behind the whole name": the character drops to the back, and both words stand in front of it */
+.is-behind .hero-figure { transform: translateZ(-90px); }
+.is-behind .hero-aura { transform: translateZ(-110px); }
+.is-behind .hero-line { transform: translateX(0.113em) translateZ(0) skewX(var(--slant)); }
+.is-behind .hero-line.is-front { transform: translateZ(80px) skewX(var(--slant)); }
 /* a glow hanging in the air behind the character */
 .hero-aura { position: absolute; left: calc(-2.15em + var(--fig-x, 0) * 0.01em); top: calc(-0.5em + var(--fig-y, 0) * 0.01em); width: calc(3.1em * var(--fig-size, 1)); height: calc(3.6em * var(--fig-size, 1)); transform: translateZ(0); background: radial-gradient(closest-side, oklch(0.55 0.25 var(--h) / 0.55), oklch(0.5 0.24 var(--h) / 0.22) 55%, transparent); pointer-events: none; }
 .hero-line > span { display: block; }
 .hero-line .is-accent { color: var(--accent); }
 .hero-tag { margin: 26px 0 8px; font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1; text-transform: uppercase; letter-spacing: 0.03em; transform: skewX(var(--slant)); transform-origin: 0 100%; }
 .hero .lead { max-width: 38ch; }
+/* the text under the name stays in front of a character that reaches down beside it */
+.hero-tag, .hero .lead, .hero-actions { position: relative; z-index: 1; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
 /* the wall hangs off the right edge of the screen and fades out toward the text */
 .hero-wall {
@@ -167,7 +174,6 @@ a.nav-status:hover { border-color: var(--fg); }
   .has-ground .hero-figure > span { -webkit-mask-image: none; mask-image: none; }
   .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 58%, transparent 74%); mask-image: linear-gradient(#000 58%, transparent 74%); }
   .hero-copy.has-figure:not(.has-ground) .hero-tag { margin-top: calc(var(--name) * 0.55); }
-  .hero-tag, .hero .lead, .hero-actions { position: relative; z-index: 1; }
   .hero-wall { position: relative; left: auto; width: 100vw; height: 64svh; margin: 36px calc(var(--gutter) * -1) 0; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
   .wall-tilt { gap: 12px; transform: rotate(-9deg) scale(1.3); }
   .wall-track { gap: 12px; }

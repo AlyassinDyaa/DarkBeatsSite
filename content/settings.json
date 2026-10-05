@@ -1,29 +1,15 @@
 {
-  "brand": {
-    "name": "DarkBeats",
-    "artist": "Jordan Beattie",
-    "handle": "@jbeatsart",
-    "tagline": "I draw things.",
-    "blurb": "Digital illustration by Jordan Beattie. Heroes, villains and the things that go bump in the night.",
-    "location": "Gold Coast, Australia",
-    "email": "Jbeatsart@outlook.com",
-    "instagram": "https://www.instagram.com/jbeatsart/",
-    "hue": 312,
-    "logo": "",
-    "contactAction": ""
-  },
-  "hero": {
-    "kicker": "Jordan Beattie · Gold Coast, Australia",
-    "text": "Heroes, villains and horror icons, painted loud on a black page.",
-    "primaryLabel": "See the work",
-    "secondaryLabel": "Commission a piece",
-    "figure": {
-      "src": "/uploads/hero-figure.webp",
-      "size": 100,
-      "x": 0,
-      "y": 0,
-      "ground": true
-    }
+  "contact": {
+    "label": "Say hello",
+    "title": "Get in touch",
+    "intro": "Commissions, conventions, collaborations, or just to say you liked a piece.",
+    "topics": [
+      "Just saying hi",
+      "Conventions and events",
+      "Collaboration",
+      "Prints",
+      "Something else"
+    ]
   },
   "marquee": [
     "Heroes",
@@ -33,22 +19,60 @@
     "Originals",
     "Keep drawing"
   ],
-  "home": {
-    "latestLabel": "Fresh ink",
-    "latestTitle": "Latest pieces",
-    "galleryLabel": "The gallery",
-    "galleryTitle": "Up on the wall",
-    "redrawLabel": "Keep drawing",
-    "redrawTitle": "Then and now",
-    "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
-    "commissionsTitle": "Get something drawn",
-    "commissionsButton": "How it works",
-    "eventsLabel": "In person",
-    "eventsTitle": "Find me at"
+  "pages": {
+    "work": {
+      "label": "The work",
+      "title": "Everything so far"
+    },
+    "gallery": {
+      "label": "The gallery",
+      "title": "Up on the wall",
+      "intro": "Finished pieces, redraws and whatever else comes off the tablet."
+    }
+  },
+  "brand": {
+    "artist": "Jordan Beattie",
+    "handle": "@jbeatsart",
+    "logo": "",
+    "name": "DarkBeats",
+    "tagline": "I draw things.",
+    "instagram": "https://www.instagram.com/jbeatsart/",
+    "location": "Gold Coast, Australia",
+    "contactAction": "",
+    "hue": 312,
+    "blurb": "Digital illustration by Jordan Beattie. Heroes, villains and the things that go bump in the night.",
+    "email": "Jbeatsart@outlook.com"
   },
   "commissions": {
-    "open": true,
-    "title": "Get something drawn",
+    "notes": [
+      "Personal use unless we agree otherwise.",
+      "Fan art and original characters are both welcome.",
+      "Turnaround depends on the queue; ask and I will tell you where it stands."
+    ],
+    "requestLabel": "Request",
+    "processLabel": "The process",
+    "steps": [
+      {
+        "title": "Send the idea",
+        "text": "Who or what, the mood, and any reference pictures you have."
+      },
+      {
+        "title": "Quote and sketch",
+        "text": "You get a price and a rough sketch to approve before any colour goes down."
+      },
+      {
+        "title": "Colour and finish",
+        "text": "The piece is inked and painted, with progress shots along the way."
+      },
+      {
+        "title": "Delivery",
+        "text": "A high-resolution file lands in your inbox, ready to print or post."
+      }
+    ],
+    "requestTitle": "Tell me the idea",
+    "processTitle": "How it works",
+    "open": false,
+    "closedTitle": "Join the queue",
     "intro": "Want your favourite character, your own character or yourself drawn in this style? Tell me what you have in mind.",
     "tiers": [
       {
@@ -82,36 +106,21 @@
         ]
       }
     ],
-    "processLabel": "The process",
-    "processTitle": "How it works",
-    "steps": [
-      {
-        "title": "Send the idea",
-        "text": "Who or what, the mood, and any reference pictures you have."
-      },
-      {
-        "title": "Quote and sketch",
-        "text": "You get a price and a rough sketch to approve before any colour goes down."
-      },
-      {
-        "title": "Colour and finish",
-        "text": "The piece is inked and painted, with progress shots along the way."
-      },
-      {
-        "title": "Delivery",
-        "text": "A high-resolution file lands in your inbox, ready to print or post."
-      }
-    ],
-    "requestLabel": "Request",
-    "requestTitle": "Tell me the idea",
-    "closedTitle": "Join the queue",
-    "closedText": "The books are closed for now. Send the idea anyway and you will hear back when a slot opens.",
-    "notes": [
-      "Personal use unless we agree otherwise.",
-      "Fan art and original characters are both welcome.",
-      "Turnaround depends on the queue; ask and I will tell you where it stands."
-    ]
+    "title": "Get something drawn",
+    "closedText": "The books are closed for now. Send the idea anyway and you will hear back when a slot opens."
   },
+  "social": [
+    {
+      "label": "Instagram",
+      "handle": "@jbeatsart",
+      "url": "https://www.instagram.com/jbeatsart/"
+    },
+    {
+      "label": "Threads",
+      "handle": "@jbeatsart",
+      "url": "https://www.threads.net/@jbeatsart"
+    }
+  ],
   "about": {
     "title": "I draw things.",
     "paragraphs": [
@@ -137,34 +146,6 @@
       }
     ]
   },
-  "contact": {
-    "label": "Say hello",
-    "title": "Get in touch",
-    "intro": "Commissions, conventions, collaborations, or just to say you liked a piece.",
-    "topics": [
-      "Just saying hi",
-      "Conventions and events",
-      "Collaboration",
-      "Prints",
-      "Something else"
-    ]
-  },
-  "social": [
-    {
-      "label": "Instagram",
-      "handle": "@jbeatsart",
-      "url": "https://www.instagram.com/jbeatsart/"
-    },
-    {
-      "label": "Threads",
-      "handle": "@jbeatsart",
-      "url": "https://www.threads.net/@jbeatsart"
-    }
-  ],
-  "footer": {
-    "line": "Keep drawing.",
-    "fine": "Characters shown in fan art belong to their owners."
-  },
   "visibility": {
     "pages": {
       "work": true,
@@ -182,15 +163,35 @@
       "events": true
     }
   },
-  "pages": {
-    "work": {
-      "label": "The work",
-      "title": "Everything so far"
-    },
-    "gallery": {
-      "label": "The gallery",
-      "title": "Up on the wall",
-      "intro": "Finished pieces, redraws and whatever else comes off the tablet."
+  "hero": {
+    "kicker": "Jordan Beattie · Gold Coast, Australia",
+    "text": "Heroes, villains and horror icons, painted loud on a black page.",
+    "primaryLabel": "See the work",
+    "secondaryLabel": "Commission a piece",
+    "figure": {
+      "src": "/uploads/hero-bust.webp",
+      "layer": "behind",
+      "ground": false,
+      "size": 104,
+      "x": 30,
+      "y": -29
     }
+  },
+  "footer": {
+    "line": "Keep drawing.",
+    "fine": "Characters shown in fan art belong to their owners."
+  },
+  "home": {
+    "redrawTitle": "Then and now",
+    "galleryLabel": "The gallery",
+    "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
+    "galleryTitle": "Up on the wall",
+    "latestLabel": "Fresh ink",
+    "commissionsTitle": "Get something drawn",
+    "latestTitle": "Latest pieces",
+    "commissionsButton": "How it works",
+    "eventsLabel": "In person",
+    "redrawLabel": "Keep drawing",
+    "eventsTitle": "Find me at"
   }
 }
