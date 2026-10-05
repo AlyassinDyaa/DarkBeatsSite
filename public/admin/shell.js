@@ -68,10 +68,13 @@
 
   /* The navigation and the Home screen list the sections in these groups, in this order. */
   const GROUPS = [
-    { label: 'Artwork and events', lead: 'What you add to over time.', has: (s) => !s.file },
-    { label: 'Words on each page', lead: 'Headings, introductions and buttons, one short form per page.', has: (s) => s.name === 'pages' },
-    { label: 'Whole site', lead: 'Your name and colour, and which parts are switched on.', has: (s) => s.name === 'site' },
+    { label: 'Artwork and events', short: 'Content', lead: 'What you add to over time.', has: (s) => !s.file },
+    { label: 'Words on each page', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', has: (s) => s.name === 'pages' },
+    { label: 'Whole site', short: 'Site', lead: 'Your name and colour, and which parts are switched on.', has: (s) => s.name === 'site' },
   ]
+  /* The navigation is narrow, and under "Page text" every name would end in "page": there the
+     pages go by these shorter names. Tiles and form headings keep the full ones. */
+  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Work & Gallery', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -93,6 +96,8 @@
   })
   ICONS.adminhome = 'M4 4h7v7H4z M13 4h7v4h-7z M13 10h7v10h-7z M4 13h7v7H4z'
   ICONS.menu = 'M4 7h16 M4 12h16 M4 17h16'
+  ICONS.library = 'M4 7h12v12H4z M8 7V4h12v12h-4 M4 16l3.500-3.500 3 3 2-2 3.500 3.500'
+  ICONS.external = 'M14 5h5v5 M19 5l-8 8 M11 7H6a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-5'
 
   const currentFile = () => (location.hash.match(/^#\/collections\/[^/]+\/entries\/([^/?]+)/) || [])[1]
   const layoutNow = () => LAYOUT[`${currentSection()}/${currentFile()}`] || LAYOUT[currentSection()]
@@ -137,13 +142,13 @@
       const q = search.value.trim()
       if (q) location.hash = `#/search/${encodeURIComponent(q)}`
     })
-    const home = el('a', { href: HOME, className: 'ia-home-link' }, [icon('adminhome'), 'Overview'])
+    const home = el('a', { href: HOME, className: 'ia-home-link' }, [icon('adminhome'), el('span', { textContent: 'Overview' })])
     const links = []
-    const linkTo = (s) => { const a = Object.assign(el('a', { href: hrefOf(s) }, [icon(s.key), s.label]), { section: s.name, file: s.file }); links.push(a); return a }
-    const media = el('button', { type: 'button' }, [icon('pictures'), 'Pictures'])
+    const linkTo = (s) => { const a = Object.assign(el('a', { href: hrefOf(s), title: s.label }, [icon(s.key), el('span', { textContent: SHORT[s.key] || s.label })]), { section: s.name, file: s.file }); links.push(a); return a }
+    const media = el('button', { type: 'button' }, [icon('library'), el('span', { textContent: 'Pictures' })])
     // Sign out: forget this browser's login and show the login page again. (Unsaved changes on
     // an open form still get the browser's "leave this page?" question first.)
-    const out = el('button', { type: 'button' }, [icon('signout'), 'Sign out'])
+    const out = el('button', { type: 'button', className: 'ia-out' }, [icon('signout'), el('span', { textContent: 'Sign out' })])
     out.addEventListener('click', () => {
       try { if (window.netlifyIdentity && window.netlifyIdentity.currentUser()) window.netlifyIdentity.logout() } catch { /* not that kind of login */ }
       try { localStorage.removeItem('decap-cms-user') } catch { /* nothing stored */ }
@@ -154,13 +159,14 @@
     const side = el('aside', { className: 'ia-side' }, [
       el('a', { className: 'ia-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('span', {}, [el('strong', { textContent: 'DarkBeats' }), el('small', { textContent: 'Admin' })])]),
       form,
-      el('nav', { ariaLabel: 'Admin' }, [home]),
-      ...groups.flatMap((g) => [el('div', { className: 'ia-label', textContent: g.label }), el('nav', { ariaLabel: g.label }, g.sections.map(linkTo))]),
-      el('div', { className: 'ia-label', textContent: 'Library' }),
-      el('nav', {}, [media]),
+      // the list of sections scrolls by itself on a short screen; the brand above and the foot below stay put
+      el('div', { className: 'ia-scroll' }, [
+        el('nav', { ariaLabel: 'Admin' }, [home]),
+        ...groups.flatMap((g, i) => [el('div', { className: 'ia-label', textContent: g.short }), el('nav', { ariaLabel: g.label }, [...g.sections.map(linkTo), ...(i === 0 ? [media] : [])])]),
+      ]),
       el('div', { className: 'ia-foot' }, [
-        el('a', { className: 'ia-site', href: '../', target: '_blank', rel: 'noopener', textContent: 'View the site ↗' }),
-        el('nav', { ariaLabel: 'Account' }, [out]),
+        el('a', { className: 'ia-site', href: '../', target: '_blank', rel: 'noopener' }, [icon('external'), el('span', { textContent: 'View site' })]),
+        out,
       ]),
     ])
 

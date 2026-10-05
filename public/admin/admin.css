@@ -23,7 +23,7 @@
   --ok: #56c98a;
   --display: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --body: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --side: 256px;      /* left navigation */
+  --side: 244px;      /* left navigation */
   --col: 1080px;      /* width of the working column */
   --r-card: 16px;
   --r-field: 10px;
@@ -107,38 +107,44 @@ button:disabled, [class*='-disabled']:disabled { opacity: 0.38; cursor: not-allo
 /* =====================================================================
    3. Left navigation and Home (built by shell.js)
    ===================================================================== */
+/* Three parts, top to bottom: the brand and search, which stay put; the list of sections, which
+   scrolls by itself when the screen is short; the foot (view the site, sign out), which stays put. */
 .ia-side {
-  position: fixed; inset: 0 auto 0 0; z-index: 400; width: var(--side); padding: 20px 14px 16px;
-  display: flex; flex-direction: column; overflow-y: auto;
-  background: #08060c; border-right: 1px solid var(--line); font-family: var(--body); color: var(--dim);
+  position: fixed; inset: 0 auto 0 0; z-index: 400; width: var(--side);
+  display: flex; flex-direction: column;
+  background: #08060c; border-right: 1px solid var(--line); font-family: var(--body); font-size: 14px; line-height: 1.3; color: var(--dim);
 }
-.ia-brand { display: flex; align-items: center; gap: 12px; padding: 4px 10px 20px; text-decoration: none; }
-.ia-brand img { width: 40px; height: 40px; border-radius: 50%; }
-.ia-brand span { display: grid; line-height: 1.15; }
-.ia-brand strong { font-family: var(--display); font-weight: 800; font-size: 1rem; letter-spacing: -0.01em; text-transform: uppercase; color: var(--fg); }
-.ia-brand small { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
-.ia-search { margin-bottom: 16px; }
+.ia-brand { flex: 0 0 auto; display: flex; align-items: center; gap: 11px; padding: 18px 18px 14px; text-decoration: none; }
+.ia-brand img { width: 36px; height: 36px; border-radius: 50%; }
+.ia-brand span { display: grid; gap: 2px; line-height: 1.1; }
+.ia-brand strong { font-family: var(--display); font-weight: 800; font-size: 0.98rem; letter-spacing: 0; text-transform: uppercase; color: var(--fg); }
+.ia-brand small { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+.ia-search { flex: 0 0 auto; padding: 0 12px 10px; }
 .ia-search input {
-  width: 100%; height: 40px; padding: 0 14px; border-radius: var(--r-field); border: 1px solid var(--line);
-  background: rgba(232, 230, 224, 0.05); color: var(--fg); font: inherit; font-size: 0.9rem; outline: 0; transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box; width: 100%; height: 36px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line);
+  background: rgba(232, 230, 224, 0.05); color: var(--fg); font: inherit; outline: 0; transition: border-color 0.2s, box-shadow 0.2s;
 }
 .ia-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .ia-search input::placeholder { color: var(--mute); }
-.ia-label { margin: 20px 12px 8px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mute); }
-.ia-side nav { display: grid; gap: 2px; }
-.ia-side nav a, .ia-side nav button {
-  all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%; height: 42px; padding: 0 12px;
-  border-radius: 10px; color: var(--dim); font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+.ia-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 2px 12px 14px; scrollbar-width: thin; scrollbar-color: rgba(232, 230, 224, 0.18) transparent; }
+.ia-label { margin: 18px 10px 6px; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mute); }
+.ia-side nav { display: grid; gap: 1px; }
+.ia-side nav a, .ia-side nav button, .ia-foot a, .ia-foot button {
+  all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 11px; min-width: 0; height: 36px; padding: 0 10px;
+  border-radius: 9px; color: var(--dim); font-weight: 500; cursor: pointer; transition: background 0.15s, color 0.15s;
 }
-.ia-side nav svg { width: 19px; height: 19px; flex: 0 0 auto; opacity: 0.85; }
-.ia-side nav a:hover, .ia-side nav button:hover { background: rgba(232, 230, 224, 0.06); color: var(--fg); }
-.ia-side nav a.on { background: var(--accent-soft); color: var(--fg); }
+.ia-side nav a, .ia-side nav button { position: relative; width: 100%; }
+/* a name that does not fit is cut short with dots, never wrapped onto a second line */
+.ia-side nav span, .ia-foot span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ia-side nav svg, .ia-foot svg { width: 17px; height: 17px; flex: 0 0 auto; opacity: 0.8; }
+.ia-side nav a:hover, .ia-side nav button:hover, .ia-foot a:hover, .ia-foot button:hover { background: rgba(232, 230, 224, 0.06); color: var(--fg); }
+.ia-side nav a.on { background: var(--accent-soft); color: var(--fg); font-weight: 650; }
+.ia-side nav a.on::before { content: ''; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
 .ia-side nav a.on svg { color: var(--accent); opacity: 1; }
-.ia-side nav a:focus-visible, .ia-side nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-/* foot of the navigation: the way to the site, then Sign out */
-.ia-foot { margin-top: auto; display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
-.ia-site { padding: 8px 12px 6px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); text-decoration: none; }
-.ia-site:hover { color: var(--fg); }
+.ia-side nav a:focus-visible, .ia-side nav button:focus-visible, .ia-foot a:focus-visible, .ia-foot button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* foot of the navigation: the way to the site on the left, Sign out on the right */
+.ia-foot { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px 12px 10px; border-top: 1px solid var(--line); }
+.ia-foot a, .ia-foot button { gap: 8px; font-size: 0.82rem; }
 /* nothing to navigate before login */
 body:not(:has([class*='AppHeader'], [class*='ToolbarContainer'])) .ia-side { display: none; }
 
@@ -189,7 +195,8 @@ html[data-ia-home] body:has([class*='AppHeader'], [class*='ToolbarContainer']) .
   .ia-top-brand strong { font-family: var(--display); font-weight: 800; font-size: 0.95rem; text-transform: uppercase; color: var(--fg); }
   .ia-top-brand small { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
   body:has([class*='AppHeader'], [class*='ToolbarContainer']) { padding-top: var(--bar); }
-  .ia-side { width: min(86vw, 300px); transform: translateX(-104%); transition: transform 0.25s ease; overflow-y: auto; }
+  .ia-side { width: min(84vw, 290px); transform: translateX(-104%); transition: transform 0.25s ease; }
+  .ia-side nav a, .ia-side nav button { height: 42px; }
   html[data-ia-menu] .ia-side { transform: none; box-shadow: 24px 0 60px rgba(0, 0, 0, 0.6); }
   html[data-ia-menu] .ia-shade { display: block; position: fixed; inset: 0; z-index: 395; background: rgba(0, 0, 0, 0.6); }
   .ia-home { inset: var(--bar) 0 0 0; }
