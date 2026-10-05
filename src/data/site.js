@@ -89,6 +89,7 @@ function assemble(content) {
     gallery: { label: 'The gallery', title: 'Up on the wall', ...given({ label: lists.galleryLabel, title: lists.galleryTitle, intro: lists.galleryIntro }) },
   }
   social = links || []
+  brand.instagram = social.find((s) => /instagram/i.test(s.label || ''))?.url
   footer = { fine: 'Characters shown in fan art belong to their owners.', ...given({ line: footerLine, fine: footerFine }) }
 
   nav = [

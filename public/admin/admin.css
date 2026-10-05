@@ -172,7 +172,55 @@ html[data-ia-home] body:has([class*='AppHeader'], [class*='ToolbarContainer']) .
   [class*='CollectionMain'] { padding-left: 0 !important; }
   [class*='EditorContainer'] { left: var(--side) !important; width: calc(100% - var(--side)) !important; }
 }
-@media (max-width: 899px) { .ia-side { display: none; } .ia-home { inset: 0; } }
+/* Phones and small tablets: a bar across the top with a menu button; the navigation slides in
+   over the page as a drawer. */
+.ia-top, .ia-shade { display: none; }
+@media (max-width: 899px) {
+  :root { --bar: 54px; }
+  body:has([class*='AppHeader'], [class*='ToolbarContainer']) .ia-top {
+    display: flex; align-items: center; gap: 10px; position: fixed; inset: 0 0 auto 0; z-index: 390; height: var(--bar); padding: 0 10px;
+    background: #08060c; border-bottom: 1px solid var(--line); font-family: var(--body);
+  }
+  .ia-menu { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; color: var(--fg); cursor: pointer; }
+  .ia-menu:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .ia-menu svg { width: 22px; height: 22px; }
+  .ia-top-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .ia-top-brand img { width: 30px; height: 30px; border-radius: 50%; }
+  .ia-top-brand strong { font-family: var(--display); font-weight: 800; font-size: 0.95rem; text-transform: uppercase; color: var(--fg); }
+  .ia-top-brand small { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+  body:has([class*='AppHeader'], [class*='ToolbarContainer']) { padding-top: var(--bar); }
+  .ia-side { width: min(86vw, 300px); transform: translateX(-104%); transition: transform 0.25s ease; overflow-y: auto; }
+  html[data-ia-menu] .ia-side { transform: none; box-shadow: 24px 0 60px rgba(0, 0, 0, 0.6); }
+  html[data-ia-menu] .ia-shade { display: block; position: fixed; inset: 0; z-index: 395; background: rgba(0, 0, 0, 0.6); }
+  .ia-home { inset: var(--bar) 0 0 0; }
+  .ia-home-inner { padding: 28px 18px 56px; }
+  .ia-home-inner h1 { font-size: 1.7rem !important; }
+  .ia-group { margin-top: 30px; }
+  .ia-tiles { grid-template-columns: 1fr; gap: 12px; }
+  .ia-tile { padding: 18px; }
+  [class*='CollectionContainer'] { padding: 0 14px !important; margin: 14px auto 40px !important; }
+  [class*='CollectionTopContainer'], [class*='SearchResultContainer'] { padding: 18px 18px !important; }
+  /* Decap's own list of sections: the drawer replaces it here just as the sidebar does on a wide screen */
+  [class*='SidebarContainer'] { display: none !important; }
+  [class*='CollectionMain'] { padding-left: 0 !important; }
+  /* the form: Decap lays its editor out at least 800px wide; let it be as narrow as the screen,
+     sitting under the bar, with the form's own heading bar at its top */
+  [class*='EditorContainer'] { top: var(--bar) !important; min-width: 0 !important; width: 100% !important; height: calc(100% - var(--bar)) !important; padding-top: 70px !important; }
+  [class*='ToolbarContainer'] { min-width: 0 !important; width: 100% !important; }
+  [class*='ToolbarSectionMeta'] { display: none !important; }
+  [class*='ToolbarSectionBackLink'] { min-width: 0; padding-right: 8px !important; }
+  [class*='ToolbarSectionBackLink'] [class*='BackArrow'] { flex: 0 0 auto; }
+  [class*='ToolbarSectionBackLink'] > div:last-child { min-width: 0; }
+  [class*='BackCollection'] { font-size: 1.05rem !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [class*='ToolbarSectionMain'] { padding: 0 10px 0 4px !important; gap: 8px; flex: 0 0 auto !important; }
+  [class*='ToolbarContainer'] [class*='StyledDropdownButton'], [class*='ToolbarContainer'] [class*='ToolbarButton'] { height: 40px !important; line-height: 40px !important; padding: 0 14px !important; font-size: 0.84rem !important; }
+  [class*='ToolbarContainer'] [class*='StyledDropdownButton'] { padding-right: 32px !important; }
+  [class*='PreviewPaneContainer'] { padding: 0 10px 88px !important; }
+  [class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) { padding: 18px 14px 26px !important; column-gap: 0; row-gap: 18px; }
+  [data-ia-group]::before { font-size: 18px; margin: 8px 0 14px; padding-top: 20px; }
+  [data-ia-grid] { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); column-gap: 12px; }
+  .ia-notice { right: 12px; bottom: 12px; width: calc(100vw - 24px); }
+}
 
 /* =====================================================================
    4. Top bar of list pages
@@ -407,15 +455,31 @@ html[data-ia-view='gallery'] [class*='GridCardLink']:not(:has([class*='CardImage
 [class*='-multiValue'] div { color: var(--fg) !important; }
 [class*='-noOptionsMessage'], [class*='-loadingMessage'] { color: var(--mute) !important; }
 
-/* on/off: one row, name on the left, switch on the right */
+/* A group of fields that is always open needs no bar with an arrow to open it. (A list keeps
+   its bar: that is where its "Add" button lives.) */
+[class*='ControlContainer'] > div > [class*='TopBarContainer']:not(:has([class*='AddButton'])) { display: none !important; }
+[class*='ControlContainer'] > div:has(> [class*='TopBarContainer']:not(:has([class*='AddButton']))) > [class*='TopBarContainer'] + div:has(*) { padding-top: 16px !important; }
+/* ...and no name of its own when it already sits under a heading that names it */
+[data-ia-group]:has(> div > [class*='TopBarContainer']:not(:has([class*='AddButton']))) > :is([class*='ControlTopbar'], label) { display: none !important; }
+/* The sidebar and the overview already offer "New ..." and "Sign out", so Decap's own bar across
+   the top (Quick add, account menu) only repeats them. It stays in the page, empty: the rules
+   above use it to tell that somebody is logged in. */
+[class*='AppHeaderContent'] { min-height: 0 !important; height: 0 !important; padding-block: 0 !important; overflow: hidden !important; }
+
+/* on/off: one box. The name, with its explanation under it, on the left; the switch on the right,
+   level with the middle of the box however many lines the explanation runs to. */
 [class*='ControlContainer']:has(> div > [class*='ToggleContainer']) {
-  display: grid !important; grid-template-columns: 1fr auto; align-items: center; column-gap: 16px; min-height: 48px;
-  padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-field); background: var(--field);
+  display: grid !important; grid-template-columns: 1fr auto; align-items: center; column-gap: 20px; row-gap: 3px; min-height: 54px;
+  padding: 12px 16px; border: 1px solid var(--line-strong); border-radius: var(--r-field); background: var(--field);
 }
-[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > div:not([class*='ControlTopbar']) { background: transparent !important; border: 0 !important; padding: 0 !important; grid-column: 2; grid-row: 1; box-shadow: none !important; }
+/* (the string of :not()s is there to outrank "the box of every field" above, which would draw a second box round the switch) */
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > div:not([class*='ControlTopbar']):not([class*='ControlHint']):not([class*='ControlErrorsList']):not([class*='ColorSwatch']) {
+  grid-column: 2; grid-row: 1 / span 2; display: flex !important; align-items: center; min-height: 0 !important;
+  background: transparent !important; border: 0 !important; outline: 0 !important; border-radius: 0 !important; padding: 0 !important; box-shadow: none !important;
+}
 [class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > [class*='ControlTopbar'] { grid-column: 1; grid-row: 1; }
 [class*='ControlContainer']:has(> div > [class*='ToggleContainer']) [class*='FieldLabel'] { padding: 0 !important; color: var(--fg) !important; }
-[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > [class*='ControlHint'] { grid-column: 1 / -1; margin: 0 0 10px !important; }
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > [class*='ControlHint'] { grid-column: 1; grid-row: 2; margin: 0 !important; padding: 0 !important; }
 [class*='ToggleBackground'] { background: rgba(232, 230, 224, 0.2) !important; }
 [class*='ToggleContainer'][aria-checked='true'] [class*='ToggleBackground'] { background: var(--accent) !important; }
 [class*='ToggleHandle'] { background: #fff !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important; }

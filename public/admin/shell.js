@@ -46,9 +46,9 @@
      single pages is looked up as "collection/page". A heading never goes on an on/off switch:
      a switch is drawn as a box of its own and the heading would land inside it. */
   const LAYOUT = {
-    work: { groups: { title: 'The piece', src: 'Picture, and where it shows', hue: 'Rarely needed' }, half: ['title', 'category', 'date', 'link', 'featured', 'hidden'] },
+    work: { groups: { title: 'The piece', src: 'Picture, and where it shows' }, half: ['title', 'category', 'date', 'link', 'featured', 'hidden'] },
     gallery_sections: { groups: { title: 'Section', from: 'Pictures' }, half: ['title', 'order'] },
-    redraws: { groups: { title: 'The set', stages: 'The drawings, oldest first', link: 'Rarely needed' }, half: ['title', 'text', 'link', 'order'] },
+    redraws: { groups: { title: 'The set', stages: 'The drawings, oldest first', order: 'Rarely needed' }, half: ['title', 'text'] },
     events: { groups: { name: 'The event', order: 'Rarely needed' }, half: ['name', 'when', 'role', 'place', 'order', 'hidden'] },
     'pages/home': {
       groups: { kicker: 'Top of the page', figure: 'Character beside the name', marquee: 'Moving band of words', latestLabel: 'Latest pieces', galleryLabel: 'Gallery', redrawLabel: 'Then and now', commissionsTitle: 'Commissions', eventsLabel: 'Conventions' },
@@ -62,7 +62,7 @@
     },
     'pages/about': { groups: { title: 'Text', facts: 'Quick facts' }, half: [] },
     'pages/contact': { groups: { label: 'Top of the page', topics: 'Form' }, half: ['label', 'title'] },
-    'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'tagline', 'handle', 'email', 'location', 'instagram', 'contactAction'] },
+    'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
@@ -92,6 +92,7 @@
     'site/visibility': 'M2.500 12s3.500-6.500 9.500-6.500 9.500 6.500 9.500 6.500-3.500 6.500-9.500 6.500S2.500 12 2.500 12z M12 9.500a2.500 2.500 0 1 0 0 5 2.500 2.500 0 0 0 0-5z',
   })
   ICONS.adminhome = 'M4 4h7v7H4z M13 4h7v4h-7z M13 10h7v10h-7z M4 13h7v7H4z'
+  ICONS.menu = 'M4 7h16 M4 12h16 M4 17h16'
 
   const currentFile = () => (location.hash.match(/^#\/collections\/[^/]+\/entries\/([^/?]+)/) || [])[1]
   const layoutNow = () => LAYOUT[`${currentSection()}/${currentFile()}`] || LAYOUT[currentSection()]
@@ -186,9 +187,23 @@
         ])),
       ]),
     ])
-    document.body.append(side, homeScreen)
+    // ---- phones and small tablets: the navigation is a drawer, opened from a bar across the top
+    const menu = el('button', { type: 'button', className: 'ia-menu', ariaLabel: 'Menu' }, [icon('menu')])
+    const top = el('div', { className: 'ia-top' }, [menu, el('a', { className: 'ia-top-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('strong', { textContent: 'DarkBeats' }), el('small', { textContent: 'Admin' })])])
+    const shade = el('div', { className: 'ia-shade' })
+    const drawer = (open) => { document.documentElement.toggleAttribute('data-ia-menu', open); menu.setAttribute('aria-expanded', String(open)) }
+    menu.addEventListener('click', () => drawer(!document.documentElement.hasAttribute('data-ia-menu')))
+    shade.addEventListener('click', () => drawer(false))
+    side.addEventListener('click', (e) => { if (e.target.closest('a, button')) drawer(false) })
+    addEventListener('hashchange', () => drawer(false))
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') drawer(false) })
+    document.body.append(top, shade, side, homeScreen)
 
     const sync = () => {
+      // an address left over from an older layout of this panel (a bookmark, a tab left open)
+      // names a section that no longer exists: show the overview instead of an empty form
+      const section = currentSection()
+      if (section && !sections.some((s) => s.name === section)) { location.hash = HOME; return }
       const onHome = location.hash === HOME
       document.documentElement.toggleAttribute('data-ia-home', onHome)
       home.classList.toggle('on', onHome)

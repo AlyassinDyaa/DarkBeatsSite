@@ -59,7 +59,6 @@ collections:
       - { name: note, label: A few words about it, widget: text, required: false, hint: 'Shown beside the picture when it is opened.' }
       - { name: featured, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'Up to six ticked pieces are listed on the home page. With none ticked, the six newest are.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes it off the site but keeps it here.' }
-      - { name: hue, label: Colour of the stand-in card, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', required: false, hint: 'Only matters while the piece has no picture: the site then draws a title card in this colour. 25 red, 55 orange, 145 green, 200 teal, 250 blue, 312 purple.' }
 
   - name: gallery_sections
     label: Gallery
@@ -131,10 +130,8 @@ collections:
         fields:
           - { name: year, label: Year, widget: string }
           - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7. Use the same shape for every drawing in a set.' }
-      - { name: link, label: Link to the post, widget: string, required: false }
       - { name: order, label: Order on site, widget: number, value_type: int, default: 10, required: false, hint: 'Lower numbers come first.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false }
-      - { name: hue, label: Colour of the stand-in card, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', required: false, hint: 'Only matters while a drawing has no picture.' }
 
   - name: events
     label: Conventions
@@ -183,7 +180,7 @@ collections:
                 options:
                   - { label: 'Behind the whole name', value: behind }
                   - { label: 'Between the two words', value: between }
-              - { name: ground, label: It stands on something, widget: boolean, default: false, required: false, hint: 'On for a full figure standing on a floor or roof. Off for a head-and-shoulders picture.' }
+              - { name: ground, label: It stands on something, widget: boolean, default: false, required: false, hint: 'For a full figure on a floor or roof.' }
               - { name: size, label: Size, widget: slider, min: 50, max: 150, step: 1, default: 100, unit: '%', required: false }
               - { name: x, label: Move sideways, widget: slider, min: -100, max: 100, step: 1, default: 0, required: false }
               - { name: y, label: Move up or down, widget: slider, min: -100, max: 100, step: 1, default: 0, required: false }
@@ -300,13 +297,11 @@ collections:
           - { name: name, label: Site name, widget: string, hint: 'Written with a capital in the middle ("DarkBeats"), the second half takes the brand colour.' }
           - { name: artist, label: Your name, widget: string }
           - { name: tagline, label: Tagline, widget: string }
-          - { name: handle, label: Handle, widget: string, required: false }
           - { name: blurb, label: One or two sentences about the site, widget: text, hint: 'Shown in the footer, and by search engines and link previews.' }
           - { name: hue, label: Brand colour, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', hint: 'Tints the whole site. 312 is the purple. 25 red, 55 orange, 145 green, 200 teal, 250 blue, 340 pink.' }
           - { name: logo, label: Logo, widget: image, choose_url: false, required: false, hint: 'Optional. A small square picture shown beside the name in the top bar.' }
           - { name: email, label: Contact email, widget: string }
           - { name: location, label: Location, widget: string, required: false }
-          - { name: instagram, label: Instagram address, widget: string, required: false }
           - { name: contactAction, label: Form service address, widget: string, required: false, hint: 'Optional. With an address from a form service (Formspree and the like) the forms send there. Empty, they open the visitor''s mail app.' }
           - name: social
             label: Links
@@ -315,7 +310,7 @@ collections:
             required: false
             summary: '{{fields.label}} {{fields.handle}}'
             fields:
-              - { name: label, label: Network, widget: string, hint: 'Instagram, Threads, TikTok, X, Facebook, YouTube and ArtStation get their own icon.' }
+              - { name: label, label: Network, widget: string, hint: 'Instagram, Threads, TikTok, X, Facebook, YouTube and ArtStation get their own icon. The Instagram link is also the "More on Instagram" button on the Gallery page.' }
               - { name: handle, label: Handle, widget: string, required: false }
               - { name: url, label: Address, widget: string }
           - { name: footerLine, label: Big line across the footer, widget: string, required: false }
