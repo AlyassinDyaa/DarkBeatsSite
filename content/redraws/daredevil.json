@@ -1,0 +1,22 @@
+{
+  "title": "Daredevil",
+  "text": "Daredevil show art over the years.",
+  "hue": 25,
+  "order": 2,
+  "link": "https://www.instagram.com/jbeatsart/p/DWtTlBjgX5Z/",
+  "hidden": false,
+  "stages": [
+    {
+      "year": "2018",
+      "src": "/uploads/daredevil-2018.webp"
+    },
+    {
+      "year": "2022",
+      "src": "/uploads/daredevil-2022.webp"
+    },
+    {
+      "year": "2026",
+      "src": "/uploads/daredevil.webp"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "title": "The Batman Who Laughs",
+  "text": "Same villain, four years apart.",
+  "hue": 150,
+  "order": 1,
+  "link": "https://www.instagram.com/jbeatsart/p/DXP_BGcksvj/",
+  "hidden": false,
+  "stages": [
+    {
+      "year": "2022",
+      "src": "/uploads/the-batman-who-laughs-2022.webp"
+    },
+    {
+      "year": "2026",
+      "src": "/uploads/the-batman-who-laughs.webp"
+    }
+  ]
+}

@@ -1,0 +1,186 @@
+/* DarkBeats — global styles & tokens */
+
+/* --h is the one number that tints the site: the brand hue, set in the admin panel
+   (hooks/useHue.js writes it here). */
+:root {
+  --h: 312;
+  --bg: #09070d;
+  --bg-2: #120e19;
+  --bg-3: #1c1627;
+  --fg: #f4eff8;
+  --fg-dim: rgba(244, 239, 248, 0.68);
+  --fg-mute: rgba(244, 239, 248, 0.44);
+  --line: rgba(244, 239, 248, 0.12);
+  --line-strong: rgba(244, 239, 248, 0.32);
+  /* oklch keeps every hue equally bright, so dark text sits on the accent whatever the hue is */
+  --accent: oklch(0.68 0.22 var(--h));
+  --accent-soft: oklch(0.68 0.22 var(--h) / 0.16);
+  --on-accent: #0a0710;
+  --open: oklch(0.82 0.2 150);
+  --display: 'Anton', Impact, 'Haettenschweiler', 'Arial Narrow Bold', sans-serif;
+  --body: 'Hanken Grotesk Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --slant: -7deg;
+  /* a button's slanted ends; a card's clipped corners */
+  --lean: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  --gutter: clamp(20px, 5vw, 72px);
+  --max: 1400px;
+  --nav: 76px;
+  --ease: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+img, svg, video { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+p { margin: 0 0 1em; }
+h1, h2, h3, h4 { margin: 0; font-weight: 400; }
+::selection { background: var(--accent); color: var(--on-accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* backdrop, fixed behind every page: a wash of the current colour in one corner, crossed by
+   thin slanted strokes */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 55% at 100% 0%, oklch(0.5 0.2 var(--h) / 0.34), transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, oklch(0.4 0.16 calc(var(--h) - 50) / 0.22), transparent 70%);
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: repeating-linear-gradient(-58deg, transparent 0 46px, oklch(0.8 0.19 var(--h) / 0.07) 46px 48px, transparent 48px 118px, oklch(0.8 0.19 var(--h) / 0.045) 118px 124px);
+  -webkit-mask-image: radial-gradient(70% 70% at 100% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(70% 70% at 100% 0%, #000, transparent 75%);
+}
+#root { position: relative; z-index: 1; }
+
+.container { width: min(100% - 2 * var(--gutter), var(--max)); margin-inline: auto; }
+.section { padding-block: clamp(56px, 8vw, 128px); }
+.section.tight { padding-block: clamp(36px, 5vw, 72px); }
+.page { min-height: 70vh; }
+
+/* type: tall poster capitals with a lean, the way the logo is drawn */
+.display {
+  font-family: var(--display);
+  text-transform: uppercase;
+  line-height: 0.98;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  transform: skewX(var(--slant));
+  transform-origin: 0 100%;
+}
+.h-xl { font-size: clamp(3.2rem, 9.5vw, 8.5rem); }
+.h-lg { font-size: clamp(2.5rem, 5.6vw, 4.8rem); }
+.h-md { font-size: clamp(1.7rem, 3vw, 2.5rem); }
+.h-sm { font-size: 1.4rem; letter-spacing: 0.02em; }
+.lead { font-size: clamp(1.08rem, 1.5vw, 1.3rem); line-height: 1.55; color: var(--fg-dim); max-width: 52ch; }
+.dim { color: var(--fg-dim); }
+
+.label {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+  font-family: var(--mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--fg-mute);
+}
+.label.accent { color: var(--accent); }
+.label.accent::before { content: ''; flex: 0 0 auto; width: 26px; height: 3px; background: currentColor; transform: skewX(-40deg); }
+
+/* buttons: slanted slabs */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6em;
+  min-height: 54px; padding: 0 32px;
+  font-family: var(--display); font-size: 1.08rem; letter-spacing: 0.07em; text-transform: uppercase; white-space: nowrap;
+  background: var(--accent); color: var(--on-accent);
+  clip-path: var(--lean);
+  transition: background 0.25s, color 0.25s;
+}
+.btn .arrow { transition: transform 0.3s var(--ease-out); }
+.btn:hover .arrow { transform: translateX(5px); }
+/* the slanted shape cuts an outline off, so focus is shown by the fill instead */
+.btn:hover, .btn:focus-visible { background: var(--fg); color: var(--bg); outline: 0; }
+.btn.ghost { position: relative; isolation: isolate; background: var(--line-strong); color: var(--fg); }
+.btn.ghost::before { content: ''; position: absolute; inset: 1.5px; z-index: -1; background: var(--bg); clip-path: var(--lean); transition: background 0.25s; }
+.btn.ghost:hover, .btn.ghost:focus-visible { background: var(--accent); color: var(--on-accent); }
+.btn.ghost:hover::before, .btn.ghost:focus-visible::before { background: var(--accent); }
+.btn.sm { min-height: 42px; padding: 0 22px; font-size: 0.92rem; }
+
+/* chips: filters and year pickers */
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 40px; padding: 0 16px;
+  font-family: var(--mono); font-size: 0.76rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--fg-dim); border: 1px solid var(--line-strong);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.chip small { font-size: 0.9em; opacity: 0.6; }
+button.chip:hover { color: var(--fg); border-color: var(--fg); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip.is-fixed { border-style: dashed; color: var(--fg-mute); }
+
+/* open / closed */
+.status { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 18px; font-family: var(--mono); font-size: 0.76rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); }
+.status i, .nav-status i { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--fg-mute); }
+.status.on i, .nav-status i.on { background: var(--open); box-shadow: 0 0 0 0 var(--open); animation: pulse 2.2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 oklch(0.82 0.2 150 / 0.6); } 70%, 100% { box-shadow: 0 0 0 9px oklch(0.82 0.2 150 / 0); } }
+
+.section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px 48px; flex-wrap: wrap; margin-bottom: clamp(28px, 4vw, 56px); }
+.section-head .label { margin-bottom: 12px; }
+.section-note { max-width: 40ch; margin: 0; }
+.page-head { padding-top: calc(var(--nav) + clamp(40px, 7vw, 96px)); }
+.page-head .lead { margin-top: 22px; }
+
+/* forms */
+form { max-width: 620px; }
+.field { position: relative; margin-bottom: 28px; }
+.field input, .field textarea {
+  width: 100%; padding: 22px 0 10px;
+  background: transparent; color: var(--fg); font: inherit;
+  border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; outline: 0;
+}
+.field textarea { resize: vertical; min-height: 120px; }
+.field label { position: absolute; left: 0; top: 20px; color: var(--fg-mute); pointer-events: none; transform-origin: left; transition: transform 0.3s var(--ease-out), color 0.3s; }
+.field input:focus + label, .field input:not(:placeholder-shown) + label,
+.field textarea:focus + label, .field textarea:not(:placeholder-shown) + label { transform: translateY(-22px) scale(0.76); color: var(--accent); }
+.field input::placeholder, .field textarea::placeholder { color: transparent; }
+.field .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.45s var(--ease); }
+.field input:focus ~ .bar, .field textarea:focus ~ .bar { transform: scaleX(1); }
+.form-alt { margin-top: 20px; font-size: 0.9rem; color: var(--fg-mute); }
+.form-alt a { color: var(--fg); border-bottom: 1px solid var(--line-strong); }
+
+/* the site's own drop-down (components/Picker.jsx) */
+.field.pick { z-index: 5; }
+.pick-label { display: block; margin-bottom: 2px; font-size: 0.78rem; color: var(--accent); }
+.pick-button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 0 10px; text-align: left; border-bottom: 1px solid var(--line-strong); outline: 0; }
+.pick-button svg, .pick-list svg { flex: 0 0 auto; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pick-button svg { transition: transform 0.3s var(--ease); }
+.field.pick.is-open .pick-button svg { transform: rotate(180deg); }
+.field.pick.is-open .bar, .pick-button:focus-visible ~ .bar { transform: scaleX(1); }
+.pick-list { position: absolute; left: 0; right: 0; top: calc(100% + 6px); padding: 6px; background: var(--bg-3); border: 1px solid var(--line-strong); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+.pick-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 0 14px; color: var(--fg-dim); cursor: pointer; }
+.pick-list li.on { background: var(--accent-soft); color: var(--fg); }
+.pick-list li[aria-selected='true'] { color: var(--fg); font-weight: 700; }
+.pick-list li svg { color: var(--accent); }
+
+.fresh-note { position: fixed; z-index: 400; left: 16px; bottom: 16px; max-width: min(360px, calc(100vw - 32px)); padding: 10px 14px; background: rgba(14, 11, 20, 0.94); border: 1px solid var(--open); color: var(--fg-dim); font-size: 0.78rem; line-height: 1.45; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; }
+}

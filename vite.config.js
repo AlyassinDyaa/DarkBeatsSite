@@ -1,0 +1,77 @@
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { spawn } from 'node:child_process'
+import { connect } from 'node:net'
+
+// Copies index.html to 404.html after build so GitHub Pages serves the SPA on deep links.
+const spaFallback = () => ({
+  name: 'spa-404',
+  closeBundle() {
+    try { writeFileSync(resolve('dist/404.html'), readFileSync(resolve('dist/index.html'))) } catch { /* no dist yet */ }
+  },
+})
+
+// Serves the self-hosted admin panel (Decap CMS) from node_modules in dev,
+// and copies its scripts into dist/admin/ on build, so the panel needs no external CDN.
+const CMS_DIR = resolve('node_modules/decap-cms/dist')
+const cmsFiles = () => readdirSync(CMS_DIR).filter((f) => /^(\d+\.)?decap-cms\.js$/.test(f))
+// The admin saves through a small local helper (decap-server). It listens on 8082 here, not on
+// its usual 8081, so that it never shares a helper with another site being worked on at the same
+// time: a shared helper would save this site's edits into the other site's folder.
+const ADMIN_PORT = 8082
+// Without the helper the panel only shows a login it cannot complete, so `npm run dev` starts
+// the helper too, unless one is already running, and stops it again on the way out.
+const startAdminBackend = (server) => {
+  const probe = connect({ port: ADMIN_PORT, host: '127.0.0.1' })
+  probe.once('connect', () => probe.destroy()) // already there: leave it alone
+  probe.once('error', () => {
+    const child = spawn(process.execPath, [resolve('node_modules/decap-server/dist/index.js')], { stdio: 'ignore', windowsHide: true, env: { ...process.env, PORT: String(ADMIN_PORT) } })
+    child.on('error', (e) => server.config.logger.warn(`admin backend did not start: ${e.message}`))
+    const stop = () => { if (!child.killed) child.kill() }
+    server.httpServer?.once('close', stop)
+    process.once('exit', stop)
+    server.config.logger.info(`  admin backend started on port ${ADMIN_PORT}`)
+  })
+}
+
+const adminBundle = () => ({
+  name: 'admin-bundle',
+  configureServer(server) {
+    startAdminBackend(server)
+    server.middlewares.use('/admin', (req, res, next) => {
+      const path = (req.originalUrl || '').split('?')[0]
+      const name = (req.url || '').split('?')[0].replace(/^\//, '')
+      // "/admin" and "/admin/" would otherwise fall through to the site's own router.
+      if (path === '/admin') { res.statusCode = 302; res.setHeader('Location', '/admin/'); return res.end() }
+      if (name === '') { res.setHeader('Content-Type', 'text/html'); return res.end(readFileSync(resolve('public/admin/index.html'))) }
+      if (!name.endsWith('.js') || !existsSync(resolve(CMS_DIR, name))) return next()
+      res.setHeader('Content-Type', 'application/javascript')
+      res.end(readFileSync(resolve(CMS_DIR, name)))
+    })
+  },
+  closeBundle() {
+    try {
+      mkdirSync(resolve('dist/admin'), { recursive: true })
+      for (const f of cmsFiles()) copyFileSync(resolve(CMS_DIR, f), resolve('dist/admin', f))
+      // On Vercel there is no Netlify login, so the admin logs people in with a passcode instead
+      // (the functions in /api) and saves to the repository and branch this build came from.
+      // The admin page reads this file; where it is missing it keeps the backend in config.yml.
+      if (process.env.VERCEL) {
+        const repo = process.env.VERCEL_GIT_REPO_OWNER && process.env.VERCEL_GIT_REPO_SLUG
+          ? `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}`
+          : 'AlyassinDyaa/DarkBeatsSite'
+        writeFileSync(resolve('dist/admin/backend.json'), JSON.stringify({ name: 'github', repo, branch: process.env.VERCEL_GIT_COMMIT_REF || 'main' }))
+      }
+    } catch (e) { console.warn('admin bundle copy failed', e.message) }
+  },
+})
+
+export default defineConfig({
+  // Set VITE_BASE=/repo-name/ when deploying under a sub-path (GitHub project pages).
+  base: process.env.VITE_BASE || '/',
+  plugins: [react(), spaFallback(), adminBundle()],
+  // PORT lets a preview tool pick a free port; 5174 keeps clear of other sites' dev servers.
+  server: { port: Number(process.env.PORT) || 5174 },
+})

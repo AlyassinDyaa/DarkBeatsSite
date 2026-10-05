@@ -1,0 +1,604 @@
+/* DarkBeats admin.
+   Decap CMS draws the panel; this sheet restyles it (and styles the parts shell.js adds).
+   Decap's class names end in the component name (css-<hash>-ListCard-card), so rules match on
+   those name fragments. Decap applies its own styles last, hence the !important.
+
+   Built for someone who works here all day: calm surfaces, one spacing scale
+   (4 / 8 / 12 / 16 / 24 / 32 / 48) and the brand red kept for the things that matter. */
+
+:root {
+  --bg: #0b0911;
+  --panel: #130f1b;
+  --panel-2: #1c1627;
+  --field: #0b0911;
+  --line: rgba(232, 230, 224, 0.09);
+  --line-strong: rgba(232, 230, 224, 0.2);
+  --fg: #eceae4;
+  --text: rgba(232, 230, 224, 0.82);
+  --dim: rgba(232, 230, 224, 0.62);
+  --mute: rgba(232, 230, 224, 0.44);
+  --accent: #b55cf0;
+  --accent-soft: rgba(181, 92, 240, 0.16);
+  --danger: #ff6b7f;
+  --ok: #56c98a;
+  --display: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --side: 256px;      /* left navigation */
+  --col: 1080px;      /* width of the working column */
+  --r-card: 16px;
+  --r-field: 10px;
+  color-scheme: dark;
+}
+
+/* =====================================================================
+   1. Page
+   ===================================================================== */
+html { background: var(--bg) !important; }
+/* Decap positions its screens against the page, so #nc-root itself is left alone */
+body { background: transparent !important; color: var(--text) !important; font-family: var(--body) !important; -webkit-font-smoothing: antialiased; }
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(60% 50% at 100% 0%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 70%);
+}
+#nc-root *, .ReactModalPortal * { font-family: var(--body); }
+#nc-root input, #nc-root textarea, #nc-root select, #nc-root button, .ReactModalPortal input, .ReactModalPortal button { font-family: var(--body) !important; }
+#nc-root h1, #nc-root h2, #nc-root h3, .ReactModalPortal h1, .ReactModalPortal h2,
+[class*='Heading'], [class*='LibraryTitle'], [class*='ListCardTitle'] {
+  font-family: var(--display) !important; font-weight: 800 !important; letter-spacing: -0.02em; color: var(--fg) !important;
+}
+::selection { background: var(--accent); color: #fff; }
+* { scrollbar-color: rgba(232, 230, 224, 0.22) transparent; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body > canvas { filter: hue-rotate(128deg) saturate(1.8); } /* Decap's loading bar, in red */
+
+/* every Decap "card" */
+[class*='-card '], [class*='-card-'], [class$='-card'] {
+  background: var(--panel) !important; color: var(--text) !important;
+  border: 1px solid var(--line) !important; border-radius: var(--r-card) !important; box-shadow: none !important;
+}
+
+/* =====================================================================
+   2. Buttons
+   ===================================================================== */
+/* secondary: light pill (New, Quick add, Login, Save) */
+[class*='-gray '], [class*='-gray-'], [class$='-gray'],
+[class*='SaveButton'], [class*='-lightBlue'], [class*='-blue '], [class*='-blue-'], [class$='-blue'] {
+  background: var(--fg) !important; color: #0b0911 !important;
+  border: 0 !important; border-radius: 999px !important; box-shadow: none !important;
+  font-weight: 700 !important; letter-spacing: 0.01em; transition: background 0.2s, color 0.2s;
+}
+[class*='-gray ']:hover, [class*='-gray-']:hover, [class$='-gray']:hover,
+[class*='SaveButton']:hover, [class*='-lightBlue']:hover { background: #fff !important; }
+/* primary: the one red button on a screen (Save, Upload, Choose) */
+[class*='PublishButton'], [class*='InsertButton'], [class*='UploadButton'], [class*='-teal'], [class*='-green '], [class*='-green-'], [class$='-green'] {
+  background: var(--accent) !important; color: #fff !important;
+  border: 0 !important; border-radius: 999px !important; box-shadow: none !important; font-weight: 700 !important; letter-spacing: 0.01em;
+  transition: filter 0.2s;
+}
+[class*='PublishButton']:hover, [class*='InsertButton']:hover:not(:disabled), [class*='UploadButton']:hover { filter: brightness(1.15); }
+/* quiet: outlined pill */
+[class*='PublishedButton'], [class*='PublishedToolbarButton'], [class*='StatusButton'], [class*='-lightTeal'], [class*='ActionButton'],
+[class*='FileWidgetButton'] {
+  background: transparent !important; color: var(--fg) !important;
+  border: 0 !important; border-radius: 999px !important; box-shadow: inset 0 0 0 1px var(--line-strong) !important; font-weight: 700 !important;
+  transition: box-shadow 0.2s, background 0.2s, color 0.2s;
+}
+[class*='PublishedButton']:hover, [class*='PublishedToolbarButton']:hover, [class*='ActionButton']:hover:not(:disabled), [class*='FileWidgetButton']:hover { box-shadow: inset 0 0 0 1px var(--fg) !important; }
+/* destructive: red outline, fills on hover */
+[class*='DeleteButton'], [class*='-lightRed'], [class*='-badgeDanger'], [class*='FileWidgetButtonRemove'] {
+  background: transparent !important; color: var(--danger) !important;
+  border: 0 !important; border-radius: 999px !important; box-shadow: inset 0 0 0 1px rgba(255, 107, 127, 0.45) !important; font-weight: 700 !important;
+}
+[class*='DeleteButton']:hover:not(:disabled), [class*='FileWidgetButtonRemove']:hover { background: var(--accent) !important; color: #fff !important; box-shadow: none !important; }
+button:disabled, [class*='-disabled']:disabled { opacity: 0.38; cursor: not-allowed; }
+[class*='StyledDropdownButton']::after { border-top-color: currentColor !important; }
+[class*='-ControlButton'], [class*='-grayText'] { background: transparent !important; box-shadow: none !important; border: 0 !important; color: var(--dim) !important; font-weight: 600 !important; }
+
+/* menus that drop from buttons */
+[class*='DropdownList'] {
+  background: var(--panel-2) !important; border: 1px solid var(--line-strong) !important; border-radius: 12px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; overflow: hidden; padding: 6px !important; min-width: 220px;
+}
+[class*='StyledMenuItem'] { background: transparent !important; color: var(--fg) !important; border: 0 !important; border-radius: 8px; padding: 10px 12px !important; font-weight: 600; }
+[class*='StyledMenuItem']:hover, [class*='StyledMenuItem']:focus { background: rgba(232, 230, 224, 0.08) !important; }
+[class*='MenuItemIconContainer'] { color: var(--dim) !important; }
+
+/* =====================================================================
+   3. Left navigation and Home (built by shell.js)
+   ===================================================================== */
+.ia-side {
+  position: fixed; inset: 0 auto 0 0; z-index: 400; width: var(--side); padding: 20px 14px 16px;
+  display: flex; flex-direction: column; overflow-y: auto;
+  background: #08060c; border-right: 1px solid var(--line); font-family: var(--body); color: var(--dim);
+}
+.ia-brand { display: flex; align-items: center; gap: 12px; padding: 4px 10px 20px; text-decoration: none; }
+.ia-brand img { width: 38px; height: 38px; }
+.ia-brand span { display: grid; line-height: 1.15; }
+.ia-brand strong { font-family: var(--display); font-weight: 800; font-size: 1rem; letter-spacing: -0.01em; text-transform: uppercase; color: var(--fg); }
+.ia-brand small { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+.ia-search { margin-bottom: 16px; }
+.ia-search input {
+  width: 100%; height: 40px; padding: 0 14px; border-radius: var(--r-field); border: 1px solid var(--line);
+  background: rgba(232, 230, 224, 0.05); color: var(--fg); font: inherit; font-size: 0.9rem; outline: 0; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ia-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.ia-search input::placeholder { color: var(--mute); }
+.ia-label { margin: 20px 12px 8px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mute); }
+.ia-side nav { display: grid; gap: 2px; }
+.ia-side nav a, .ia-side nav button {
+  all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%; height: 42px; padding: 0 12px;
+  border-radius: 10px; color: var(--dim); font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.ia-side nav svg { width: 19px; height: 19px; flex: 0 0 auto; opacity: 0.85; }
+.ia-side nav a:hover, .ia-side nav button:hover { background: rgba(232, 230, 224, 0.06); color: var(--fg); }
+.ia-side nav a.on { background: var(--accent-soft); color: var(--fg); }
+.ia-side nav a.on svg { color: var(--accent); opacity: 1; }
+.ia-side nav a:focus-visible, .ia-side nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* foot of the navigation: the way to the site, then Sign out */
+.ia-foot { margin-top: auto; display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ia-site { padding: 8px 12px 6px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); text-decoration: none; }
+.ia-site:hover { color: var(--fg); }
+/* nothing to navigate before login */
+body:not(:has([class*='AppHeader'], [class*='ToolbarContainer'])) .ia-side { display: none; }
+
+.ia-home { display: none; position: fixed; inset: 0 0 0 var(--side); z-index: 350; overflow-y: auto; background: var(--bg); font-family: var(--body); color: var(--text); }
+html[data-ia-home] body:has([class*='AppHeader'], [class*='ToolbarContainer']) .ia-home { display: block; }
+.ia-home-inner { max-width: var(--col); margin: 0 auto; padding: 56px 40px 72px; }
+.ia-kicker { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+.ia-home h1 { margin: 12px 0 0; font-family: var(--display); font-weight: 800; font-size: clamp(1.8rem, 2.8vw, 2.5rem); letter-spacing: -0.03em; line-height: 1.1; color: var(--fg); }
+.ia-lead { margin: 12px 0 0; color: var(--dim); max-width: 60ch; }
+.ia-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 32px; }
+.ia-tile { display: flex; flex-direction: column; gap: 8px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); transition: border-color 0.2s; }
+.ia-tile:hover { border-color: var(--line-strong); }
+.ia-tile-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); margin-bottom: 8px; }
+.ia-tile-icon svg { width: 21px; height: 21px; }
+.ia-tile h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--fg); }
+.ia-tile p { margin: 0; flex: 1; font-size: 0.92rem; line-height: 1.5; color: var(--dim); }
+.ia-tile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ia-btn { all: unset; box-sizing: border-box; cursor: pointer; height: 40px; padding: 0 18px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--fg); color: #0b0911; font-weight: 700; font-size: 0.86rem; transition: background 0.2s, box-shadow 0.2s; }
+.ia-btn:hover { background: #fff; }
+.ia-btn.ghost { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.ia-btn.ghost:hover { box-shadow: inset 0 0 0 1px var(--fg); background: transparent; }
+.ia-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (min-width: 900px) {
+  /* everything Decap draws moves over to make room; its own list of sections is replaced */
+  body:has([class*='AppHeader'], [class*='ToolbarContainer']) { padding-left: var(--side); }
+  [class*='SidebarContainer'] { display: none !important; }
+  [class*='CollectionMain'] { padding-left: 0 !important; }
+  [class*='EditorContainer'] { left: var(--side) !important; width: calc(100% - var(--side)) !important; }
+}
+@media (max-width: 899px) { .ia-side { display: none; } .ia-home { inset: 0; } }
+
+/* =====================================================================
+   4. Top bar of list pages
+   ===================================================================== */
+/* the sidebar already has the sections and Pictures, so only Quick add and the account stay */
+[class*='-AppHeader-css'], header[class*='AppHeader'] { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+[class*='AppHeaderContent'] { max-width: calc(var(--col) + 80px) !important; min-height: 56px !important; padding: 0 40px !important; align-items: center; }
+[class*='AppHeaderNavList'] { visibility: hidden; }
+[class*='AppHeaderSiteLink'] { display: none !important; }
+[class*='AppHeaderButton'] { background: transparent !important; color: var(--dim) !important; }
+[class*='AvatarPlaceholderIcon'] { background: var(--panel-2) !important; color: var(--fg) !important; }
+[class*='AppHeader'] [class*='IconWrapper'], [class*='ToolbarContainer'] [class*='IconWrapper'], [class*='ListCard'] [class*='IconWrapper'], [class*='TitleIcons'] { color: inherit !important; }
+
+/* =====================================================================
+   5. List pages
+   ===================================================================== */
+[class*='CollectionContainer'] { max-width: calc(var(--col) + 80px); margin: 24px auto 48px !important; padding: 0 40px; }
+[class*='CollectionTopContainer'], [class*='CollectionControlsContainer'], [class*='SearchResultContainer'] { width: auto !important; max-width: none !important; }
+[class*='CollectionTopContainer'], [class*='SearchResultContainer'] { padding: 24px 28px !important; margin: 0 0 12px !important; }
+[class*='CollectionTopHeading'], [class*='SearchResultHeading'] { font-size: 1.6rem !important; line-height: 1.2 !important; margin: 0 !important; }
+[class*='CollectionTopDescription'] { max-width: 70ch !important; margin: 8px 0 0 !important; font-size: 0.95rem; line-height: 1.5; color: var(--dim) !important; }
+[class*='CollectionControlsContainer'] { margin: 0 !important; padding: 4px 4px 0; min-height: 40px; align-items: center; }
+/* Decap's own two view buttons stay in the page (shell.js presses them) but out of sight;
+   the admin sees the four-view switch instead */
+[class*='ViewControlsSection'] > [class*='ViewControlsButton'] { display: none !important; }
+.ia-views { display: inline-flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.ia-views button { all: unset; box-sizing: border-box; width: 32px; height: 28px; display: grid; place-items: center; border-radius: 7px; color: var(--mute); cursor: pointer; transition: background 0.2s, color 0.2s; }
+.ia-views button svg { width: 16px; height: 16px; }
+.ia-views button:hover { color: var(--fg); }
+.ia-views button[aria-pressed='true'] { background: var(--panel-2); color: var(--accent); box-shadow: inset 0 0 0 1px var(--line); }
+.ia-views button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+[class*='PaginationMessage'], [class*='NoEntriesMessage'], [class*='Loader'] { color: var(--dim) !important; }
+
+/* entries: a real grid, or one row per line */
+[class*='CardsGrid'] { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; gap: 12px; margin: 12px 0 0 !important; padding: 0 !important; }
+[class*='CardsGrid']:has(> [class*='ListCard']) { grid-template-columns: 1fr !important; gap: 8px; }
+[class*='CardsGrid'] > li { width: auto !important; max-width: none !important; margin: 0 !important; flex: none !important; height: auto !important; }
+[class*='ListCard-'], [class*='GridCard-'] { border-radius: 12px !important; overflow: hidden; transition: border-color 0.2s, background 0.2s; }
+[class*='ListCard-']:hover, [class*='GridCard-']:hover { border-color: var(--line-strong) !important; background: var(--panel-2) !important; }
+[class*='ListCardLink'], [class*='GridCardLink'] { background: transparent !important; color: var(--text) !important; }
+/* rows */
+[class*='ListCardLink'] { display: flex !important; align-items: center; gap: 16px; max-width: none !important; min-height: 56px; padding: 12px 20px !important; }
+[class*='ListCardLink']::after { content: '\2192'; margin-left: auto; color: var(--mute); font-size: 1.05rem; transition: transform 0.2s, color 0.2s; }
+[class*='ListCard-']:hover [class*='ListCardLink']::after { color: var(--accent); transform: translateX(4px); }
+[class*='ListCardTitle'] { font-size: 1.02rem !important; margin: 0 !important; flex: 1 1 auto; text-align: left !important; }
+/* search results: the kind of thing first, as a small tag */
+[class*='ListCardLink'] > [class*='CollectionLabel'], [class*='ListCardLink'] > h2:first-child:not(:only-of-type) {
+  flex: 0 0 132px; margin: 0 !important; font-family: var(--body) !important; font-size: 0.66rem !important; font-weight: 700 !important;
+  letter-spacing: 0.18em !important; text-transform: uppercase; color: var(--accent) !important;
+}
+/* cards: picture on top, name underneath */
+[class*='GridCardLink'] { display: flex !important; flex-direction: column-reverse; justify-content: flex-end; height: auto !important; min-height: 0 !important; }
+[class*='GridCardLink'] > [class*='StyledImage'], [class*='GridCard-'] [class*='CardImage'] {
+  flex: 0 0 180px !important; height: 180px !important; background-color: var(--field) !important;
+  background-size: cover !important; background-position: center 20% !important; border-bottom: 1px solid var(--line);
+}
+[class*='CardBody'] { height: auto !important; min-height: 0 !important; padding: 16px 20px !important; overflow: visible !important; color: var(--text) !important; }
+[class*='CardHeading'] { font-size: 1.05rem !important; line-height: 1.3 !important; margin: 0 !important; }
+[class*='CardBody']::after {
+  content: 'Edit  \2192' !important; display: block !important; position: static !important; width: auto !important; height: auto !important; box-shadow: none !important;
+  margin-top: 12px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mute); transition: color 0.2s;
+}
+[class*='GridCard-']:hover [class*='CardBody']::after { color: var(--accent); }
+
+/* the two extra views (shell.js sets data-ia-view from the admin's choice for this list) */
+/* compact list: one panel, thin rows */
+html[data-ia-view='compact'] [class*='CardsGrid']:has(> [class*='ListCard']) { gap: 0 !important; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+html[data-ia-view='compact'] [class*='ListCard-'] { border: 0 !important; border-bottom: 1px solid var(--line) !important; border-radius: 0 !important; background: transparent !important; }
+html[data-ia-view='compact'] [class*='ListCard-']:last-child { border-bottom: 0 !important; }
+html[data-ia-view='compact'] [class*='ListCard-']:hover { background: var(--panel-2) !important; }
+html[data-ia-view='compact'] [class*='ListCardLink'] { min-height: 38px; padding: 6px 16px !important; }
+html[data-ia-view='compact'] [class*='ListCardTitle'] { font-size: 0.9rem !important; }
+/* big pictures: tall tiles, the picture first; a tile without one gets a quiet placeholder */
+html[data-ia-view='gallery'] [class*='CardsGrid']:has(> [class*='GridCard']) { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; gap: 16px; }
+html[data-ia-view='gallery'] [class*='GridCardLink'] > [class*='StyledImage'], html[data-ia-view='gallery'] [class*='GridCard-'] [class*='CardImage'] { flex: 0 0 290px !important; height: 290px !important; }
+html[data-ia-view='gallery'] [class*='GridCardLink']:not(:has([class*='CardImage'], [class*='StyledImage']))::after {
+  content: 'No picture yet'; flex: 0 0 290px; display: grid; place-items: center; border-bottom: 1px solid var(--line);
+  background: var(--field) radial-gradient(rgba(232, 230, 224, 0.07) 1px, transparent 1.6px) 0 0 / 10px 10px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
+}
+
+/* =====================================================================
+   6. Entry pages: header card + form card, in the same column as list pages
+   ===================================================================== */
+[class*='EditorContainer'] { background: transparent !important; }
+[class*='NoPreviewContainer'], [class*='StyledSplitPane'] { background: transparent !important; border: 0 !important; border-radius: 0 !important; }
+.Resizer { background: var(--line) !important; border-color: transparent !important; }
+[class*='PreviewPaneFrame'] { background: var(--panel-2) !important; }
+
+/* header card: where you are on the left, actions on the right with Save last */
+[class*='ToolbarContainer'] { background: var(--panel) !important; box-shadow: none !important; border: 1px solid var(--line) !important; min-height: 84px; }
+[class*='-toolbarSection'] { border-color: transparent !important; }
+[class*='ToolbarSectionBackLink'] { padding: 0 8px 0 20px !important; border-radius: var(--r-card) 0 0 var(--r-card); }
+[class*='ToolbarSectionBackLink']:hover { background: transparent !important; }
+[class*='BackArrow'] {
+  width: 40px; height: 40px; display: grid !important; place-items: center; border-radius: 50%; margin-right: 16px !important;
+  color: var(--fg) !important; font-size: 1.05rem !important; box-shadow: inset 0 0 0 1px var(--line-strong); transition: background 0.2s, color 0.2s;
+}
+[class*='ToolbarSectionBackLink']:hover [class*='BackArrow'] { background: var(--fg); color: #0b0911 !important; }
+[class*='BackCollection'] { font-family: var(--display) !important; font-weight: 800 !important; font-size: 1.4rem !important; letter-spacing: -0.02em !important; color: var(--fg) !important; }
+[class*='BackStatus'] { margin-top: 2px !important; font-size: 0.66rem !important; font-weight: 700; letter-spacing: 0.16em !important; color: var(--dim) !important; }
+[class*='BackStatusUnchanged'], [class*='-textBadgeSuccess'] { color: var(--ok) !important; }
+[class*='BackStatusChanged'], [class*='-textBadgeDanger'] { color: var(--danger) !important; }
+[class*='ToolbarSectionMain'] { justify-content: flex-end !important; gap: 12px; padding: 0 20px 0 12px !important; }
+[class*='ToolbarSubSectionFirst']:not([class*='ToolbarSubSectionLast']) { order: 2; display: flex !important; flex-direction: row-reverse; align-items: center; gap: 10px; }
+[class*='ToolbarSubSectionLast'] { order: 1; margin-right: auto; }
+[class*='ToolbarSubSectionFirst'] [class*='-buttonMargin'], [class*='ToolbarSubSectionFirst'] button, [class*='ToolbarSubSectionFirst'] [class*='StyledDropdownButton'] { margin: 0 !important; }
+[class*='ToolbarContainer'] [class*='StyledDropdownButton'], [class*='ToolbarContainer'] [class*='ToolbarButton'] { height: 44px !important; line-height: 44px !important; padding: 0 22px !important; font-size: 0.9rem !important; }
+[class*='ToolbarContainer'] [class*='StyledDropdownButton'] { padding-right: 40px !important; }
+/* the sidebar links to the site; Decap's preview lookups are not used */
+[class*='PreviewLink'], [class*='RefreshPreviewButton'], [class*='PreviewButtonContainer'] { display: none !important; }
+[class*='ButtonRound'] { background: var(--panel-2) !important; color: var(--fg) !important; box-shadow: 0 0 0 1px var(--line) !important; }
+
+@media (min-width: 900px) {
+  [class*='ToolbarContainer'] { top: 80px !important; left: 50% !important; transform: translateX(-50%); width: min(var(--col), calc(100% - 80px)) !important; border-radius: var(--r-card); overflow: visible; }
+  [class*='ToolbarSectionMeta'] { display: none !important; }
+  [class*='EditorContainer'] { padding-top: 176px !important; }
+  [class*='PreviewPaneContainer'] { max-width: none !important; margin: 0 !important; padding: 0 40px 96px !important; }
+}
+
+/* the form */
+[class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) {
+  max-width: var(--col) !important; margin: 0 auto !important; padding: 28px 32px 36px !important;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card);
+  display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; row-gap: 20px; align-items: start;
+}
+[class*='ControlPaneContainer']:not([class*='PreviewPaneContainer'])::before {
+  content: 'Fields marked with a red * must be filled in.'; grid-column: 1 / -1; font-size: 0.78rem; color: var(--mute); margin-bottom: -4px;
+}
+[class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) > * { grid-column: 1 / -1; margin-top: 0 !important; min-width: 0; }
+[class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) > [data-ia-half] { grid-column: auto; }
+
+/* group headings (shell.js names the first field of each group) */
+[data-ia-group]::before {
+  content: attr(data-ia-group); display: block; margin: 12px 0 16px; padding-top: 24px; border-top: 1px solid var(--line);
+  font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 24px; letter-spacing: -0.02em; color: var(--fg);
+}
+[class*='ControlPaneContainer'] > [data-ia-group]:first-child::before { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (min-width: 1101px) {
+  /* a half-width field that opens a group: the heading spans both columns and its neighbour drops level */
+  [data-ia-group][data-ia-half]::before { width: calc(200% + 24px); box-sizing: border-box; }
+  [data-ia-group][data-ia-half] + [data-ia-half] { padding-top: 77px; }
+  [class*='ControlPaneContainer'] > [data-ia-group][data-ia-half]:first-child + [data-ia-half] { padding-top: 40px; }
+}
+@media (max-width: 1100px) { [class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) > [data-ia-half] { grid-column: 1 / -1; } }
+
+/* short fields inside a group of fields share rows (shell.js marks them) */
+[data-ia-grid] { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); column-gap: 16px; row-gap: 18px; align-items: start; }
+[data-ia-grid] > * { grid-column: 1 / -1; min-width: 0; margin-top: 0 !important; }
+[data-ia-grid] > [data-ia-inner] { grid-column: auto; }
+
+/* slider (shell.js): the track fills with red up to the handle, then an exact-number box and a reset arrow */
+.ia-slider { display: grid; grid-template-columns: minmax(0, 1fr) auto 24px; align-items: center; gap: 8px; height: 46px; padding: 0 6px 0 14px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; transition: border-color 0.2s; }
+.ia-slider:focus-within { border-color: var(--accent); }
+#nc-root .ia-slider input[type='range']:not(#_) { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; margin: 0; padding: 0; border: 0 !important; border-radius: 4px; cursor: pointer; box-shadow: none !important;
+  background: linear-gradient(to right, var(--accent) var(--fill, 50%), rgba(232, 230, 224, 0.16) var(--fill, 50%)) !important; }
+.ia-slider input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
+.ia-slider input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5); }
+.ia-slider-num { display: flex; align-items: baseline; gap: 1px; color: var(--dim); font-size: 0.85rem; }
+#nc-root .ia-slider-num input:not(#_) { width: 4.2ch; min-width: 0; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; color: var(--fg) !important; font: inherit; font-weight: 700; text-align: right; -moz-appearance: textfield; appearance: textfield; }
+.ia-slider-num input::-webkit-outer-spin-button, .ia-slider-num input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#nc-root .ia-slider-reset:not(#_) { width: 24px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--dim); font-size: 15px; line-height: 1; cursor: pointer; }
+#nc-root .ia-slider-reset:not(#_):hover:not(:disabled) { background: var(--panel-2); color: var(--fg); }
+#nc-root .ia-slider-reset:not(#_):disabled { opacity: 0.25; cursor: default; }
+
+/* on/off switches in a row of boxes line up with the boxes, not with their labels */
+[data-ia-grid] > [data-ia-inner]:has([role='switch']) { align-self: end; }
+
+/* a plain-words notice when a save is refused (shell.js) */
+.ia-notice { position: fixed; z-index: 100001; right: 24px; bottom: 24px; width: min(420px, calc(100vw - 48px)); padding: 18px 44px 18px 20px; background: var(--panel); border: 1px solid var(--accent); border-radius: var(--r-card); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); animation: ia-fade 0.2s ease-out; }
+.ia-notice.ok { border-color: rgba(84, 201, 140, 0.55); }
+.ia-notice strong { display: block; margin-bottom: 6px; font-family: var(--display); font-weight: 800; font-size: 17px; letter-spacing: -0.02em; color: var(--fg); }
+.ia-notice p { margin: 0; font-size: 0.86rem; line-height: 1.5; color: var(--dim); }
+.ia-notice button { all: unset; position: absolute; top: 10px; right: 12px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: var(--mute); font-size: 20px; cursor: pointer; }
+.ia-notice button:hover { background: var(--panel-2); color: var(--fg); }
+
+/* "are you sure?" dialog (shell.js) */
+.ia-confirm { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; padding: 24px; background: rgba(6, 7, 11, 0.72); backdrop-filter: blur(6px); animation: ia-fade 0.15s ease-out; }
+.ia-confirm-card { width: min(440px, 100%); padding: 28px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); }
+.ia-confirm-card h2 { margin: 0 0 10px; font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1.2; letter-spacing: -0.02em; color: var(--fg); }
+.ia-confirm-card p { margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--dim); }
+.ia-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.ia-confirm .ia-btn { cursor: pointer; }
+.ia-confirm .ia-btn.danger { background: var(--accent); color: #fff; border-color: transparent; }
+@keyframes ia-fade { from { opacity: 0; } }
+
+/* labels: small caps above the box; brighter while that field is being edited */
+[class*='FieldLabel'] {
+  background: transparent !important; color: var(--dim) !important; padding: 0 2px 8px !important; border-radius: 0 !important;
+  font-size: 0.72rem !important; font-weight: 700 !important; letter-spacing: 0.12em !important; text-transform: uppercase; line-height: 1.4 !important;
+}
+[class*='FieldLabel']::before, [class*='FieldLabel']::after { display: none !important; }
+[class*='FieldLabel'][data-ia-required]::after {
+  content: ' *' !important; display: inline !important; position: static !important; width: auto !important; height: auto !important;
+  background: none !important; border-radius: 0 !important; color: var(--accent); font-size: 1.25em; font-weight: 800; line-height: 0; letter-spacing: 0;
+}
+[class*='ControlContainer']:focus-within:not(:has([class*='ControlContainer']:focus-within)) > [class*='ControlTopbar'] [class*='FieldLabel'] { color: var(--fg) !important; }
+[class*='ControlErrorsList'] { color: var(--danger) !important; margin: 0 0 6px !important; }
+[class*='ControlContainer']:has(> [class*='ControlTopbar'] [class*='ControlErrorsList'] li) > [class*='ControlTopbar'] [class*='FieldLabel'] { color: var(--danger) !important; }
+[class*='ControlHint'] { font-size: 0.8rem !important; line-height: 1.5; margin: 8px 2px 0 !important; color: var(--mute) !important; }
+
+/* the box of every field */
+[class*='ControlContainer'] > div:not([class*='ControlTopbar']):not([class*='ControlHint']):not([class*='ControlErrorsList']):not([class*='ColorSwatch']),
+[class*='ControlContainer'] > input, [class*='ControlContainer'] > textarea {
+  background: var(--field) !important; color: var(--fg) !important;
+  border: 1px solid var(--line-strong) !important; border-radius: var(--r-field) !important; box-shadow: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+[class*='ControlContainer'] > input, [class*='ControlContainer'] > textarea { padding: 12px 14px !important; font-size: 0.98rem !important; line-height: 1.5 !important; }
+[class*='ControlContainer'] > input { height: 48px !important; }
+[class*='ControlContainer'] > input:hover, [class*='ControlContainer'] > textarea:hover { border-color: rgba(232, 230, 224, 0.34) !important; }
+[class*='ControlContainer'] > div:not([class*='ControlTopbar']):not([class*='ControlHint']):not([class*='ColorSwatch']):focus-within:not(:has([class*='ControlContainer']:focus-within)),
+[class*='ControlContainer'] > input:focus, [class*='ControlContainer'] > textarea:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accent-soft) !important; outline: 0 !important; }
+#nc-root input::placeholder, #nc-root textarea::placeholder, [class*='-placeholder'] { color: var(--mute) !important; }
+#nc-root input:not([type='checkbox']):not([type='radio']):not([type='file']), #nc-root textarea, #nc-root select { color: var(--fg); }
+
+/* dropdowns and "linked" pickers (react-select) */
+[class*='-container '], [class$='-container'] { min-height: 48px; }
+[class*='-container '] [class*='-control'], [class$='-container'] [class*='-control'] { border: 0 !important; background: transparent !important; box-shadow: none !important; min-height: 46px; padding: 0 4px 0 6px !important; }
+#nc-root [class*='-control'] input:not(#_):not(#_) { background: transparent !important; border: 0 !important; padding: 0 !important; height: auto !important; box-shadow: none !important; }
+[class*='-singleValue'], [class*='-input'] { color: var(--fg) !important; }
+[class*='-indicatorContainer'] { color: var(--dim) !important; }
+[class*='-indicatorSeparator'] { display: none !important; }
+[class*='-menu '], [class$='-menu'] {
+  background: var(--panel-2) !important; color: var(--fg) !important; border: 1px solid var(--line-strong) !important; border-radius: 12px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; overflow: hidden; padding: 4px;
+}
+[class*='-MenuList'], [class*='-menuList'] { background: transparent !important; }
+[class*='-option'] { background: transparent !important; color: var(--fg) !important; border-radius: 8px; }
+[class*='-option']:hover, [class*='-option'][class*='focused'] { background: rgba(232, 230, 224, 0.09) !important; }
+[class*='-multiValue'] { background: rgba(232, 230, 224, 0.1) !important; border-radius: 6px !important; }
+[class*='-multiValue'] div { color: var(--fg) !important; }
+[class*='-noOptionsMessage'], [class*='-loadingMessage'] { color: var(--mute) !important; }
+
+/* on/off: one row, name on the left, switch on the right */
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) {
+  display: grid !important; grid-template-columns: 1fr auto; align-items: center; column-gap: 16px; min-height: 48px;
+  padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-field); background: var(--field);
+}
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > div:not([class*='ControlTopbar']) { background: transparent !important; border: 0 !important; padding: 0 !important; grid-column: 2; grid-row: 1; box-shadow: none !important; }
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > [class*='ControlTopbar'] { grid-column: 1; grid-row: 1; }
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) [class*='FieldLabel'] { padding: 0 !important; color: var(--fg) !important; }
+[class*='ControlContainer']:has(> div > [class*='ToggleContainer']) > [class*='ControlHint'] { grid-column: 1 / -1; margin: 0 0 10px !important; }
+[class*='ToggleBackground'] { background: rgba(232, 230, 224, 0.2) !important; }
+[class*='ToggleContainer'][aria-checked='true'] [class*='ToggleBackground'] { background: var(--accent) !important; }
+[class*='ToggleHandle'] { background: #fff !important; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important; }
+
+/* pictures: preview with its two actions */
+[class*='ImageWrapper'], [class*='CardImageWrapper'], [class*='-checkerboard'] {
+  background-color: #08060c !important;
+  background-image: linear-gradient(45deg, rgba(232, 230, 224, 0.04) 25%, transparent 25%, transparent 75%, rgba(232, 230, 224, 0.04) 75%), linear-gradient(45deg, rgba(232, 230, 224, 0.04) 25%, transparent 25%, transparent 75%, rgba(232, 230, 224, 0.04) 75%) !important;
+  border: 1px solid var(--line) !important; border-radius: var(--r-field) !important;
+}
+[class*='ControlContainer'] div:has(> [class*='ImageWrapper']) { display: flex !important; flex-direction: row !important; flex-wrap: wrap; align-items: center; gap: 20px; width: 100% !important; padding: 14px; }
+[class*='ControlContainer'] div:has(> [class*='ImageWrapper']) > [class*='ImageWrapper'] { flex: 0 0 220px !important; width: 220px !important; height: 165px !important; margin: 0 !important; display: block !important; overflow: hidden; }
+[class*='ImageWrapper'] [class*='StyledImage'] { width: 100% !important; height: 100% !important; object-fit: contain !important; color: transparent; }
+[class*='ControlContainer'] div:has(> [class*='FileWidgetButton']) { display: flex !important; flex-direction: column; align-items: stretch; gap: 8px; flex: 0 1 240px; }
+/* a picture inside a group of fields (Characters): small thumbnail on the left, its buttons beside it */
+[class*='ControlContainer'] [data-ia-grid] div:has(> [class*='ImageWrapper']) { flex-wrap: nowrap !important; gap: 16px !important; }
+[class*='ControlContainer'] [data-ia-grid] div:has(> [class*='ImageWrapper']) > [class*='ImageWrapper'] { flex: 0 0 104px !important; width: 104px !important; height: 104px !important; }
+[class*='ControlContainer'] [data-ia-grid] div:has(> [class*='FileWidgetButton']) { flex: 1 1 0 !important; min-width: 0; }
+[class*='ControlContainer'] span:has(> [class*='FileWidgetButton']) { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+[class*='FileWidgetButton'] { margin: 0 !important; height: 40px !important; padding: 0 18px !important; font-size: 0.86rem !important; text-align: center; cursor: pointer; white-space: nowrap; }
+[class*='ControlContainer'] div:has(> [class*='FileWidgetButton']) > [class*='FileWidgetButton']:first-child,
+[class*='ControlContainer'] span > [class*='FileWidgetButton']:first-child { background: var(--fg) !important; color: #0b0911 !important; box-shadow: none !important; }
+[class*='ControlContainer'] div:has(> [class*='FileWidgetButton']) > [class*='FileWidgetButton']:first-child:hover,
+[class*='ControlContainer'] span > [class*='FileWidgetButton']:first-child:hover { background: #fff !important; }
+[class*='FileLink'], [class*='FileLinkList'] a { color: var(--fg) !important; }
+
+/* colour */
+[class*='ControlContainer']:has(> [class*='ColorSwatch']) { position: relative; }
+[class*='ControlContainer']:has(> [class*='ColorSwatch']) > input { padding-left: 70px !important; }
+[class*='ControlContainer'] > [class*='ColorSwatch'] { left: 12px !important; width: 44px !important; height: 26px !important; border-radius: 6px !important; box-shadow: 0 0 0 1px var(--line-strong) !important; }
+.chrome-picker, .sketch-picker { background: var(--panel-2) !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line-strong) !important; border-radius: 12px !important; }
+.chrome-picker input, .sketch-picker input { background: var(--field) !important; color: var(--fg) !important; box-shadow: inset 0 0 0 1px var(--line-strong) !important; }
+.chrome-picker span, .sketch-picker span, .sketch-picker label { color: var(--dim) !important; }
+.chrome-picker svg { fill: var(--fg) !important; background: transparent !important; }
+
+/* date: the field plus its Now / Clear helpers */
+[class*='DateTimeControl'] { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 4px; min-height: 48px; }
+[class*='DateTimeControl'] input { background: transparent !important; border: 0 !important; box-shadow: none !important; height: 46px !important; }
+[class*='button-widget'] { background: rgba(232, 230, 224, 0.08) !important; color: var(--fg) !important; border: 0 !important; border-radius: 999px !important; font-weight: 700 !important; height: 30px; padding: 0 12px !important; }
+[class*='button-widget']:hover { background: rgba(232, 230, 224, 0.16) !important; }
+.rdtPicker { background: var(--panel-2) !important; color: var(--fg) !important; border: 1px solid var(--line-strong) !important; border-radius: 12px !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; }
+.rdtPicker td.rdtActive, .rdtPicker td.rdtActive:hover { background: var(--accent) !important; color: #fff !important; text-shadow: none !important; }
+
+/* lists and groups: a heading row that opens and closes (the whole row is clickable) */
+[class*='ControlContainer'] > div:has(> [class*='TopBarContainer']) { padding: 0 !important; overflow: hidden; }
+[class*='ControlContainer'] > div > [class*='TopBarContainer'] {
+  margin: 0 !important; padding: 0 12px 0 14px !important; min-height: 50px; display: flex; align-items: center; cursor: pointer; border-radius: 0 !important;
+  background: var(--panel-2) !important; color: var(--fg) !important; border: 0 !important; font-weight: 600; transition: background 0.2s;
+}
+[class*='ControlContainer'] > div > [class*='TopBarContainer']:hover { background: #272036 !important; }
+[class*='ControlContainer'] > div > [class*='TopBarContainer'] + div:has(*) { padding: 8px 16px 20px !important; }
+[class*='ControlContainer'] > div > [class*='TopBarContainer'] + div:not(:has(*)) { display: none !important; }
+[class*='ExpandButton'], [class*='TopBarButton'], [class*='DragIconContainer'] { background: transparent !important; color: var(--dim) !important; }
+[class*='ExpandButton']:hover, [class*='TopBarButton']:hover { color: var(--fg) !important; }
+[class*='AddButton'] { background: rgba(232, 230, 224, 0.1) !important; color: var(--fg) !important; border: 0 !important; border-radius: 999px !important; font-weight: 700 !important; height: 32px; padding: 0 14px !important; }
+[class*='AddButton']:hover { background: var(--fg) !important; color: #0b0911 !important; }
+/* items of a list: small cards with handle, name and remove on one line */
+[class*='-listControlItem'] {
+  background: var(--panel) !important; border: 1px solid var(--line) !important; border-radius: 12px !important;
+  margin: 10px 0 0 !important; padding: 0 !important; overflow: hidden; transition: border-color 0.2s;
+}
+[class*='-listControlItem']:hover { border-color: var(--line-strong) !important; }
+[class*='-listControlItem'] > [class*='StyledListItemTopBar'] { background: transparent !important; border: 0 !important; padding: 4px 6px 0 !important; min-height: 40px; align-items: center; }
+[class*='-listControlItem'] > [class*='NestedObjectLabel'] {
+  background: transparent !important; border: 0 !important; color: var(--fg) !important; font-weight: 700 !important;
+  margin-top: -36px; min-height: 36px; padding: 0 92px 10px 46px !important; display: flex; align-items: center; pointer-events: none;
+}
+[class*='-listControlItem'] > div:not([class*='StyledListItemTopBar']):not([class*='NestedObjectLabel']) { border: 0 !important; padding: 4px 16px 18px !important; background: transparent !important; }
+[class*='-listControlItem'] [class*='ControlContainer'] { margin-top: 16px !important; }
+
+/* pieces with a picture (gallery artwork, hero covers: the items holding a field called "src"):
+   thumbnail on the left, the rest beside it, nothing to fold */
+[class*='-listControlItem']:has(label[for^='src-field']) { position: relative; }
+[class*='-listControlItem']:has(label[for^='src-field']) > [class*='StyledListItemTopBar'] { position: absolute; top: 8px; right: 8px; left: auto; width: auto !important; padding: 0 !important; z-index: 2; gap: 2px; }
+[class*='-listControlItem']:has(label[for^='src-field']) > [class*='StyledListItemTopBar'] > button:first-child { display: none !important; }
+[class*='-listControlItem']:has(label[for^='src-field']) > [class*='StyledListItemTopBar'] > * { width: 36px; height: 36px; display: grid !important; place-items: center; border-radius: 50%; }
+[class*='-listControlItem']:has(label[for^='src-field']) > [class*='StyledListItemTopBar'] > *:hover { background: rgba(232, 230, 224, 0.1) !important; }
+[class*='-listControlItem']:has(label[for^='src-field']) > div:last-child { padding: 16px 92px 16px 16px !important; }
+[class*='-listControlItem']:has(label[for^='src-field']) > div:last-child > div { display: grid; grid-template-columns: 220px minmax(0, 1fr); column-gap: 24px; row-gap: 12px; align-items: start; }
+[class*='-listControlItem']:has(label[for^='src-field']) > div:last-child > div > [class*='ControlContainer'] { margin-top: 0 !important; grid-column: 2; }
+[class*='-listControlItem']:has(label[for^='src-field']) > div:last-child > div > [class*='ControlContainer']:has(label[for^='src-field']) { grid-column: 1; grid-row: 1 / span 20; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(> [class*='ControlTopbar'] label[for^='src-field']) > [class*='ControlTopbar'],
+[class*='-listControlItem']:has(label[for^='src-field']) [class*='ControlHint'] { display: none !important; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(> [class*='ControlTopbar'] label[for^='src-field']) > div:not([class*='ControlTopbar']) { background: transparent !important; border: 0 !important; padding: 0 !important; box-shadow: none !important; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(label[for^='src-field']) div:has(> [class*='ImageWrapper']) { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; padding: 0 !important; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(label[for^='src-field']) [class*='ImageWrapper'] { width: 100% !important; height: 165px !important; flex: none !important; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(label[for^='src-field']) div:has(> [class*='FileWidgetButton']) { flex: none !important; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(label[for^='src-field']) span:has(> [class*='FileWidgetButton']) { padding: 0; }
+[class*='-listControlItem'] [class*='ControlContainer']:has(label[for^='src-field']) [class*='FileWidgetButton'] { height: 36px !important; font-size: 0.78rem !important; }
+
+/* =====================================================================
+   7. Picture library (dialog)
+   ===================================================================== */
+.ReactModal__Overlay { background-color: rgba(6, 7, 10, 0.78) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+[class*='StyledModal'] {
+  position: relative !important; display: flex !important; flex-direction: column; overflow: hidden !important; padding: 0 !important;
+  background: var(--panel) !important; color: var(--text) !important;
+  border: 1px solid var(--line-strong) !important; border-radius: 18px !important; box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7) !important;
+}
+[class*='LibraryTop'], [class*='LibraryTop'] > [class*='RowContainer'] { position: static !important; }
+[class*='LibraryTop'] { padding: 28px 32px 16px !important; margin: 0 !important; flex: 0 0 auto; }
+[class*='LibraryTop'] > [class*='RowContainer'] { align-items: flex-start !important; gap: 16px; }
+[class*='LibraryTop'] > [class*='RowContainer'] + [class*='RowContainer'] { margin-top: 16px !important; }
+[class*='LibraryTitle'] { font-size: 1.6rem !important; margin: 0 !important; }
+[class*='LibraryTitle']::after {
+  content: 'Click a picture to select it, or double-click to use it straight away. Upload adds one from your computer.';
+  display: block; margin-top: 6px; font-family: var(--body); font-size: 0.86rem; font-weight: 500; letter-spacing: 0; color: var(--dim);
+}
+[class*='StyledModal'] [class*='CloseButton'] {
+  position: absolute !important; top: 22px !important; right: 24px !important; left: auto !important; margin: 0 !important;
+  width: 40px !important; height: 40px !important; background: transparent !important; color: var(--fg) !important; box-shadow: inset 0 0 0 1px var(--line-strong) !important;
+}
+[class*='StyledModal'] [class*='CloseButton']:hover { background: var(--fg) !important; color: #0b0911 !important; }
+[class*='LibraryTop'] > [class*='RowContainer']:first-child > [class*='ButtonsContainer'] { margin-right: 56px; }
+[class*='LibraryTop'] [class*='ActionButton']:not([class*='DeleteButton']):not([class*='UploadButton']):not([class*='InsertButton']):not([class*='LowerActionButton']) { display: none !important; }
+[class*='ResponsiveActionButton'] { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; color: inherit !important; }
+[class*='UploadButton'] { height: 42px !important; line-height: 42px !important; padding: 0 22px !important; font-size: 0.9rem !important; cursor: pointer; }
+[class*='UploadButton']::before { content: '+  '; font-weight: 800; white-space: pre; }
+[class*='LibraryTop'] > [class*='RowContainer'] + [class*='RowContainer'] > :first-child { flex: 1 1 auto; width: auto !important; max-width: none !important; }
+[class*='SearchInput'], [class*='SearchContainer'] input {
+  background: var(--field) !important; color: var(--fg) !important; border: 1px solid var(--line-strong) !important; border-radius: var(--r-field) !important;
+  width: 100% !important; height: 44px !important;
+}
+[class*='SearchInput']:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px var(--accent-soft) !important; outline: 0 !important; }
+[class*='SearchInput']::placeholder { color: var(--mute) !important; }
+[class*='SearchContainer'], [class*='InputContainer'], [class*='SearchIcon'] { color: var(--mute) !important; }
+[class*='CardGridContainer'] { flex: 1 1 auto; min-height: 0; padding: 4px 22px 92px !important; margin: 0 !important; }
+.ReactModalPortal [class*='CardGridContainer'] div[style*='overflow: auto'] { overflow-x: hidden !important; }
+.ReactModalPortal [class*='-Card '], .ReactModalPortal [class$='-Card'] {
+  position: relative; cursor: pointer; background: var(--panel-2); border-color: var(--line) !important; border-radius: 12px !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ReactModalPortal [class*='-Card ']:hover, .ReactModalPortal [class$='-Card']:hover { border-color: var(--line-strong) !important; }
+.ReactModalPortal [data-picked] { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent) !important; }
+.ReactModalPortal [data-picked]::after {
+  content: '\2713'; position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--accent); color: #fff; font-weight: 800; font-size: 0.95rem;
+}
+.ReactModalPortal [class*='CardImageWrapper'] { border-width: 0 0 1px !important; border-radius: 10px 10px 0 0 !important; }
+.ReactModalPortal [class*='CardText'] { padding: 10px 14px !important; text-align: left !important; color: var(--dim) !important; font-size: 0.82rem !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[class*='DraftText'] { background: var(--accent) !important; color: #fff !important; font-size: 0 !important; border-radius: 0 0 8px 0 !important; padding: 5px 9px !important; }
+[class*='DraftText']::after { content: 'Just uploaded'; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+[class*='EmptyMessage'] { padding: 60px 20px !important; text-align: center; color: var(--dim) !important; }
+/* bottom bar: Delete on the left, Choose on the right, always in view */
+[class*='LibraryTop'] > [class*='RowContainer'] + [class*='RowContainer'] > [class*='ButtonsContainer'] {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; margin: 0 !important; padding: 14px 24px !important;
+  display: flex !important; justify-content: space-between; align-items: center; background: var(--panel-2); border-top: 1px solid var(--line);
+}
+[class*='LibraryTop'] > [class*='RowContainer'] + [class*='RowContainer'] > [class*='ButtonsContainer'] button { margin: 0 !important; height: 44px !important; padding: 0 24px !important; font-size: 0.9rem !important; }
+[class*='LibraryTop'] > [class*='RowContainer'] + [class*='RowContainer'] > [class*='ButtonsContainer'] button:only-child { margin-left: auto !important; }
+
+/* =====================================================================
+   8. Login, notices, workflow board
+   ===================================================================== */
+/* login: one centred card in the admin's own look: the logo, "Admin", the red button, a way back.
+   The content manager's own badge at the foot of the page is left out. */
+#nc-root [class*='StyledAuthenticationPage'] {
+  position: fixed !important; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(380px, calc(100vw - 40px)) !important; height: auto !important; min-height: 0 !important; gap: 0 !important;
+  padding: 40px 36px 26px !important; background: var(--panel) !important; border: 1px solid var(--line); border-radius: var(--r-card);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+#nc-root [class*='CustomIconWrapper'] { display: grid !important; justify-items: center; width: auto !important; height: auto !important; margin: 0 !important; }
+#nc-root [class*='CustomIconWrapper'] img { width: 132px !important; height: auto !important; max-width: none !important; }
+#nc-root [class*='CustomIconWrapper']::after { content: 'Admin'; margin-top: 14px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--accent); }
+#nc-root [class*='LoginButton-'] {
+  display: flex !important; align-items: center; justify-content: center !important; width: 100% !important; height: 48px !important;
+  margin: 28px 0 0 !important; padding: 0 24px !important; border-radius: 999px !important; box-shadow: none !important;
+  background: var(--accent) !important; color: #fff !important; font-size: 0.95rem !important; font-weight: 700 !important; text-align: center;
+}
+#nc-root [class*='LoginButton-']:hover:not(:disabled) { filter: brightness(1.12); }
+#nc-root [class*='LoginButton-']:disabled { opacity: 0.6; }
+#nc-root [class*='LoginButtonIcon'] { display: none !important; }
+#nc-root [class*='GoBackButtonStyle'] { margin: 12px 0 0 !important; padding: 8px 10px !important; }
+[class*='GoBackButtonStyle'], [class*='ButtonText'] { color: var(--dim) !important; }
+[class*='GoBackButtonStyle']:hover [class*='ButtonText'] { color: var(--fg) !important; }
+[class*='NetlifyCreditIcon'], [class*='CreditIcon'] { display: none !important; }
+[class*='ErrorMessage'], [class*='AuthInput'] { color: var(--fg) !important; }
+
+.Toastify__toast { background: var(--panel-2) !important; color: var(--fg) !important; border: 1px solid var(--line-strong); border-radius: 12px !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; font-family: var(--body) !important; }
+.Toastify__toast--success { border-left: 3px solid var(--ok); }
+.Toastify__toast--error { border-left: 3px solid var(--accent); }
+.Toastify__close-button { color: var(--fg) !important; }
+.Toastify__progress-bar { background: var(--accent) !important; }
+[class*='ErrorBoundaryContainer'], [class*='NotFoundContainer'] { color: var(--fg) !important; }
+
+[class*='WorkflowTopDescription'], [class*='CardDateContainer'], [class*='CardCollection'], [class*='ColumnCount'] { color: var(--dim) !important; }
+[class*='ColumnHeader'] { background: var(--panel-2) !important; color: var(--fg) !important; border-radius: 999px !important; }
+[class*='WorkflowLink'], [class*='CardButtonContainer'] { background: transparent !important; }

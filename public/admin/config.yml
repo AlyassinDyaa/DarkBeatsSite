@@ -1,0 +1,229 @@
+# DarkBeats — admin panel configuration (Decap CMS)
+# Everything on the site that the artist can edit is described here.
+# Changes are saved as commits to the repository; the site rebuilds automatically.
+
+backend:
+  name: git-gateway        # Netlify Identity + Git Gateway. On Vercel the admin page swaps this for a passcode login.
+  branch: main
+  commit_messages:
+    create: 'Content: add {{collection}} "{{slug}}"'
+    update: 'Content: update {{collection}} "{{slug}}"'
+    delete: 'Content: remove {{collection}} "{{slug}}"'
+    uploadMedia: 'Content: upload {{path}}'
+    deleteMedia: 'Content: remove {{path}}'
+
+# `npm run dev` starts a local helper on port 8082 so the panel can be used without logging in.
+local_backend:
+  url: http://localhost:8082/api/v1
+
+publish_mode: simple
+
+media_folder: public/uploads
+public_folder: /uploads
+
+site_url: /
+display_url: /
+# The sidebar already links to the site; Decap's own "View Live" lookups only add error notices.
+show_preview_links: false
+logo_url: /favicon.svg
+
+# One clean form column; the built-in preview only echoes field values.
+editor:
+  preview: false
+
+collections:
+  - name: work
+    label: Work
+    label_singular: Piece
+    description: 'Every piece on the site: the picture, its title, category and date.'
+    folder: content/work
+    create: true
+    extension: json
+    format: json
+    identifier_field: title
+    slug: '{{slug}}'
+    summary: '{{title}} — {{category}}'
+    sortable_fields: [date, title, category]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: category, label: Category, widget: select, options: [Heroes, Villains, Horror, Games, Original, Commissions], default: Heroes, hint: 'The Work page has a filter button for every category that is in use.' }
+      - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, hint: 'Newest pieces come first on the site.' }
+      - { name: link, label: Link to the post, widget: string, required: false, hint: 'Optional. The Instagram post for this piece.' }
+      - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7 (for example 1500×2100px). Leave empty and the site draws a title card in the colour below.' }
+      - { name: note, label: A few words about it, widget: text, required: false, hint: 'Optional. Shown beside the picture when it is opened.' }
+      - { name: hue, label: Colour of the title card, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', required: false, hint: 'Only used while the piece has no picture. 25 = red, 55 = orange, 90 = yellow, 145 = green, 200 = teal, 250 = blue, 312 = purple.' }
+      - { name: featured, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'The home page lists up to six ticked pieces. With none ticked it lists the six newest.' }
+      - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes it off the site but keeps it here, so you can bring it back later.' }
+
+  - name: redraws
+    label: Then and now
+    label_singular: Set
+    description: 'The same subject drawn again years later. Visitors drag a line across to compare.'
+    folder: content/redraws
+    create: true
+    extension: json
+    format: json
+    identifier_field: title
+    slug: '{{slug}}'
+    summary: '{{title}}'
+    sortable_fields: [order, title]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: text, label: One line about it, widget: string, required: false }
+      - { name: link, label: Link to the post, widget: string, required: false }
+      - name: stages
+        label: Drawings
+        label_singular: Drawing
+        widget: list
+        min: 2
+        summary: '{{fields.year}}'
+        hint: 'Oldest first. The last one is the "now" side; with three or more, visitors pick which older one to compare it with.'
+        fields:
+          - { name: year, label: Year, widget: string }
+          - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7. Use the same shape for every drawing in a set.' }
+      - { name: order, label: Order on site, widget: number, value_type: int, default: 10, required: false }
+      - { name: hue, label: Colour of the title card, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', required: false, hint: 'Only used while a drawing has no picture.' }
+      - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false }
+
+  - name: events
+    label: Conventions
+    label_singular: Event
+    description: 'Where people can meet you in person: conventions, markets, signings.'
+    folder: content/events
+    create: true
+    extension: json
+    format: json
+    identifier_field: name
+    slug: '{{slug}}'
+    summary: '{{name}} — {{when}}'
+    sortable_fields: [order, name]
+    fields:
+      - { name: name, label: Event, widget: string }
+      - { name: when, label: When, widget: string, hint: 'Written the way it should read, for example "14–15 Nov 2026" or "Dates to be announced".' }
+      - { name: role, label: Where to find you there, widget: string, required: false, hint: 'For example "Artist Alley, table 42".' }
+      - { name: place, label: City or venue, widget: string, required: false }
+      - { name: url, label: Link, widget: string, required: false }
+      - { name: order, label: Order on site, widget: number, value_type: int, default: 10, required: false }
+      - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false }
+
+  - name: settings
+    label: Site settings
+    description: 'Name, contact details, home page text, commissions, the About page, social links, and what is shown or hidden.'
+    files:
+      - name: settings
+        label: Site settings
+        file: content/settings.json
+        fields:
+          - name: brand
+            label: Brand
+            widget: object
+            collapsed: false
+            fields:
+              - { name: name, label: Site name, widget: string, hint: 'Written with a capital in the middle ("DarkBeats"), the second half takes the brand colour.' }
+              - { name: artist, label: Your name, widget: string }
+              - { name: handle, label: Handle, widget: string, required: false }
+              - { name: tagline, label: Tagline, widget: string }
+              - { name: blurb, label: One or two sentences about the site, widget: text, hint: 'Shown in the footer.' }
+              - { name: location, label: Location, widget: string, required: false }
+              - { name: email, label: Contact email, widget: string }
+              - { name: instagram, label: Instagram address, widget: string, required: false }
+              - { name: hue, label: Brand colour, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', hint: 'Tints the whole site. 312 = purple. 25 = red, 55 = orange, 145 = green, 200 = teal, 250 = blue, 340 = pink.' }
+              - { name: logo, label: Logo, widget: image, choose_url: false, required: false, hint: 'Optional. A small square picture shown beside the name in the top bar.' }
+              - { name: contactAction, label: Form service address, widget: string, required: false, hint: 'Optional. With an address from a form service (Formspree and the like) the forms send there. Empty, they open the visitor''s mail app.' }
+          - name: hero
+            label: Home page, top
+            widget: object
+            fields:
+              - { name: kicker, label: Small line above the name, widget: string, required: false }
+              - { name: text, label: Sentence under the tagline, widget: text, required: false }
+          - { name: marquee, label: Words in the moving band, widget: list }
+          - name: home
+            label: Home page, section headings
+            widget: object
+            fields:
+              - { name: latestLabel, label: 'Latest pieces: small label', widget: string, required: false }
+              - { name: latestTitle, label: 'Latest pieces: heading', widget: string }
+              - { name: redrawLabel, label: 'Then and now: small label', widget: string, required: false }
+              - { name: redrawTitle, label: 'Then and now: heading', widget: string }
+              - { name: redrawText, label: 'Then and now: text', widget: text, required: false }
+              - { name: eventsLabel, label: 'Conventions: small label', widget: string, required: false }
+              - { name: eventsTitle, label: 'Conventions: heading', widget: string }
+          - name: commissions
+            label: Commissions
+            widget: object
+            fields:
+              - { name: open, label: Commissions are open, widget: boolean, default: true, hint: 'Switches the green "Commissions open" light in the top bar and on the Commissions page.' }
+              - { name: intro, label: Introduction, widget: text }
+              - name: tiers
+                label: What you offer
+                label_singular: Offer
+                widget: list
+                summary: '{{fields.name}} — {{fields.price}}'
+                fields:
+                  - { name: name, label: Name, widget: string }
+                  - { name: text, label: Description, widget: text }
+                  - { name: price, label: Price, widget: string, required: false, hint: 'Written the way it should read, for example "From $80 AUD". Empty shows "Ask for a quote".' }
+                  - { name: includes, label: What is included, widget: list, required: false }
+              - name: steps
+                label: How it works
+                label_singular: Step
+                widget: list
+                summary: '{{fields.title}}'
+                fields:
+                  - { name: title, label: Step, widget: string }
+                  - { name: text, label: Description, widget: text }
+              - { name: notes, label: Good to know, widget: list, required: false }
+          - name: about
+            label: About page
+            widget: object
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: paragraphs, label: Paragraphs, widget: list, field: { name: text, label: Paragraph, widget: text } }
+              - name: facts
+                label: Quick facts
+                label_singular: Fact
+                widget: list
+                summary: '{{fields.label}}: {{fields.value}}'
+                fields:
+                  - { name: label, label: Label, widget: string }
+                  - { name: value, label: Value, widget: string }
+          - name: contact
+            label: Contact page
+            widget: object
+            fields:
+              - { name: intro, label: Introduction, widget: text }
+          - name: social
+            label: Social links
+            label_singular: Link
+            widget: list
+            summary: '{{fields.label}} {{fields.handle}}'
+            fields:
+              - { name: label, label: Network, widget: string, hint: 'Instagram, Threads, TikTok, X, Facebook, YouTube and ArtStation get their own icon.' }
+              - { name: handle, label: Handle, widget: string, required: false }
+              - { name: url, label: Address, widget: string }
+          - name: footer
+            label: Footer
+            widget: object
+            fields:
+              - { name: line, label: Big line across the footer, widget: string, required: false }
+          - name: visibility
+            label: Show or hide parts of the site
+            widget: object
+            fields:
+              - name: pages
+                label: Pages
+                widget: object
+                fields:
+                  - { name: work, label: Work, widget: boolean, default: true }
+                  - { name: commissions, label: Commissions, widget: boolean, default: true }
+                  - { name: about, label: About, widget: boolean, default: true }
+                  - { name: contact, label: Contact, widget: boolean, default: true }
+              - name: home
+                label: Home page sections
+                widget: object
+                fields:
+                  - { name: ticker, label: Moving band of words, widget: boolean, default: true }
+                  - { name: latest, label: Latest pieces, widget: boolean, default: true }
+                  - { name: redraws, label: Then and now, widget: boolean, default: true }
+                  - { name: commissions, label: Commissions, widget: boolean, default: true }
+                  - { name: events, label: Conventions, widget: boolean, default: true }

@@ -1,0 +1,9 @@
+# Netlify hosting: site build + SPA routing + admin panel login (Identity / Git Gateway).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

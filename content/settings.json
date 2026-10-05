@@ -1,0 +1,153 @@
+{
+  "brand": {
+    "name": "DarkBeats",
+    "artist": "Jordan Beattie",
+    "handle": "@jbeatsart",
+    "tagline": "I draw things.",
+    "blurb": "Digital illustration by Jordan Beattie. Heroes, villains and the things that go bump in the night.",
+    "location": "Gold Coast, Australia",
+    "email": "Jbeatsart@outlook.com",
+    "instagram": "https://www.instagram.com/jbeatsart/",
+    "hue": 312,
+    "logo": "",
+    "contactAction": ""
+  },
+  "hero": {
+    "kicker": "Jordan Beattie · Gold Coast, Australia",
+    "text": "Heroes, villains and horror icons, painted loud on a black page."
+  },
+  "marquee": [
+    "Heroes",
+    "Villains",
+    "Horror",
+    "Games",
+    "Originals",
+    "Keep drawing"
+  ],
+  "home": {
+    "latestLabel": "Fresh ink",
+    "latestTitle": "Latest pieces",
+    "redrawLabel": "Keep drawing",
+    "redrawTitle": "Then and now",
+    "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
+    "eventsLabel": "In person",
+    "eventsTitle": "Find me at"
+  },
+  "commissions": {
+    "open": true,
+    "intro": "Want your favourite character, your own character or yourself drawn in this style? Tell me what you have in mind.",
+    "tiers": [
+      {
+        "name": "Bust",
+        "text": "Head and shoulders. One character, simple background.",
+        "price": "",
+        "includes": [
+          "Full colour",
+          "High-resolution file",
+          "One round of changes"
+        ]
+      },
+      {
+        "name": "Half body",
+        "text": "Waist up, with room for a pose and a prop.",
+        "price": "",
+        "includes": [
+          "Full colour",
+          "High-resolution file",
+          "Two rounds of changes"
+        ]
+      },
+      {
+        "name": "Full illustration",
+        "text": "Full figure with a finished background. Poster ready.",
+        "price": "",
+        "includes": [
+          "Full colour and background",
+          "Print-ready file",
+          "Two rounds of changes"
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "title": "Send the idea",
+        "text": "Who or what, the mood, and any reference pictures you have."
+      },
+      {
+        "title": "Quote and sketch",
+        "text": "You get a price and a rough sketch to approve before any colour goes down."
+      },
+      {
+        "title": "Colour and finish",
+        "text": "The piece is inked and painted, with progress shots along the way."
+      },
+      {
+        "title": "Delivery",
+        "text": "A high-resolution file lands in your inbox, ready to print or post."
+      }
+    ],
+    "notes": [
+      "Personal use unless we agree otherwise.",
+      "Fan art and original characters are both welcome.",
+      "Turnaround depends on the queue; ask and I will tell you where it stands."
+    ]
+  },
+  "about": {
+    "title": "I draw things.",
+    "paragraphs": [
+      "I am Jordan Beattie, a digital illustrator on the Gold Coast, Australia. I draw the characters I grew up with: comic-book heroes, the villains who are more fun than the heroes, and the horror faces that kept me up at night.",
+      "Everything here is drawn digitally, built up from rough sketch to ink to colour. Every few years I redraw an old piece to see how far the work has come."
+    ],
+    "facts": [
+      {
+        "label": "Based in",
+        "value": "Gold Coast, Australia"
+      },
+      {
+        "label": "Medium",
+        "value": "Digital illustration"
+      },
+      {
+        "label": "Subjects",
+        "value": "Comics, horror, games"
+      },
+      {
+        "label": "In person",
+        "value": "Supanova, Artist Alley"
+      }
+    ]
+  },
+  "contact": {
+    "intro": "Commissions, conventions, collaborations, or just to say you liked a piece."
+  },
+  "social": [
+    {
+      "label": "Instagram",
+      "handle": "@jbeatsart",
+      "url": "https://www.instagram.com/jbeatsart/"
+    },
+    {
+      "label": "Threads",
+      "handle": "@jbeatsart",
+      "url": "https://www.threads.net/@jbeatsart"
+    }
+  ],
+  "footer": {
+    "line": "Keep drawing."
+  },
+  "visibility": {
+    "pages": {
+      "work": true,
+      "commissions": true,
+      "about": true,
+      "contact": true
+    },
+    "home": {
+      "ticker": true,
+      "latest": true,
+      "redraws": true,
+      "commissions": true,
+      "events": true
+    }
+  }
+}
