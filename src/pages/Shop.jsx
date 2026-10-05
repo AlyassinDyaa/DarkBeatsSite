@@ -25,7 +25,19 @@ export default function Shop() {
         {pages.work.label && <div className="label accent">{pages.work.label}</div>}
         <h1 className="display h-xl">{pages.work.title}</h1>
         {pages.work.intro && <p className="lead">{pages.work.intro}</p>}
-        {thanks && <p className="thanks" role="status"><strong>{shop.thanksTitle}</strong> {shop.thanksText}</p>}
+        {thanks && (
+          <motion.div className="thanks" role="status" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
+            <i aria-hidden="true">✓</i>
+            <div><strong>{shop.thanksTitle}</strong><span>{shop.thanksText}</span></div>
+          </motion.div>
+        )}
+        {shop.enabled && !thanks && (
+          <ol className="how-buy">
+            <li><b>01</b>Pick a piece</li>
+            <li><b>02</b>Pay securely with Stripe</li>
+            <li><b>03</b>{shop.shipping !== false ? 'Posted to your door' : 'Sent to your inbox'}</li>
+          </ol>
+        )}
         {categories.length > 1 && (
           <div className="filters" role="group" aria-label="Show">
             {['All', ...categories].map((c) => (
@@ -44,11 +56,14 @@ export default function Shop() {
               {shown.map((p, i) => (
                 <motion.li key={p.slug} layout initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
                   <button type="button" className="tile" onClick={() => setSel(i)}>
-                    <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={i < 4} />
+                    <span className="tile-art">
+                      <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={i < 4} />
+                      {buyable(p) && <span className="tile-price">{money(p.price)}</span>}
+                      <span className="tile-cta">{buyable(p) ? 'View & buy' : 'View'} <span className="arrow">→</span></span>
+                    </span>
                     <span className="tile-cap">
                       <strong>{p.title}</strong>
                       <small>{[p.category, day(p.date)].filter(Boolean).join(' · ')}</small>
-                      {buyable(p) && <em>{money(p.price)}</em>}
                     </span>
                   </button>
                 </motion.li>

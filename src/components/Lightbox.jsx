@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { asset, commissions, day, shows } from '../data/site'
+import { asset, buyable, commissions, day, shows } from '../data/site'
 import { useFinePointer } from '../hooks/useMedia'
 import Poster from './Poster'
 import Buy from './Buy'
@@ -89,7 +89,7 @@ export default function Lightbox({ items, sel, setSel }) {
               <Buy key={piece.slug || sel} piece={piece} />
               <div className="lightbox-actions">
                 {piece.link && <a className="btn ghost sm" href={piece.link} target="_blank" rel="noreferrer">See the post <span className="arrow">↗</span></a>}
-                {shows('pages', 'commissions') && commissions.open && <Link className="btn sm" to="/commissions" onClick={() => setSel(null)}>Commission one like it</Link>}
+                {shows('pages', 'commissions') && commissions.open && <Link className={`btn sm ${buyable(piece) ? 'ghost' : ''}`} to="/commissions" onClick={() => setSel(null)}>Commission one like it</Link>}
               </div>
               <p className="lightbox-hint">{many ? `${sel + 1} / ${count} · ${mouse ? '← → to browse · Esc to close' : 'Swipe to browse'}` : mouse ? 'Esc to close' : ''}</p>
             </div>
