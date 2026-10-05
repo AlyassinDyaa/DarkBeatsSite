@@ -19,6 +19,8 @@ const byOrder = (a, b) => (a.order ?? 99) - (b.order ?? 99)
 const live = (list) => list.filter((x) => !x.hidden) // entries ticked "Hide from the site"
 
 export let brand, hero, marquee, home, commissions, about, contact, social, footer
+/* The Support page: the artist's own project, and the ways to back it. */
+export let support
 /* Headings and introductions of the Work and Gallery pages. */
 export let pages
 export let nav
@@ -88,6 +90,15 @@ function assemble(content) {
     work: { label: 'The work', title: 'Everything so far', ...given({ label: lists.workLabel, title: lists.workTitle, intro: lists.workIntro }) },
     gallery: { label: 'The gallery', title: 'Up on the wall', ...given({ label: lists.galleryLabel, title: lists.galleryTitle, intro: lists.galleryIntro }) },
   }
+  support = {
+    title: 'Support', primaryLabel: 'Support the project',
+    aboutLabel: 'The project', aboutTitle: 'What it is', artLabel: 'Project art', artTitle: 'From the drawing board',
+    supportLabel: 'Support', supportTitle: 'Back the project', customLabel: 'Choose your own amount',
+    soonTitle: 'Support opens soon.', soonText: 'The payment page is being set up. Until then, say hello:',
+    homeButton: 'Support the project',
+    paragraphs: [], facts: [], art: [], tiers: [], notes: [],
+    ...given(page('support')),
+  }
   social = links || []
   brand.instagram = social.find((s) => /instagram/i.test(s.label || ''))?.url
   footer = { fine: 'Characters shown in fan art belong to their owners.', ...given({ line: footerLine, fine: footerFine }) }
@@ -99,6 +110,7 @@ function assemble(content) {
     { label: 'Commissions', to: '/commissions' },
     { label: 'About', to: '/about' },
     { label: 'Contact', to: '/contact' },
+    { label: 'Support', to: '/support' },
   ].filter((n) => n.to === '/' || shows('pages', n.to.slice(1)))
 
   work = live(folder('work'))
@@ -146,6 +158,9 @@ export function showLatest({ content = {}, media = {} }) {
 
 /* Uploaded images are stored as "/uploads/x.jpg". Prefix the deploy base path. */
 export const asset = (url) => newPictures[url] || (url && url.startsWith('/') ? import.meta.env.BASE_URL.replace(/\/$/, '') + url : url)
+
+/* An address typed into the admin is only ever used as a link when it is an ordinary web address. */
+export const safeUrl = (url) => (/^https?:\/\//i.test(String(url || '').trim()) ? String(url).trim() : null)
 
 /* A two-part name ("DarkBeats") is split where its second capital starts, so the second half can
    take the brand colour; any other name comes back whole. */

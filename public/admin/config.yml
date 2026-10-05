@@ -286,6 +286,81 @@ collections:
           - { name: intro, label: Introduction, widget: text }
           - { name: topics, label: Choices in the "About" drop-down, widget: list, required: false, hint: 'What a visitor can say their message is about. Separate them with commas. With none, the drop-down is left out.' }
 
+      - name: support
+        label: Support page
+        file: content/pages/support.json
+        fields:
+          - { name: label, label: Small label, widget: string, required: false }
+          - { name: title, label: Name of the project, widget: string }
+          - { name: logo, label: Logo, widget: image, choose_url: false, required: false, hint: 'The project''s title as a picture with a see-through background. Without one, the name is written in the site''s lettering.' }
+          - { name: figure, label: Character picture, widget: image, choose_url: false, required: false, hint: 'A cut-out with a see-through background, shown large beside the logo.' }
+          - { name: intro, label: Introduction, widget: text, required: false }
+          - { name: primaryLabel, label: Button, widget: string, hint: 'Jumps down to the ways to give.' }
+          - { name: aboutLabel, label: Small label, widget: string, required: false }
+          - { name: aboutTitle, label: Heading, widget: string }
+          - name: paragraphs
+            label: Paragraphs
+            label_singular: Paragraph
+            widget: list
+            required: false
+            field: { name: text, label: Paragraph, widget: text }
+          - name: facts
+            label: Facts
+            label_singular: Fact
+            widget: list
+            required: false
+            summary: '{{fields.label}}: {{fields.value}}'
+            fields:
+              - { name: label, label: Label, widget: string }
+              - { name: value, label: Value, widget: string }
+          - { name: poster, label: Poster, widget: image, choose_url: false, required: false, hint: 'A finished picture, shown framed beside the text and on the home page.' }
+          - { name: artLabel, label: Small label, widget: string, required: false }
+          - { name: artTitle, label: Heading, widget: string }
+          - name: art
+            label: Pictures
+            label_singular: picture
+            widget: list
+            required: false
+            summary: '{{fields.title}}'
+            hint: 'Drag to reorder.'
+            fields:
+              - { name: src, label: Picture, widget: image, choose_url: false }
+              - { name: title, label: Title, widget: string, required: false }
+              - { name: note, label: A few words about it, widget: text, required: false }
+          - { name: supportLabel, label: Small label, widget: string, required: false }
+          - { name: supportTitle, label: Heading, widget: string }
+          - { name: supportText, label: Text, widget: text, required: false }
+          - name: tiers
+            label: Amounts
+            label_singular: Amount
+            widget: list
+            required: false
+            summary: '{{fields.amount}} — {{fields.name}}'
+            hint: 'Each amount gets a button once it has a payment link.'
+            fields:
+              - { name: amount, label: Amount, widget: string, hint: 'Written the way it should read: "$5", "A$15".' }
+              - { name: name, label: Name, widget: string }
+              - { name: text, label: What it helps with, widget: text, required: false }
+              - { name: url, label: Payment link, widget: string, required: false, hint: 'The address of a payment page for this amount: a Stripe Payment Link (buy.stripe.com/...), or a Ko-fi, PayPal.me or Buy Me a Coffee address. Without a link the amount is shown with no button.' }
+          - { name: customLabel, label: 'Any amount: button', widget: string }
+          - { name: customUrl, label: 'Any amount: payment link', widget: string, required: false, hint: 'A payment page where the giver types the amount. In Stripe: Payment Links, New, "Customers choose what to pay".' }
+          - { name: payNote, label: Line under the buttons, widget: text, required: false }
+          - { name: soonTitle, label: 'Before any link is in: heading', widget: string, required: false }
+          - { name: soonText, label: 'Before any link is in: text', widget: string, required: false, hint: 'Shown with your email address after it, until the first payment link is added.' }
+          - { name: goalLabel, label: What you are raising for, widget: string, required: false, hint: 'For example "Print run for issue 1". The bar only shows once the target is above 0.' }
+          - { name: goalSign, label: Currency sign, widget: string, required: false, default: '$' }
+          - { name: goalRaised, label: Raised so far, widget: number, value_type: int, required: false, default: 0, hint: 'You update this by hand.' }
+          - { name: goalTarget, label: Target, widget: number, value_type: int, required: false, default: 0 }
+          - name: notes
+            label: Points
+            label_singular: Point
+            widget: list
+            required: false
+            field: { name: text, label: Point, widget: string }
+          - { name: homeLabel, label: Small label, widget: string, required: false }
+          - { name: homeText, label: Text, widget: text, required: false }
+          - { name: homeButton, label: Button, widget: string }
+
   # ------------------------------------------------------------------ 3. the whole site
   - name: site
     label: Site
@@ -331,6 +406,7 @@ collections:
               - { name: commissions, label: Commissions, widget: boolean, default: true }
               - { name: about, label: About, widget: boolean, default: true }
               - { name: contact, label: Contact, widget: boolean, default: true }
+              - { name: support, label: Support, widget: boolean, default: true }
           - name: home
             label: Parts of the home page
             widget: object
@@ -341,4 +417,5 @@ collections:
               - { name: gallery, label: Gallery, widget: boolean, default: true }
               - { name: redraws, label: Then and now, widget: boolean, default: true }
               - { name: commissions, label: Commissions, widget: boolean, default: true }
+              - { name: support, label: Your own project (Support), widget: boolean, default: true }
               - { name: events, label: Conventions, widget: boolean, default: true }

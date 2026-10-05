@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { asset, brand, commissions, day, events, galleryHome, hero, home, latest, marquee, nameParts, redraws, shows, work } from '../data/site'
+import { asset, brand, commissions, day, events, galleryHome, hero, home, latest, marquee, nameParts, redraws, shows, support, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Magnetic from '../components/Magnetic'
@@ -178,6 +178,23 @@ export default function Home() {
                   ))}
                 </ul>
               )}
+            </Reveal>
+          </div>
+        </section>
+      )}
+
+      {/* The artist's own project */}
+      {shows('home', 'support') && shows('pages', 'support') && (
+        <section className="section">
+          <div className="container">
+            <Reveal className="invite">
+              <div className="invite-copy">
+                {support.homeLabel && <div className="label accent">{support.homeLabel}</div>}
+                <h2 className={support.logo ? 'project-logo' : 'display h-lg'}>{support.logo ? <img src={asset(support.logo)} alt={support.title} loading="lazy" /> : support.title}</h2>
+                {support.homeText && <p className="lead">{support.homeText}</p>}
+                <Magnetic><Link className="btn" to="/support">{support.homeButton} <span className="arrow">→</span></Link></Magnetic>
+              </div>
+              {support.poster && <div className="invite-art" aria-hidden="true"><img src={asset(support.poster)} alt="" loading="lazy" /></div>}
             </Reveal>
           </div>
         </section>

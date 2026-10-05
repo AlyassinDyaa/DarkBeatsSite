@@ -14,6 +14,7 @@ import Gallery from './pages/Gallery'
 import Commissions from './pages/Commissions'
 import About from './pages/About'
 import Contact from './pages/Contact'
+import Support from './pages/Support'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
           {shows('pages', 'commissions') && <Route path="/commissions" element={<Commissions />} />}
           {shows('pages', 'about') && <Route path="/about" element={<About />} />}
           {shows('pages', 'contact') && <Route path="/contact" element={<Contact />} />}
+          {shows('pages', 'support') && <Route path="/support" element={<Support />} />}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>

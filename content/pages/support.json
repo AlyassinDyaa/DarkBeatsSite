@@ -1,0 +1,84 @@
+{
+  "label": "A DarkBeats original",
+  "title": "Knight Shadow",
+  "logo": "/uploads/knight-shadow-logo.webp",
+  "figure": "/uploads/knight-shadow-figure.webp",
+  "intro": "My own character, my own story. Knight Shadow is the project I work on between commissions, and your support buys it more time at the drawing board.",
+  "primaryLabel": "Support the project",
+  "aboutLabel": "The project",
+  "aboutTitle": "What it is",
+  "paragraphs": [
+    "Knight Shadow is a personal project: an original character and world, built from scratch rather than drawn from somebody else's universe.",
+    "Everything you see here is work in progress. Character art, designs and pages will be added as they are finished."
+  ],
+  "facts": [
+    {
+      "label": "Created by",
+      "value": "Jordan Beattie"
+    },
+    {
+      "label": "Status",
+      "value": "In development"
+    }
+  ],
+  "poster": "/uploads/knight-shadow-mask.webp",
+  "artLabel": "Project art",
+  "artTitle": "From the drawing board",
+  "art": [
+    {
+      "src": "/uploads/knight-shadow-rooftop.webp",
+      "title": "Knight Shadow on the rooftop"
+    },
+    {
+      "src": "/uploads/hero-bust.webp",
+      "title": "Knight Shadow, portrait"
+    },
+    {
+      "src": "/uploads/knight-shadow-mask.webp",
+      "title": "The mask"
+    },
+    {
+      "src": "/uploads/knight-shadow-figure.webp",
+      "title": "Knight Shadow, full figure"
+    }
+  ],
+  "supportLabel": "Support",
+  "supportTitle": "Back the project",
+  "supportText": "No rewards, no strings. If you like where this is going, chip in what you can and help it get made.",
+  "tiers": [
+    {
+      "name": "Ink refill",
+      "amount": "$5",
+      "text": "Keeps the pens full for another page.",
+      "url": ""
+    },
+    {
+      "name": "A new page",
+      "amount": "$15",
+      "text": "Covers an evening at the drawing board.",
+      "url": ""
+    },
+    {
+      "name": "Chapter backer",
+      "amount": "$50",
+      "text": "A serious push toward the next chapter.",
+      "url": ""
+    }
+  ],
+  "customLabel": "Choose your own amount",
+  "customUrl": "",
+  "payNote": "You pay on a secure page run by the payment service, not on this site. No card details ever pass through here.",
+  "soonTitle": "Support opens soon.",
+  "soonText": "The payment page is being set up. Until then, say hello:",
+  "goalLabel": "",
+  "goalRaised": 0,
+  "goalTarget": 0,
+  "goalSign": "$",
+  "notes": [
+    "Support is a gift toward the project, not a purchase.",
+    "Every amount helps, and so does sharing the work."
+  ],
+  "homeLabel": "Personal project",
+  "homeText": "An original character and story, made between commissions. Fans can help it happen.",
+  "homeButton": "Support Knight Shadow"
+}

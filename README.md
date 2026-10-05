@@ -24,6 +24,7 @@ npm run preview    # serve the production build
 | `/commissions` | What is on offer, how it works, and the request form |
 | `/about` | Who Jordan is, quick facts, where to find him |
 | `/contact` | Contact form, email and social links |
+| `/support` | The artist's own project (Knight Shadow): what it is, its art, and the ways fans can back it |
 
 ## Edit the content: the admin panel
 
@@ -38,6 +39,7 @@ The site rebuilds itself about a minute later. No code involved.
 | Then and now | Sets of the same subject drawn years apart: a year and a picture for each drawing |
 | Conventions | Events, with dates and where to find the table |
 | Home page, Work and Gallery pages, Commissions page, About page, Contact page | The words on each page, one short form per page: headings, introductions, buttons. The Home page form also holds the character beside the name and which layout the gallery opens in; the Commissions form holds open or closed, the offers and prices |
+| Support page | The project's name, logo, character picture, text and art; the amounts fans can give and the **payment link** behind each; an optional goal bar; the short invitation on the home page |
 | Name, colour and contact | Site name, tagline, brand colour, logo, email, social links, footer text |
 | Show or hide | Switch whole pages, or parts of the home page, on and off |
 
@@ -60,6 +62,17 @@ Then open http://localhost:5174/admin/ and edit; changes land directly in `conte
 
 Everything the panel edits is plain JSON under `content/`. Editing those files and pushing
 has the same effect as using the panel.
+
+## Taking support payments
+
+The Support page never handles money itself and holds no keys. Each amount on it is a button that opens a payment page the artist made with a payment service, pasted into the admin as a link (Support page, "Ways to give"):
+
+- **Stripe Payment Links** (recommended): in the Stripe dashboard, *Payment Links → New*. Make one link per fixed amount, and one with *Customers choose what to pay* for "any amount". Each link looks like `https://buy.stripe.com/...`.
+- A Ko-fi, PayPal.me or Buy Me a Coffee address works the same way.
+
+Until the first link is in, the page shows the amounts without buttons and says support opens soon. An amount with no link is shown without a button. The goal bar is filled in by hand (raised so far, target).
+
+Never put a secret key from a payment service into the admin: everything typed there is saved to this repository.
 
 ## Design
 

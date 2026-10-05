@@ -31,7 +31,7 @@ export default function Nav() {
             <Wordmark />
           </Link>
           <nav className="nav-links" aria-label="Main">
-            {nav.map((n) => <NavLink key={n.to} to={n.to} end className={({ isActive }) => `nav-link ${isActive ? 'on' : ''}`}>{n.label}</NavLink>)}
+            {nav.map((n) => <NavLink key={n.to} to={n.to} end className={({ isActive }) => `nav-link ${isActive ? 'on' : ''} ${n.to === '/support' ? 'is-support' : ''}`}>{n.label}</NavLink>)}
           </nav>
           {hire && <Link className="nav-status" to="/commissions"><Status /></Link>}
           <button className={`burger ${open ? 'open' : ''}`} aria-expanded={open} aria-label="Menu" onClick={() => setOpen((o) => !o)}>

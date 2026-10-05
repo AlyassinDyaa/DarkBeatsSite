@@ -62,8 +62,12 @@
     },
     'pages/about': { groups: { title: 'Text', facts: 'Quick facts' }, half: [] },
     'pages/contact': { groups: { label: 'Top of the page', topics: 'Form' }, half: ['label', 'title'] },
+    'pages/support': {
+      groups: { label: 'The project', aboutLabel: 'About the project', artLabel: 'Project art', supportLabel: 'Ways to give', goalLabel: 'A goal (optional)', notes: 'Small print', homeLabel: 'On the home page' },
+      half: ['label', 'title', 'logo', 'figure', 'aboutLabel', 'aboutTitle', 'artLabel', 'artTitle', 'supportLabel', 'supportTitle', 'customLabel', 'customUrl', 'soonTitle', 'soonText', 'goalSign', 'goalLabel', 'goalRaised', 'goalTarget'],
+    },
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
-    'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
+    'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
   /* The navigation and the Home screen list the sections in these groups, in this order. */
@@ -74,7 +78,7 @@
   ]
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Work & Gallery', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
+  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Work & Gallery', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -82,6 +86,7 @@
     'pages/commissions': 'Open or closed, what you offer and what it costs, how it works.',
     'pages/about': 'Who you are: the heading, the paragraphs and the quick facts.',
     'pages/contact': 'The heading, the introduction and what visitors can say their message is about.',
+    'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
   }
@@ -91,6 +96,7 @@
     'pages/commissions': 'M5 4h14v16l-3.500-2-3.500 2-3.500-2L5 20z M9 9h6 M9 13h4',
     'pages/about': 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
     'pages/contact': 'M4 6h16v12H4z M4 7l8 6 8-6',
+    'pages/support': 'M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 10c0 5.500-7 10-7 10z',
     'site/brand': 'M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z',
     'site/visibility': 'M2.500 12s3.500-6.500 9.500-6.500 9.500 6.500 9.500 6.500-3.500 6.500-9.500 6.500S2.500 12 2.500 12z M12 9.500a2.500 2.500 0 1 0 0 5 2.500 2.500 0 0 0 0-5z',
   })
