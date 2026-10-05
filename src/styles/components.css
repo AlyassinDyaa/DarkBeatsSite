@@ -105,11 +105,13 @@ a.nav-status:hover { border-color: var(--fg); }
 /* --name is the letter size of the big name. The poster wall starts a fixed number of letters to
    the right of it (--wall), so the two keep their distance at every screen width, including
    screens wider than the page column. */
-.hero-inner { position: relative; display: grid; align-content: center; min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; --name: clamp(5.5rem, 15.5vw, 17rem); --wall: calc(var(--name) * 2.95); }
-.hero-inner:has(.has-figure) { --name: clamp(4.6rem, 12.8vw, 14rem); --wall: calc(var(--name) * 4.3); }
+/* The hero is allowed a wider column than the rest of the page, so on a big screen the name
+   stays near the left edge and the wall gets the room that opens up on the right. */
+.hero-inner { position: relative; display: grid; align-content: center; width: min(100% - 2 * var(--gutter), 1720px); min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; --name: clamp(5.5rem, 15.5vw, 17rem); --wall: calc(var(--name) * 2.95); }
+.hero-inner:has(.has-figure) { --name: clamp(4.6rem, 12.8vw, 14rem); --wall: calc(var(--name) * 4.15); }
 .hero-copy { position: relative; z-index: 2; max-width: calc(var(--wall) + 3rem); perspective: 1400px; }
 /* with a character at its left, the whole column steps aside for it; the name is a little smaller so both fit beside the wall */
-.hero-copy.has-figure { padding-left: calc(var(--name) * 1.4); }
+.hero-copy.has-figure { margin-left: calc(var(--gutter) * -0.35); padding-left: calc(var(--name) * 1.4); }
 .hero-copy .label { margin-bottom: 22px; }
 .hero-name { font-family: var(--display); font-size: var(--name); line-height: 0.86; letter-spacing: 0.005em; text-transform: uppercase; transform-style: preserve-3d; }
 /* The name in depth (see Hero in pages/Home.jsx): first word at the back, second word at the
@@ -157,7 +159,7 @@ a.nav-status:hover { border-color: var(--fg); }
   mask-image: linear-gradient(90deg, transparent, #000 22%), linear-gradient(transparent 5%, #000 22%, #000 80%, transparent); mask-composite: intersect;
 }
 .wall { height: 100%; }
-.wall-tilt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; height: 100%; transform: rotate(-9deg) scale(1.22); transform-origin: 50% 50%; }
+.wall-tilt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; height: 100%; transform: rotate(-9deg) scale(1.26); transform-origin: 50% 50%; }
 .wall-track { display: flex; flex-direction: column; gap: 18px; animation: wall-up var(--speed, 40s) linear infinite; }
 .wall-col[data-dir='down'] .wall-track { animation-name: wall-down; }
 .wall:hover .wall-track, .wall:focus-within .wall-track { animation-play-state: paused; }
@@ -171,7 +173,7 @@ a.nav-status:hover { border-color: var(--fg); }
   .hero-inner:has(.has-figure) { --name: 21vw; }
   .hero-copy { max-width: none; }
   /* on a phone only the name steps aside; the text below it runs the full width, so the character fades out at the knee before it */
-  .hero-copy.has-figure { padding-left: 0; }
+  .hero-copy.has-figure { margin-left: 0; padding-left: 0; }
   .has-figure .hero-name { margin-left: 1.3em; }
   .hero-figure { left: calc(-1.5em + var(--fig-x, 0) * 0.01em); }
   .has-ground .hero-figure > span { -webkit-mask-image: none; mask-image: none; }
