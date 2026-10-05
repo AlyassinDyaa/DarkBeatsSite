@@ -47,7 +47,7 @@
     gallery_sections: { groups: { title: 'Section', from: 'Pictures', hidden: 'Advanced' }, half: ['title', 'order'] },
     redraws: { groups: { title: 'Set', stages: 'The drawings, oldest first', order: 'Advanced' }, half: ['title', 'link', 'order', 'hidden'] },
     events: { groups: { name: 'Event', order: 'Advanced' }, half: ['name', 'role', 'place', 'when', 'order', 'hidden'] },
-    settings: { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
+    settings: { groups: {}, half: [], inner: ['size', 'x', 'y', 'work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
   // ---------- read the sections out of config.yml ----------

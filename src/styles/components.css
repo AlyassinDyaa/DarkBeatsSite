@@ -1,11 +1,36 @@
 /* DarkBeats — components */
 
 /* ---------- opening card and the slash between pages ---------- */
-.preloader { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; }
-.preloader-stroke { position: absolute; top: 0; bottom: 0; width: 34%; background: var(--bg); }
-.preloader-stroke:nth-child(2) { background: var(--bg-2); }
-.preloader-mark { position: relative; }
-.preloader-mark .wordmark { font-size: clamp(2.6rem, 9vw, 5rem); }
+/* The opening card (components/Preloader.jsx). One dark sheet in the site's own backdrop; the
+   name rises in, a bar fills, then the sheet leaves along a slanted edge. The timings add up to
+   the 1.25s the component waits before telling the site the wipe has begun. */
+.preloader {
+  position: fixed; inset: 0; z-index: 300;
+  display: grid; place-content: center; justify-items: center; gap: clamp(16px, 2.4vw, 26px);
+  background:
+    repeating-linear-gradient(-58deg, transparent 0 46px, oklch(0.8 0.19 var(--h) / 0.06) 46px 48px, transparent 48px 118px, oklch(0.8 0.19 var(--h) / 0.04) 118px 124px),
+    radial-gradient(60% 55% at 100% 0%, oklch(0.5 0.2 var(--h) / 0.34), transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, oklch(0.4 0.16 calc(var(--h) - 50) / 0.22), transparent 70%),
+    var(--bg);
+  animation: preloader-wipe 0.8s var(--ease) 1.25s both;
+}
+/* the slab of colour that follows the sheet out */
+.preloader-slab { position: fixed; inset: 0; z-index: 299; background: var(--accent); animation: preloader-wipe 0.8s var(--ease) 1.37s both; }
+@keyframes preloader-wipe {
+  from { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+  to { clip-path: polygon(125% 0, 125% 0, 125% 100%, 100% 100%); visibility: hidden; }
+}
+.preloader-name { display: flex; font-family: var(--display); font-size: clamp(3.2rem, 12vw, 8rem); line-height: 0.92; letter-spacing: 0.01em; text-transform: uppercase; transform: skewX(var(--slant)); }
+.preloader-name span { display: block; overflow: hidden; padding-top: 0.06em; }
+.preloader-name b { display: block; font-weight: 400; animation: preloader-rise 0.7s var(--ease-out) both; }
+.preloader-name span + span b { animation-delay: 0.1s; }
+.preloader-name .is-accent { color: var(--accent); }
+@keyframes preloader-rise { from { transform: translateY(105%); } }
+.preloader-bar { width: min(62vw, 22rem); height: 6px; overflow: hidden; background: var(--line); transform: skewX(-40deg); }
+.preloader-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; animation: preloader-fill 0.95s cubic-bezier(0.65, 0, 0.35, 1) 0.2s both; }
+@keyframes preloader-fill { from { transform: scaleX(0); } }
+.preloader-tag { font-family: var(--mono); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-mute); animation: preloader-fade 0.6s ease 0.35s both; }
+@keyframes preloader-fade { from { opacity: 0; } }
 .slash { position: fixed; inset: 0 -30%; z-index: 150; background: var(--accent); pointer-events: none; }
 
 /* ---------- the name ---------- */
@@ -78,10 +103,38 @@ a.nav-status:hover { border-color: var(--fg); }
 /* ---------- hero ---------- */
 .hero { position: relative; overflow: hidden; }
 .hero-inner { position: relative; display: grid; align-content: center; min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; }
-.hero-copy { position: relative; z-index: 2; max-width: 54%; }
+.hero-copy { position: relative; z-index: 2; max-width: 54%; perspective: 1400px; --name: clamp(5.5rem, 15.5vw, 17rem); }
+/* with a character at its left, the whole column steps aside for it; the name is a little smaller so both fit beside the wall */
+.hero-copy.has-figure { --name: clamp(4.6rem, 12.8vw, 14rem); max-width: 58%; padding-left: calc(var(--name) * 1.4); }
+.hero:has(.has-figure) .hero-wall { left: 57%; width: 46vw; }
 .hero-copy .label { margin-bottom: 22px; }
-.hero-name { font-family: var(--display); font-size: clamp(5.5rem, 15.5vw, 17rem); line-height: 0.86; letter-spacing: 0.005em; text-transform: uppercase; transform: skewX(var(--slant)); transform-origin: 0 100%; }
-.hero-line { display: block; overflow: hidden; padding-top: 0.06em; }
+.hero-name { font-family: var(--display); font-size: var(--name); line-height: 0.86; letter-spacing: 0.005em; text-transform: uppercase; transform-style: preserve-3d; }
+/* The name in depth (see Hero in pages/Home.jsx): first word at the back, second word at the
+   front, the character between them. Each line leans by itself now, so the top one is nudged
+   across to keep the two on one slanted edge. */
+.hero-line { display: block; overflow: hidden; padding-top: 0.06em; transform: translateX(0.113em) translateZ(-30px) skewX(var(--slant)); transform-origin: 0 100%; }
+.hero-line.is-front { transform: translateZ(80px) skewX(var(--slant)); }
+.hero-line:only-of-type { transform: skewX(var(--slant)); }
+/* everything about the character is measured in the name's own letter size, so the two stay
+   locked together at every screen width; the admin's size and position sliders adjust from there */
+.hero-figure { position: absolute; left: calc(-1.85em + var(--fig-x, 0) * 0.01em); top: calc(-0.16em + var(--fig-y, 0) * 0.01em); height: calc(3.45em * var(--fig-size, 1)); transform: translateZ(30px); pointer-events: none; }
+.hero-figure > span { display: block; height: 100%; }
+.hero-figure img {
+  width: auto; height: 100%; max-width: none;
+  filter: drop-shadow(-0.07em 0.09em 0.1em rgba(0, 0, 0, 0.75));
+  animation: figure-float 7s ease-in-out infinite;
+}
+/* A full figure standing on something ("ground" in the admin): the ground under its feet runs on
+   behind the text column, so its right-hand end fades out before the words, and its bottom edge
+   fades into the page. A bust, or anything that floats, needs neither. */
+.has-ground .hero-figure > span { -webkit-mask-image: linear-gradient(#000 84%, transparent 99%); mask-image: linear-gradient(#000 84%, transparent 99%); }
+.has-ground .hero-figure img {
+  -webkit-mask-image: linear-gradient(#000 60%, transparent 60%), linear-gradient(90deg, #000 68%, transparent 84%);
+  mask-image: linear-gradient(#000 60%, transparent 60%), linear-gradient(90deg, #000 68%, transparent 84%);
+}
+@keyframes figure-float { 50% { transform: translateY(-0.035em); } }
+/* a glow hanging in the air behind the character */
+.hero-aura { position: absolute; left: calc(-2.15em + var(--fig-x, 0) * 0.01em); top: calc(-0.5em + var(--fig-y, 0) * 0.01em); width: calc(3.1em * var(--fig-size, 1)); height: calc(3.6em * var(--fig-size, 1)); transform: translateZ(0); background: radial-gradient(closest-side, oklch(0.55 0.25 var(--h) / 0.55), oklch(0.5 0.24 var(--h) / 0.22) 55%, transparent); pointer-events: none; }
 .hero-line > span { display: block; }
 .hero-line .is-accent { color: var(--accent); }
 .hero-tag { margin: 26px 0 8px; font-family: var(--display); font-size: clamp(1.5rem, 2.6vw, 2.3rem); line-height: 1; text-transform: uppercase; letter-spacing: 0.03em; transform: skewX(var(--slant)); transform-origin: 0 100%; }
@@ -105,7 +158,16 @@ a.nav-status:hover { border-color: var(--fg); }
 @media (max-width: 899px) {
   .hero-inner { min-height: 0; padding-bottom: 0; }
   .hero-copy { max-width: none; }
-  .hero-name { font-size: 31vw; }
+  .hero-copy { --name: 31vw; }
+  /* on a phone only the name steps aside; the text below it runs the full width, so the character fades out at the knee before it */
+  .hero-copy.has-figure { --name: 21vw; max-width: none; padding-left: 0; }
+  .has-figure .hero-name { margin-left: 1.3em; }
+  .hero:has(.has-figure) .hero-wall { left: auto; width: 100vw; }
+  .hero-figure { left: calc(-1.75em + var(--fig-x, 0) * 0.01em); }
+  .has-ground .hero-figure > span { -webkit-mask-image: none; mask-image: none; }
+  .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 58%, transparent 74%); mask-image: linear-gradient(#000 58%, transparent 74%); }
+  .hero-copy.has-figure:not(.has-ground) .hero-tag { margin-top: calc(var(--name) * 0.55); }
+  .hero-tag, .hero .lead, .hero-actions { position: relative; z-index: 1; }
   .hero-wall { position: relative; left: auto; width: 100vw; height: 64svh; margin: 36px calc(var(--gutter) * -1) 0; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
   .wall-tilt { gap: 12px; transform: rotate(-9deg) scale(1.3); }
   .wall-track { gap: 12px; }

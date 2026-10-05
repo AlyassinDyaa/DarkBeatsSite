@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
-import { brand, commissions, day, events, galleryHome, hero, home, latest, marquee, nameParts, redraws, shows, work } from '../data/site'
+import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { asset, brand, commissions, day, events, galleryHome, hero, home, latest, marquee, nameParts, redraws, shows, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Magnetic from '../components/Magnetic'
@@ -11,19 +11,55 @@ import PosterWall from '../components/PosterWall'
 import Compare from '../components/Compare'
 import GalleryGrid from '../components/GalleryGrid'
 import Lightbox from '../components/Lightbox'
+import { useFinePointer, useReducedMotion } from '../hooks/useMedia'
 
+/* The name is built in depth. A cut-out character stands at its left: the first word is behind
+   the character (the sword crosses in front of it) and the second word runs in front of the
+   character, so the two are woven together. The three layers really are at different distances
+   (translateZ under one perspective), so when the whole name tilts toward the pointer they slide
+   past each other the way near and far things do. The poster wall drifts the other way, as the
+   furthest thing back. Without a mouse, or with reduced motion, the layers simply hold still. */
 function Hero({ onOpen }) {
+  const ref = useRef(null)
   const [a, b] = nameParts(brand.name)
+  const figure = hero.figure?.src ? hero.figure : null
+  const fine = useFinePointer(), reduced = useReducedMotion()
+  const live = fine && !reduced
+  const mx = useMotionValue(0), my = useMotionValue(0)
+  const sx = useSpring(mx, { stiffness: 70, damping: 18 }), sy = useSpring(my, { stiffness: 70, damping: 18 })
+  const rotateY = useTransform(sx, [-1, 1], [-8, 8]), rotateX = useTransform(sy, [-1, 1], [6, -6])
+  const wallX = useTransform(sx, [-1, 1], [16, -16]), wallY = useTransform(sy, [-1, 1], [10, -10])
+  const move = (e) => {
+    if (!live) return
+    const r = ref.current.getBoundingClientRect()
+    mx.set(((e.clientX - r.left) / r.width) * 2 - 1); my.set(((e.clientY - r.top) / r.height) * 2 - 1)
+  }
+  const rest = () => { mx.set(0); my.set(0) }
+  const num = (v, fallback) => (v === '' || v == null || Number.isNaN(Number(v)) ? fallback : Number(v))
   const rise = (delay) => ({ initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.8, ease: [0.16, 1, 0.3, 1] } })
   return (
-    <section className="hero">
+    <section ref={ref} className="hero" onMouseMove={move} onMouseLeave={rest}>
       <div className="container hero-inner">
-        <div className="hero-copy">
+        <div className={`hero-copy ${figure ? 'has-figure' : ''} ${figure?.ground ? 'has-ground' : ''}`}>
           <motion.div className="label accent" {...rise(1.0)}>{hero.kicker}</motion.div>
-          <h1 className="hero-name" aria-label={brand.name}>
+          <motion.h1
+            className="hero-name"
+            aria-label={brand.name}
+            style={{ rotateX, rotateY, '--fig-size': num(figure?.size, 100) / 100, '--fig-x': num(figure?.x, 0), '--fig-y': num(figure?.y, 0) }}
+          >
             <span className="hero-line"><motion.span initial={{ y: '105%' }} animate={{ y: 0 }} transition={{ delay: 1.0, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>{a}</motion.span></span>
-            {b && <span className="hero-line"><motion.span className="is-accent" initial={{ y: '105%' }} animate={{ y: 0 }} transition={{ delay: 1.1, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>{b}</motion.span></span>}
-          </h1>
+            {figure && (
+              <>
+                <span className="hero-aura" aria-hidden="true" />
+                <span className="hero-figure" aria-hidden="true">
+                  <motion.span initial={{ opacity: 0, y: '8%' }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.25, duration: 1.1, ease: [0.16, 1, 0.3, 1] }}>
+                    <img src={asset(figure.src)} alt="" draggable="false" />
+                  </motion.span>
+                </span>
+              </>
+            )}
+            {b && <span className="hero-line is-front"><motion.span className="is-accent" initial={{ y: '105%' }} animate={{ y: 0 }} transition={{ delay: 1.1, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}>{b}</motion.span></span>}
+          </motion.h1>
           <motion.p className="hero-tag" {...rise(1.35)}>{brand.tagline}</motion.p>
           <motion.p className="lead" {...rise(1.45)}>{hero.text}</motion.p>
           <motion.div className="hero-actions" {...rise(1.55)}>
@@ -31,7 +67,7 @@ function Hero({ onOpen }) {
             {shows('pages', 'commissions') && <Magnetic><Link className="btn ghost" to="/commissions">{hero.secondaryLabel}</Link></Magnetic>}
           </motion.div>
         </div>
-        <motion.div className="hero-wall" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1, duration: 1.2 }}>
+        <motion.div className="hero-wall" style={{ x: wallX, y: wallY }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1, duration: 1.2 }}>
           <PosterWall pieces={work} onOpen={onOpen} />
         </motion.div>
       </div>

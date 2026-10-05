@@ -57,7 +57,7 @@ function assemble(content) {
   // Every piece of text has a built-in wording, so a settings file that predates a field still works.
   visibility = settings.visibility || {}
   brand = { name: 'DarkBeats', hue: 312, ...settings.brand }
-  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', ...settings.hero }
+  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, ...settings.hero }
   marquee = settings.marquee || []
   home = {
     latestLabel: 'Fresh ink', latestTitle: 'Latest pieces',

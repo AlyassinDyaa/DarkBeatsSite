@@ -181,6 +181,15 @@ collections:
             fields:
               - { name: kicker, label: Small line above the name, widget: string, required: false }
               - { name: text, label: Sentence under the tagline, widget: text, required: false }
+              - name: figure
+                label: Character standing beside the name
+                widget: object
+                fields:
+                  - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'A cut-out with a see-through background (PNG or WebP), standing figure, taller than wide. It stands at the left of the name: the first word goes behind it and the second word in front. Remove the picture to have the name on its own.' }
+                  - { name: ground, label: It stands on something, widget: boolean, default: false, required: false, hint: 'Switch on for a full figure standing on a floor, roof or rock: the ground fades out before it reaches the text. Leave off for a head-and-shoulders picture.' }
+                  - { name: size, label: Size, widget: slider, min: 50, max: 150, step: 1, default: 100, unit: '%', required: false }
+                  - { name: x, label: Move sideways, widget: slider, min: -100, max: 100, step: 1, default: 0, required: false, hint: 'Left is negative, right is positive.' }
+                  - { name: y, label: Move up or down, widget: slider, min: -100, max: 100, step: 1, default: 0, required: false, hint: 'Up is negative, down is positive.' }
               - { name: primaryLabel, label: First button, widget: string, default: 'See the work', hint: 'Goes to the Work page.' }
               - { name: secondaryLabel, label: Second button, widget: string, default: 'Commission a piece', hint: 'Goes to the Commissions page.' }
           - { name: marquee, label: Words in the moving band, widget: list }

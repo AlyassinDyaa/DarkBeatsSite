@@ -1,29 +1,38 @@
-import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { brand } from '../data/site'
+import { useEffect, useRef, useState } from 'react'
+import { brand, nameParts } from '../data/site'
 import { useReducedMotion } from '../hooks/useMedia'
-import Wordmark from './Wordmark'
 
-/* A short opening card: the name, then three slanted strokes pull away to show the site. */
+/* The opening card: the name rises into place over a bar that fills, then the card is wiped off
+   to the right along a slanted edge, with a slab of the brand colour chasing it.
+   The whole sequence is plain CSS (see .preloader in components.css) and ends with the card
+   hidden, so it cannot get stuck on screen; the timers here only tell the site when the wipe
+   starts and take the card out of the page once it is over. */
+const WIPE_AT = 1250 // ms: the same moment the CSS starts the wipe
+const OVER_AT = 2200
+
 export default function Preloader({ onDone }) {
   const reduced = useReducedMotion()
-  const [show, setShow] = useState(true)
+  const [over, setOver] = useState(false)
+  const done = useRef(onDone)
+  useEffect(() => { done.current = onDone })
   useEffect(() => {
-    const t = setTimeout(() => setShow(false), reduced ? 0 : 900)
-    return () => clearTimeout(t)
+    const start = setTimeout(() => done.current?.(), reduced ? 0 : WIPE_AT)
+    const end = setTimeout(() => setOver(true), reduced ? 0 : OVER_AT)
+    return () => { clearTimeout(start); clearTimeout(end) }
   }, [reduced])
+  if (over || reduced) return null
+  const [a, b] = nameParts(brand.name)
   return (
-    <AnimatePresence onExitComplete={onDone}>
-      {show && (
-        <motion.div className="preloader" exit={{ opacity: 1, transition: { duration: reduced ? 0 : 0.7 } }} aria-label={`${brand.name} is loading`}>
-          {[0, 1, 2].map((i) => (
-            <motion.i key={i} className="preloader-stroke" style={{ left: `${i * 33.34}%` }} exit={{ y: i % 2 ? '100%' : '-100%' }} transition={{ duration: reduced ? 0 : 0.6, delay: reduced ? 0 : i * 0.06, ease: [0.76, 0, 0.24, 1] }} />
-          ))}
-          <motion.div className="preloader-mark" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, transition: { duration: 0.15 } }} transition={{ duration: 0.4 }}>
-            <Wordmark />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <>
+      <i className="preloader-slab" aria-hidden="true" />
+      <div className="preloader" role="status" aria-label={`${brand.name} is loading`}>
+        <div className="preloader-name" aria-hidden="true">
+          <span><b>{a}</b></span>
+          {b && <span><b className="is-accent">{b}</b></span>}
+        </div>
+        <div className="preloader-bar" aria-hidden="true"><i /></div>
+        {brand.tagline && <div className="preloader-tag" aria-hidden="true">{brand.tagline}</div>}
+      </div>
+    </>
   )
 }
