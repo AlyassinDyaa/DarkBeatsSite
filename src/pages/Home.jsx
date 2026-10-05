@@ -10,8 +10,10 @@ import Poster from '../components/Poster'
 import PosterWall from '../components/PosterWall'
 import Compare from '../components/Compare'
 import GalleryGrid from '../components/GalleryGrid'
+import ViewSwitch from '../components/ViewSwitch'
 import Lightbox from '../components/Lightbox'
 import { useFinePointer, useReducedMotion } from '../hooks/useMedia'
+import { useGalleryView } from '../hooks/useGalleryView'
 
 /* The name is built in depth, with a cut-out character at its left. The character is either the
    back layer, with both words of the name in front of it, or the middle one, standing between
@@ -115,6 +117,7 @@ function Latest({ onOpen }) {
 
 export default function Home() {
   const [sel, setSel] = useState(null)
+  const [view, setView] = useGalleryView()
   return (
     <Page>
       <Hero onOpen={setSel} />
@@ -128,9 +131,12 @@ export default function Home() {
           <div className="container">
             <div className="section-head">
               <div><div className="label accent">{home.galleryLabel}</div><h2 className="display h-lg">{home.galleryTitle}</h2></div>
-              {shows('pages', 'gallery') && <Link className="btn ghost sm" to="/gallery">Full gallery <span className="arrow">→</span></Link>}
+              <div className="section-tools">
+                <ViewSwitch view={view} onChange={setView} />
+                {shows('pages', 'gallery') && <Link className="btn ghost sm" to="/gallery">Full gallery <span className="arrow">→</span></Link>}
+              </div>
             </div>
-            <GalleryGrid items={galleryHome} />
+            <GalleryGrid items={galleryHome} view={view} />
           </div>
         </section>
       )}

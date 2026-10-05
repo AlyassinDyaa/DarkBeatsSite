@@ -1,6 +1,7 @@
 /* DarkBeats admin shell.
    Decap CMS renders the editing screens; this adds what makes them easy to get around:
-   1. a left navigation that never goes away, with a Home screen of big section tiles;
+   1. a left navigation that never goes away, in three groups (what you add to, the words on
+      each page, the whole site), with an overview screen of tiles in the same groups;
    2. edit forms broken into named groups, with short fields side by side;
    3. "Save" where Decap says "Publish", and after saving a return to the list the entry came from;
    4. a friendlier picture picker (the chosen picture is marked; double-click uses it);
@@ -41,24 +42,77 @@
 
   /* How each form is laid out. `groups` puts a heading above the named field;
      `half` fields sit two to a row; `inner` fields, which live inside a group of fields,
-     sit three to a row. Field names are the ones in config.yml. */
+     sit three to a row. Field names are the ones in config.yml. A form in a collection of
+     single pages is looked up as "collection/page". A heading never goes on an on/off switch:
+     a switch is drawn as a box of its own and the heading would land inside it. */
   const LAYOUT = {
-    work: { groups: { title: 'Piece', src: 'Picture', hue: 'Colour', featured: 'Where it appears' }, half: ['title', 'category', 'date', 'link', 'featured', 'hidden'] },
-    gallery_sections: { groups: { title: 'Section', from: 'Pictures', hidden: 'Advanced' }, half: ['title', 'order'] },
-    redraws: { groups: { title: 'Set', stages: 'The drawings, oldest first', order: 'Advanced' }, half: ['title', 'link', 'order', 'hidden'] },
-    events: { groups: { name: 'Event', order: 'Advanced' }, half: ['name', 'role', 'place', 'when', 'order', 'hidden'] },
-    settings: { groups: {}, half: [], inner: ['size', 'x', 'y', 'work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
+    work: { groups: { title: 'The piece', src: 'Picture, and where it shows', hue: 'Rarely needed' }, half: ['title', 'category', 'date', 'link', 'featured', 'hidden'] },
+    gallery_sections: { groups: { title: 'Section', from: 'Pictures' }, half: ['title', 'order'] },
+    redraws: { groups: { title: 'The set', stages: 'The drawings, oldest first', link: 'Rarely needed' }, half: ['title', 'text', 'link', 'order'] },
+    events: { groups: { name: 'The event', order: 'Rarely needed' }, half: ['name', 'when', 'role', 'place', 'order', 'hidden'] },
+    'pages/home': {
+      groups: { kicker: 'Top of the page', figure: 'Character beside the name', marquee: 'Moving band of words', latestLabel: 'Latest pieces', galleryLabel: 'Gallery', redrawLabel: 'Then and now', commissionsTitle: 'Commissions', eventsLabel: 'Conventions' },
+      half: ['primaryLabel', 'secondaryLabel', 'latestLabel', 'latestTitle', 'galleryLabel', 'galleryTitle', 'redrawLabel', 'redrawTitle', 'commissionsTitle', 'commissionsButton', 'eventsLabel', 'eventsTitle'],
+      inner: ['layer', 'ground', 'size', 'x', 'y'],
+    },
+    'pages/lists': { groups: { workLabel: 'Work page', galleryLabel: 'Gallery page' }, half: ['workLabel', 'workTitle', 'galleryLabel', 'galleryTitle'] },
+    'pages/commissions': {
+      groups: { title: 'Top of the page', tiers: 'What you offer', processLabel: 'How it works', requestLabel: 'Request form', notes: 'Good to know' },
+      half: ['processLabel', 'processTitle', 'requestLabel', 'requestTitle'],
+    },
+    'pages/about': { groups: { title: 'Text', facts: 'Quick facts' }, half: [] },
+    'pages/contact': { groups: { label: 'Top of the page', topics: 'Form' }, half: ['label', 'title'] },
+    'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'tagline', 'handle', 'email', 'location', 'instagram', 'contactAction'] },
+    'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
+  /* The navigation and the Home screen list the sections in these groups, in this order. */
+  const GROUPS = [
+    { label: 'Artwork and events', lead: 'What you add to over time.', has: (s) => !s.file },
+    { label: 'Words on each page', lead: 'Headings, introductions and buttons, one short form per page.', has: (s) => s.name === 'pages' },
+    { label: 'Whole site', lead: 'Your name and colour, and which parts are switched on.', has: (s) => s.name === 'site' },
+  ]
+  /* One line about each single page, for its tile on the Home screen. */
+  const ABOUT = {
+    'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
+    'pages/lists': 'The heading and introduction above the Work page and the Gallery page.',
+    'pages/commissions': 'Open or closed, what you offer and what it costs, how it works.',
+    'pages/about': 'Who you are: the heading, the paragraphs and the quick facts.',
+    'pages/contact': 'The heading, the introduction and what visitors can say their message is about.',
+    'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
+    'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
+  }
+  Object.assign(ICONS, {
+    'pages/home': 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+    'pages/lists': 'M4 5h16 M4 10h10 M4 15h16 M4 20h8',
+    'pages/commissions': 'M5 4h14v16l-3.500-2-3.500 2-3.500-2L5 20z M9 9h6 M9 13h4',
+    'pages/about': 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+    'pages/contact': 'M4 6h16v12H4z M4 7l8 6 8-6',
+    'site/brand': 'M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z',
+    'site/visibility': 'M2.500 12s3.500-6.500 9.500-6.500 9.500 6.500 9.500 6.500-3.500 6.500-9.500 6.500S2.500 12 2.500 12z M12 9.500a2.500 2.500 0 1 0 0 5 2.500 2.500 0 0 0 0-5z',
+  })
+  ICONS.adminhome = 'M4 4h7v7H4z M13 4h7v4h-7z M13 10h7v10h-7z M4 13h7v7H4z'
+
+  const currentFile = () => (location.hash.match(/^#\/collections\/[^/]+\/entries\/([^/?]+)/) || [])[1]
+  const layoutNow = () => LAYOUT[`${currentSection()}/${currentFile()}`] || LAYOUT[currentSection()]
+  /* Collections that are a fixed set of single pages rather than a list that grows. */
+  const singles = new Set()
+  let known = [] // every section, once config.yml has been read
+
   // ---------- read the sections out of config.yml ----------
+  // A list that grows is one section. A collection of single pages gives one section per page.
   const readSections = async () => {
     const cfg = (await (await fetch('config.yml')).text()).replace(/\r\n/g, '\n')
     const body = cfg.slice(cfg.indexOf('\ncollections:'))
-    return body.split(/\n {2}- name: /).slice(1).map((block) => {
-      const pick = (key) => ((block.match(new RegExp(`^ {4}${key}: (.+)$`, 'm')) || [])[1] || '').trim().replace(/^['"]|['"]$/g, '')
+    const pick = (text, indent, key) => ((text.match(new RegExp(`^ {${indent}}${key}: (.+)$`, 'm')) || [])[1] || '').trim().replace(/^['"]|['"]$/g, '')
+    return body.split(/\n {2}- name: /).slice(1).flatMap((block) => {
       const name = block.split('\n')[0].trim()
-      const file = (block.match(/^ {4}files:\n {6}- name: (\S+)/m) || [])[1]
-      return { name, label: pick('label'), singular: pick('label_singular') || pick('label'), description: pick('description'), file, canAdd: /^ {4}create: true$/m.test(block) }
+      if (!/^ {4}files:$/m.test(block)) return [{ name, key: name, label: pick(block, 4, 'label'), singular: pick(block, 4, 'label_singular') || pick(block, 4, 'label'), description: pick(block, 4, 'description'), canAdd: /^ {4}create: true$/m.test(block) }]
+      singles.add(name)
+      return block.slice(block.indexOf('\n    files:')).split(/\n {6}- name: /).slice(1).map((entry) => {
+        const file = entry.split('\n')[0].trim()
+        return { name, file, key: `${name}/${file}`, label: pick(entry, 8, 'label'), description: ABOUT[`${name}/${file}`] || '', canAdd: false }
+      })
     })
   }
 
@@ -70,8 +124,9 @@
   }
 
   const build = async () => {
-    const sections = await readSections()
+    const sections = known = await readSections()
     const hrefOf = (s) => (s.file ? `#/collections/${s.name}/entries/${s.file}` : `#/collections/${s.name}`)
+    const groups = GROUPS.map((g) => ({ ...g, sections: sections.filter(g.has) })).filter((g) => g.sections.length)
 
     // ---- left navigation
     const search = el('input', { type: 'search', placeholder: 'Search everything', ariaLabel: 'Search everything' })
@@ -81,8 +136,9 @@
       const q = search.value.trim()
       if (q) location.hash = `#/search/${encodeURIComponent(q)}`
     })
-    const home = el('a', { href: HOME, className: 'ia-home-link' }, [icon('home'), 'Home'])
-    const links = sections.map((s) => Object.assign(el('a', { href: hrefOf(s) }, [icon(s.name), s.label]), { section: s.name }))
+    const home = el('a', { href: HOME, className: 'ia-home-link' }, [icon('adminhome'), 'Overview'])
+    const links = []
+    const linkTo = (s) => { const a = Object.assign(el('a', { href: hrefOf(s) }, [icon(s.key), s.label]), { section: s.name, file: s.file }); links.push(a); return a }
     const media = el('button', { type: 'button' }, [icon('pictures'), 'Pictures'])
     // Sign out: forget this browser's login and show the login page again. (Unsaved changes on
     // an open form still get the browser's "leave this page?" question first.)
@@ -95,11 +151,10 @@
     })
     media.addEventListener('click', () => openMedia())
     const side = el('aside', { className: 'ia-side' }, [
-      el('a', { className: 'ia-brand', href: HOME }, [el('img', { src: '../favicon.svg', alt: '' }), el('span', {}, [el('strong', { textContent: 'DarkBeats' }), el('small', { textContent: 'Admin' })])]),
+      el('a', { className: 'ia-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('span', {}, [el('strong', { textContent: 'DarkBeats' }), el('small', { textContent: 'Admin' })])]),
       form,
       el('nav', { ariaLabel: 'Admin' }, [home]),
-      el('div', { className: 'ia-label', textContent: 'Edit the site' }),
-      el('nav', { ariaLabel: 'Sections' }, links),
+      ...groups.flatMap((g) => [el('div', { className: 'ia-label', textContent: g.label }), el('nav', { ariaLabel: g.label }, g.sections.map(linkTo))]),
       el('div', { className: 'ia-label', textContent: 'Library' }),
       el('nav', {}, [media]),
       el('div', { className: 'ia-foot' }, [
@@ -108,23 +163,27 @@
       ]),
     ])
 
-    // ---- home screen
-    const tiles = sections.map((s) => el('div', { className: 'ia-tile' }, [
-      el('div', { className: 'ia-tile-icon' }, [icon(s.name)]),
-      el('h2', { textContent: s.label }),
+    // ---- home screen: the same groups, as tiles
+    const tile = (s) => el('div', { className: 'ia-tile' }, [
+      el('div', { className: 'ia-tile-icon' }, [icon(s.key)]),
+      el('h3', { textContent: s.label }),
       el('p', { textContent: s.description }),
       el('div', { className: 'ia-tile-actions' }, [
-        el('a', { className: 'ia-btn', href: hrefOf(s), textContent: s.file ? 'Open' : 'See all' }),
+        el('a', { className: 'ia-btn', href: hrefOf(s), textContent: s.file ? 'Edit' : 'See all' }),
         s.canAdd ? el('a', { className: 'ia-btn ghost', href: `#/collections/${s.name}/new`, textContent: `+ New ${s.singular.toLowerCase()}` }) : null,
       ]),
-    ]))
-    const mediaTile = el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [icon('pictures')]), el('h2', { textContent: 'Pictures' }), el('p', { textContent: 'Every picture uploaded to the site. Upload new ones or remove old ones.' }), el('div', { className: 'ia-tile-actions' }, [(() => { const b = el('button', { type: 'button', className: 'ia-btn', textContent: 'Open the library' }); b.addEventListener('click', () => openMedia()); return b })()])])
+    ])
+    const mediaTile = el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [icon('pictures')]), el('h3', { textContent: 'Pictures' }), el('p', { textContent: 'Every picture uploaded to the site. Upload new ones or remove old ones.' }), el('div', { className: 'ia-tile-actions' }, [(() => { const b = el('button', { type: 'button', className: 'ia-btn', textContent: 'Open the library' }); b.addEventListener('click', () => openMedia()); return b })()])])
     const homeScreen = el('main', { className: 'ia-home' }, [
       el('div', { className: 'ia-home-inner' }, [
         el('div', { className: 'ia-kicker', textContent: 'DarkBeats admin' }),
         el('h1', { textContent: 'What do you want to update?' }),
         el('p', { className: 'ia-lead', textContent: 'Pick a part of the site. Changes go live when you press Save.' }),
-        el('div', { className: 'ia-tiles' }, [...tiles, mediaTile]),
+        ...groups.map((g, i) => el('section', { className: 'ia-group' }, [
+          el('h2', { textContent: g.label }),
+          el('p', { textContent: g.lead }),
+          el('div', { className: 'ia-tiles' }, [...g.sections.map(tile), ...(i === 0 ? [mediaTile] : [])]),
+        ])),
       ]),
     ])
     document.body.append(side, homeScreen)
@@ -133,7 +192,7 @@
       const onHome = location.hash === HOME
       document.documentElement.toggleAttribute('data-ia-home', onHome)
       home.classList.toggle('on', onHome)
-      links.forEach((a) => a.classList.toggle('on', !onHome && a.section === currentSection()))
+      links.forEach((a) => a.classList.toggle('on', !onHome && a.section === currentSection() && (!a.file || a.file === currentFile())))
     }
     addEventListener('hashchange', sync)
     sync()
@@ -151,7 +210,7 @@
 
   // ---------- never jump straight from one open entry to another ----------
   /* Decap only loads an entry when its editor opens. Going directly from one entry to another
-     (for instance clicking "Site settings" while a comic is open) keeps the editor open and
+     (for instance clicking "Home page" while a piece is open) keeps the editor open and
      would show the first entry's values in the second entry's form. So such a jump goes by way
      of the section list, which closes the editor first; anything else (back/forward buttons)
      falls back to a clean reload. */
@@ -181,7 +240,7 @@
 
   // ---------- form layout: tag fields so the stylesheet can group and pair them ----------
   const tagFields = () => {
-    const layout = LAYOUT[currentSection()]
+    const layout = layoutNow()
     const pane = document.querySelector('[class*="ControlPaneContainer"]:not([class*="PreviewPaneContainer"])')
     if (!pane) return
     for (const field of pane.children) {
@@ -203,6 +262,17 @@
       field.parentElement.dataset.iaGrid = ''
     }
     markRequired(pane)
+    nameTheForm()
+  }
+
+  /* Decap heads every form "Writing in X collection". Say what is being edited instead: the
+     page's own name for a single page ("Home page"), the section's name for anything else. */
+  const nameTheForm = () => {
+    const title = document.querySelector('[class*="ToolbarContainer"] [class*="BackCollection"]')
+    const here = known.find((s) => s.name === currentSection() && (s.file ? s.file === currentFile() : true))
+    if (!title || !here) return
+    const want = here.file ? here.label : /\/new/.test(location.hash) ? `New ${here.singular.toLowerCase()}` : here.label
+    if (title.textContent !== want) title.textContent = want
   }
 
   /* Decap only labels the optional fields ("(optional)"); everything else must be filled in.
@@ -319,7 +389,8 @@
   }, true)
   const backToList = () => {
     const section = currentSection()
-    if (section && /^#\/collections\/[^/]+\/(new|entries)/.test(location.hash)) location.hash = `#/collections/${section}`
+    // a single page has no list to go back to: return to the overview instead
+    if (section && /^#\/collections\/[^/]+\/(new|entries)/.test(location.hash)) location.hash = singles.has(section) ? HOME : `#/collections/${section}`
   }
   new MutationObserver((changes) => {
     scheduleTag()

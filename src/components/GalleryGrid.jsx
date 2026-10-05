@@ -1,30 +1,92 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { asset } from '../data/site'
 import Reveal from './Reveal'
 import Lightbox from './Lightbox'
 
 function Shot({ g, eager }) {
-  // Until the file arrives, CSS holds a portrait slot open so the columns do not collapse and jump.
+  // Until the file arrives, CSS holds a portrait slot open so the layout does not collapse and jump.
   const [loaded, setLoaded] = useState(false)
   return <img className={loaded ? undefined : 'pending'} src={asset(g.src)} alt={g.title || ''} loading={eager ? 'eager' : 'lazy'} draggable="false" onLoad={() => setLoaded(true)} />
 }
 
-/* Pictures in columns, each at its own proportions (nothing is cropped), with its title under
-   it. A click opens the picture large; from there the whole set can be browsed. */
-export default function GalleryGrid({ items }) {
-  const [sel, setSel] = useState(null)
+/* Strip: one row of tall pictures that scrolls sideways (swipe, trackpad, the scrollbar, or the
+   two arrow buttons, which move it most of a screen at a time). */
+function Strip({ items, open }) {
+  const row = useRef(null)
+  const slide = (way) => row.current?.scrollBy({ left: way * row.current.clientWidth * 0.8, behavior: 'smooth' })
   return (
-    <>
-      <ul className="masonry">
+    <div className="strip-wrap">
+      <ul className="strip" ref={row} data-lenis-prevent-touch>
         {items.map((g, i) => (
-          <Reveal as="li" key={`${g.src}-${i}`} delay={Math.min(i, 8) * 0.05} y={20}>
-            <button type="button" className="shot" onClick={() => setSel(i)} aria-label={`Open ${g.title || 'picture'}`}>
-              <Shot g={g} eager={i < 3} />
+          <li key={`${g.src}-${i}`}>
+            <button type="button" className="shot" onClick={() => open(i)} aria-label={`Open ${g.title || 'picture'}`}>
+              <Shot g={g} eager={i < 4} />
               {g.title && <span className="shot-cap">{g.title}</span>}
             </button>
-          </Reveal>
+          </li>
         ))}
       </ul>
+      {items.length > 2 && (
+        <>
+          <button type="button" className="strip-nav prev" onClick={() => slide(-1)} aria-label="Earlier pictures">←</button>
+          <button type="button" className="strip-nav next" onClick={() => slide(1)} aria-label="More pictures">→</button>
+        </>
+      )}
+    </div>
+  )
+}
+
+/* Spotlight: one picture large, with its title and the rest of the set beside it. Pointing at (or
+   tabbing to) a small picture puts it in the big frame; a click on the big picture opens it. */
+function Spotlight({ items, open }) {
+  const [at, setAt] = useState(0)
+  const cur = items[Math.min(at, items.length - 1)]
+  const i = items.indexOf(cur)
+  return (
+    <div className="spot">
+      <button type="button" className="shot spot-main" onClick={() => open(i)} aria-label={`Open ${cur.title || 'picture'}`}>
+        <Shot key={cur.src} g={cur} eager />
+      </button>
+      <div className="spot-side">
+        <div className="label accent">{i + 1} / {items.length}</div>
+        {cur.title && <h3 className="display h-md">{cur.title}</h3>}
+        {cur.note && <p className="dim">{cur.note}</p>}
+        <ul className="spot-thumbs">
+          {items.map((g, n) => (
+            <li key={`${g.src}-${n}`}>
+              <button type="button" className={n === i ? 'on' : ''} aria-label={`Show ${g.title || 'picture'}`} aria-pressed={n === i} onMouseEnter={() => setAt(n)} onFocus={() => setAt(n)} onClick={() => setAt(n)}>
+                <Shot g={g} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/* A set of pictures in one of four layouts (hooks/useGalleryView.js): wall (columns, each
+   picture at its own proportions), grid (even tiles), strip (one sideways row) or spotlight.
+   In every layout a click opens the picture large, and from there the whole set can be browsed. */
+export default function GalleryGrid({ items, view = 'wall' }) {
+  const [sel, setSel] = useState(null)
+  const tiles = view === 'grid'
+  return (
+    <>
+      {view === 'strip' && <Strip items={items} open={setSel} />}
+      {view === 'spotlight' && <Spotlight items={items} open={setSel} />}
+      {view !== 'strip' && view !== 'spotlight' && (
+        <ul className={tiles ? 'tiles' : 'masonry'}>
+          {items.map((g, i) => (
+            <Reveal as="li" key={`${g.src}-${i}`} delay={Math.min(i, 8) * 0.05} y={20}>
+              <button type="button" className="shot" onClick={() => setSel(i)} aria-label={`Open ${g.title || 'picture'}`}>
+                <Shot g={g} eager={i < 3} />
+                {g.title && <span className="shot-cap">{g.title}</span>}
+              </button>
+            </Reveal>
+          ))}
+        </ul>
+      )}
       <Lightbox items={items} sel={sel} setSel={setSel} />
     </>
   )

@@ -1,0 +1,27 @@
+{
+  "name": "DarkBeats",
+  "artist": "Jordan Beattie",
+  "tagline": "I draw things.",
+  "handle": "@jbeatsart",
+  "blurb": "Digital illustration by Jordan Beattie. Heroes, villains and the things that go bump in the night.",
+  "hue": 312,
+  "logo": "/uploads/logo.webp",
+  "email": "Jbeatsart@outlook.com",
+  "location": "Gold Coast, Australia",
+  "instagram": "https://www.instagram.com/jbeatsart/",
+  "contactAction": "",
+  "social": [
+    {
+      "label": "Instagram",
+      "handle": "@jbeatsart",
+      "url": "https://www.instagram.com/jbeatsart/"
+    },
+    {
+      "label": "Threads",
+      "handle": "@jbeatsart",
+      "url": "https://www.threads.net/@jbeatsart"
+    }
+  ],
+  "footerLine": "Keep drawing.",
+  "footerFine": "Characters shown in fan art belong to their owners."
+}

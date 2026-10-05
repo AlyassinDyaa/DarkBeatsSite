@@ -1,0 +1,21 @@
+{
+  "name": "DarkBeats",
+  "short_name": "DarkBeats",
+  "description": "Digital illustration by Jordan Beattie.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09070d",
+  "theme_color": "#09070d",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

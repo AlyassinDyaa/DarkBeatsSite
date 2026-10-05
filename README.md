@@ -37,7 +37,9 @@ The site rebuilds itself about a minute later. No code involved.
 | Gallery | Sections of the gallery page and the pictures in each. A section can also fill itself from Work, so a finished piece is only uploaded once. Tick "Show on the home page" on up to 6 pictures |
 | Then and now | Sets of the same subject drawn years apart: a year and a picture for each drawing |
 | Conventions | Events, with dates and where to find the table |
-| Site settings | Name, tagline, contact email, brand colour, every heading, label and button on every page, commissions (open or closed, offers, prices, steps), the About page, the contact form's topics, social links, footer text, and **Show or hide parts of the site** |
+| Home page, Work and Gallery pages, Commissions page, About page, Contact page | The words on each page, one short form per page: headings, introductions, buttons. The Home page form also holds the character beside the name and which layout the gallery opens in; the Commissions form holds open or closed, the offers and prices |
+| Name, colour and contact | Site name, tagline, brand colour, logo, email, social links, footer text |
+| Show or hide | Switch whole pages, or parts of the home page, on and off |
 
 Pictures upload straight from the panel into `public/uploads/`. A piece without a picture gets a
 generated title card, so the site never shows a hole.
@@ -62,7 +64,9 @@ has the same effect as using the panel.
 ## Design
 
 - Tokens (colours, type, spacing) are at the top of `src/styles/global.css`.
-- The whole site is tinted by one hue, `--h`, set from **Site settings → Brand colour**.
+- The whole site is tinted by one hue, `--h`, set from **Name, colour and contact → Brand colour**.
+- Wherever a set of pictures is shown (the home page gallery, the Gallery page) visitors can switch between four layouts: wall, grid, strip and spotlight.
+- The browser icon, the icon a phone uses when the site is added to its home screen (`public/manifest.webmanifest`) and the mark in the top bar are all the logo.
 - Everything respects `prefers-reduced-motion`: smooth scroll, the poster wall and the moving band switch off.
 
 ## Deploy on Vercel (site and admin)

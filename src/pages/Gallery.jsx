@@ -3,10 +3,13 @@ import { brand, gallerySections, pages } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import GalleryGrid from '../components/GalleryGrid'
+import ViewSwitch from '../components/ViewSwitch'
+import { useGalleryView } from '../hooks/useGalleryView'
 
 /* Every picture, in the sections made in the admin panel. A section with nothing in it stays hidden. */
 export default function Gallery() {
   const [on, setOn] = useState('all')
+  const [view, setView] = useGalleryView()
   const shown = on === 'all' ? gallerySections : gallerySections.filter((s) => s.slug === on)
   const { label, title, intro } = pages.gallery
   return (
@@ -26,7 +29,10 @@ export default function Gallery() {
               ))}
             </div>
           )}
-          {brand.instagram && <a className="btn ghost sm" href={brand.instagram} target="_blank" rel="noreferrer">More on Instagram <span className="arrow">↗</span></a>}
+          <div className="section-tools">
+            <ViewSwitch view={view} onChange={setView} />
+            {brand.instagram && <a className="btn ghost sm" href={brand.instagram} target="_blank" rel="noreferrer">More on Instagram <span className="arrow">↗</span></a>}
+          </div>
         </div>
       </header>
 
@@ -39,7 +45,7 @@ export default function Gallery() {
                 {s.description && <p className="dim">{s.description}</p>}
                 <span>{s.items.length} {s.items.length === 1 ? 'picture' : 'pictures'}</span>
               </Reveal>
-              <GalleryGrid items={s.items} />
+              <GalleryGrid items={s.items} view={view} />
             </div>
           ))}
           {gallerySections.length === 0 && <p className="dim">Pictures are on their way.</p>}

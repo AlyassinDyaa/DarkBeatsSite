@@ -43,7 +43,7 @@
 .nav.scrolled { background: rgba(9, 7, 13, 0.82); backdrop-filter: blur(14px); border-bottom-color: var(--line); }
 .nav-bar { display: flex; align-items: center; gap: 32px; height: 100%; }
 .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; }
-.brand-logo { width: 40px; height: 40px; object-fit: contain; }
+.brand-logo { width: 42px; height: 42px; object-fit: cover; border-radius: 50%; }
 .nav-links { display: flex; gap: 30px; }
 .nav-link { position: relative; padding: 10px 0; font-family: var(--mono); font-size: 0.76rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); transition: color 0.2s; }
 .nav-link::after { content: ''; position: absolute; left: 0; right: 0; bottom: 2px; height: 3px; background: var(--accent); transform: skewX(-40deg) scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease-out); }
@@ -280,6 +280,45 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .shot:focus-visible { outline: 0; }
 .shot-cap { display: block; padding: 10px 0 2px; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-mute); transition: color 0.25s; }
 .shot:hover .shot-cap, .shot:focus-visible .shot-cap { color: var(--fg); }
+/* the four layouts and the buttons that switch between them */
+.section-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.views { display: inline-flex; border: 1px solid var(--line-strong); }
+.views button { display: grid; place-items: center; width: 42px; height: 40px; color: var(--fg-mute); transition: background 0.2s, color 0.2s; }
+.views button + button { border-left: 1px solid var(--line-strong); }
+.views button:hover { color: var(--fg); }
+.views button[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); }
+.views button:focus-visible { outline-offset: -3px; }
+.views svg { width: 20px; height: 20px; }
+/* grid: even tiles, cropped toward the top where the faces are */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(46%, 210px), 1fr)); gap: clamp(14px, 2.2vw, 28px) clamp(12px, 2vw, 24px); }
+.tiles .shot img { aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 18%; }
+/* strip: one row, scrolled sideways */
+.strip-wrap { position: relative; }
+.strip { display: flex; gap: clamp(12px, 2vw, 24px); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding-bottom: 14px; scrollbar-width: thin; scrollbar-color: var(--accent) var(--line); }
+.strip > li { flex: 0 0 auto; scroll-snap-align: start; }
+.strip .shot img { width: auto; height: clamp(280px, 58vh, 560px); max-width: 84vw; object-fit: cover; }
+.strip .shot-cap { max-width: 24ch; }
+.strip-nav { position: absolute; top: calc(50% - 40px); z-index: 2; display: grid; place-items: center; width: 46px; height: 46px; font-size: 1.2rem; background: rgba(6, 4, 9, 0.78); border: 1px solid var(--line-strong); transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.strip-nav:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.strip-nav.prev { left: -12px; }
+.strip-nav.next { right: -12px; }
+@media (pointer: coarse) { .strip-nav { display: none; } }
+/* spotlight: one large, the rest small beside it */
+.spot { display: grid; grid-template-columns: minmax(0, auto) minmax(220px, 1fr); gap: clamp(20px, 3.5vw, 56px); align-items: start; }
+.spot-main { width: auto; }
+.spot-main img { width: auto; max-width: 100%; height: auto; max-height: min(74vh, 720px); box-shadow: 12px 12px 0 var(--accent); }
+.spot-main img.pending { height: min(74vh, 720px); }
+.spot-side .display { margin-bottom: 12px; }
+.spot-side p { max-width: 44ch; }
+.spot-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 12px; margin-top: 26px; }
+.spot-thumbs button { display: block; width: 100%; outline: 3px solid transparent; outline-offset: -3px; transition: outline-color 0.2s, opacity 0.2s; opacity: 0.6; }
+.spot-thumbs button.on, .spot-thumbs button:hover, .spot-thumbs button:focus-visible { outline-color: var(--accent); opacity: 1; }
+.spot-thumbs img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 18%; background: var(--bg-2); }
+@media (max-width: 899px) {
+  .spot { grid-template-columns: 1fr; }
+  .spot-main img { max-height: 62vh; box-shadow: 8px 8px 0 var(--accent); }
+  .spot-thumbs { grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; margin-top: 18px; }
+}
 .gallery-group + .gallery-group { margin-top: clamp(48px, 7vw, 104px); }
 .gallery-group-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 28px; margin-bottom: clamp(20px, 3vw, 36px); padding-bottom: 18px; border-bottom: 1px solid var(--line); }
 .gallery-group-head p { flex: 1 1 280px; margin: 0; }

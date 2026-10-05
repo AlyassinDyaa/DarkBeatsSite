@@ -1,0 +1,25 @@
+{
+  "title": "I draw things.",
+  "paragraphs": [
+    "I am Jordan Beattie, a digital illustrator on the Gold Coast, Australia. I draw the characters I grew up with: comic-book heroes, the villains who are more fun than the heroes, and the horror faces that kept me up at night.",
+    "Everything here is drawn digitally, built up from rough sketch to ink to colour. Every few years I redraw an old piece to see how far the work has come."
+  ],
+  "facts": [
+    {
+      "label": "Based in",
+      "value": "Gold Coast, Australia"
+    },
+    {
+      "label": "Medium",
+      "value": "Digital illustration"
+    },
+    {
+      "label": "Subjects",
+      "value": "Comics, horror, games"
+    },
+    {
+      "label": "In person",
+      "value": "Supanova, Artist Alley"
+    }
+  ]
+}

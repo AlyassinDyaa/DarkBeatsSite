@@ -22,7 +22,7 @@ export default function App() {
   const [ready, setReady] = useState(false)
   useLenis(!reduced)
   useEffect(applyBrandHue, [])
-  // what search engines and link previews say about the site: the blurb from Site settings
+  // what search engines and link previews say about the site: the blurb from "Name, colour and contact" in the admin
   useEffect(() => { if (brand.blurb) document.querySelector('meta[name="description"]')?.setAttribute('content', brand.blurb) }, [])
   return (
     <>

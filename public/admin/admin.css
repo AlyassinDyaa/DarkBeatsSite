@@ -113,7 +113,7 @@ button:disabled, [class*='-disabled']:disabled { opacity: 0.38; cursor: not-allo
   background: #08060c; border-right: 1px solid var(--line); font-family: var(--body); color: var(--dim);
 }
 .ia-brand { display: flex; align-items: center; gap: 12px; padding: 4px 10px 20px; text-decoration: none; }
-.ia-brand img { width: 38px; height: 38px; }
+.ia-brand img { width: 40px; height: 40px; border-radius: 50%; }
 .ia-brand span { display: grid; line-height: 1.15; }
 .ia-brand strong { font-family: var(--display); font-weight: 800; font-size: 1rem; letter-spacing: -0.01em; text-transform: uppercase; color: var(--fg); }
 .ia-brand small { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
@@ -148,12 +148,15 @@ html[data-ia-home] body:has([class*='AppHeader'], [class*='ToolbarContainer']) .
 .ia-kicker { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
 .ia-home h1 { margin: 12px 0 0; font-family: var(--display); font-weight: 800; font-size: clamp(1.8rem, 2.8vw, 2.5rem); letter-spacing: -0.03em; line-height: 1.1; color: var(--fg); }
 .ia-lead { margin: 12px 0 0; color: var(--dim); max-width: 60ch; }
-.ia-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 32px; }
+.ia-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px; }
+.ia-group { margin-top: 40px; }
+.ia-group > h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; color: var(--fg); }
+.ia-group > p { margin: 4px 0 0; font-size: 0.9rem; color: var(--dim); }
 .ia-tile { display: flex; flex-direction: column; gap: 8px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); transition: border-color 0.2s; }
 .ia-tile:hover { border-color: var(--line-strong); }
 .ia-tile-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: var(--accent-soft); color: var(--accent); margin-bottom: 8px; }
 .ia-tile-icon svg { width: 21px; height: 21px; }
-.ia-tile h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--fg); }
+.ia-tile h3 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--fg); }
 .ia-tile p { margin: 0; flex: 1; font-size: 0.92rem; line-height: 1.5; color: var(--dim); }
 .ia-tile-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ia-btn { all: unset; box-sizing: border-box; cursor: pointer; height: 40px; padding: 0 18px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--fg); color: #0b0911; font-weight: 700; font-size: 0.86rem; transition: background 0.2s, box-shadow 0.2s; }

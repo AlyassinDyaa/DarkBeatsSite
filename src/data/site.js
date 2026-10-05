@@ -40,49 +40,56 @@ export let events
 /* True when the page is showing an admin their newest saved changes rather than only the built-in content. */
 export let previewing = false
 
-/* Hiding. Site settings → "Show or hide parts of the site" switches whole pages and sections off
+/* Hiding. "Show or hide" in the admin switches whole pages and home-page sections off
    (anything not listed there is shown), and every entry has its own "Hide from the site" switch. */
 let visibility = {}
 export const shows = (group, key) => visibility[group]?.[key] !== false
 
 let newPictures = {} // pictures saved after this build: "/uploads/x.webp" -> the picture itself
 
+/* Leaves out anything not filled in, so the built-in wording below it shows through. */
+const given = (fields) => Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined && v !== null))
+
 function assemble(content) {
-  const settings = content['content/settings.json'] || {}
+  // the words on each page (content/pages) and what applies to the whole site (content/site)
+  const page = (name) => content[`content/pages/${name}.json`] || {}
+  const site = (name) => content[`content/site/${name}.json`] || {}
+  const { social: links, footerLine, footerFine, ...name } = site('brand')
+  const { kicker, text, primaryLabel, secondaryLabel, figure, marquee: words, ...sections } = page('home')
+  const lists = page('lists')
   // every file of one folder, each with the name of its file
   const folder = (name) => Object.entries(content)
     .filter(([path]) => path.startsWith(`content/${name}/`))
     .map(([path, data]) => ({ ...data, slug: path.split('/').pop().replace(/\.json$/, '') }))
 
-  // Every piece of text has a built-in wording, so a settings file that predates a field still works.
-  visibility = settings.visibility || {}
-  brand = { name: 'DarkBeats', hue: 312, ...settings.brand }
-  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, ...settings.hero }
-  marquee = settings.marquee || []
+  // Every piece of text has a built-in wording, so a content file that predates a field still works.
+  visibility = site('visibility')
+  brand = { name: 'DarkBeats', hue: 312, ...name }
+  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, ...given({ kicker, text, primaryLabel, secondaryLabel, figure }) }
+  marquee = words || []
   home = {
     latestLabel: 'Fresh ink', latestTitle: 'Latest pieces',
-    galleryLabel: 'The gallery', galleryTitle: 'Up on the wall',
+    galleryLabel: 'The gallery', galleryTitle: 'Up on the wall', galleryView: 'wall',
     redrawLabel: 'Keep drawing', redrawTitle: 'Then and now',
     commissionsTitle: 'Get something drawn', commissionsButton: 'How it works',
     eventsLabel: 'In person', eventsTitle: 'Find me at',
-    ...settings.home,
+    ...given(sections),
   }
   commissions = {
     title: 'Get something drawn', processLabel: 'The process', processTitle: 'How it works',
     requestLabel: 'Request', requestTitle: 'Tell me the idea',
     closedTitle: 'Join the queue', closedText: 'The books are closed for now. Send the idea anyway and you will hear back when a slot opens.',
     tiers: [], steps: [], notes: [],
-    ...settings.commissions,
+    ...given(page('commissions')),
   }
-  about = { paragraphs: [], facts: [], ...settings.about }
-  contact = { label: 'Say hello', title: 'Get in touch', ...settings.contact }
-  contact.topics = contact.topics || []
+  about = { paragraphs: [], facts: [], ...given(page('about')) }
+  contact = { label: 'Say hello', title: 'Get in touch', topics: [], ...given(page('contact')) }
   pages = {
-    work: { label: 'The work', title: 'Everything so far', ...settings.pages?.work },
-    gallery: { label: 'The gallery', title: 'Up on the wall', ...settings.pages?.gallery },
+    work: { label: 'The work', title: 'Everything so far', ...given({ label: lists.workLabel, title: lists.workTitle, intro: lists.workIntro }) },
+    gallery: { label: 'The gallery', title: 'Up on the wall', ...given({ label: lists.galleryLabel, title: lists.galleryTitle, intro: lists.galleryIntro }) },
   }
-  social = settings.social || []
-  footer = { fine: 'Characters shown in fan art belong to their owners.', ...settings.footer }
+  social = links || []
+  footer = { fine: 'Characters shown in fan art belong to their owners.', ...given({ line: footerLine, fine: footerFine }) }
 
   nav = [
     { label: 'Home', to: '/' },

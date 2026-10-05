@@ -1,0 +1,34 @@
+{
+  "kicker": "Jordan Beattie · Gold Coast, Australia",
+  "text": "Heroes, villains and horror icons, painted loud on a black page.",
+  "primaryLabel": "See the work",
+  "secondaryLabel": "Commission a piece",
+  "figure": {
+    "src": "/uploads/hero-bust.webp",
+    "layer": "behind",
+    "ground": false,
+    "size": 118,
+    "x": -19,
+    "y": -44
+  },
+  "marquee": [
+    "Heroes",
+    "Villains",
+    "Horror",
+    "Games",
+    "Originals",
+    "Keep drawing"
+  ],
+  "latestLabel": "Fresh ink",
+  "latestTitle": "Latest pieces",
+  "galleryLabel": "The gallery",
+  "galleryTitle": "Up on the wall",
+  "galleryView": "wall",
+  "redrawLabel": "Keep drawing",
+  "redrawTitle": "Then and now",
+  "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
+  "commissionsTitle": "Get something drawn",
+  "commissionsButton": "How it works",
+  "eventsLabel": "In person",
+  "eventsTitle": "Find me at"
+}

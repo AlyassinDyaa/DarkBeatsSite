@@ -1,0 +1,66 @@
+{
+  "open": false,
+  "title": "Get something drawn",
+  "intro": "Want your favourite character, your own character or yourself drawn in this style? Tell me what you have in mind.",
+  "tiers": [
+    {
+      "name": "Bust",
+      "text": "Head and shoulders. One character, simple background.",
+      "price": "",
+      "includes": [
+        "Full colour",
+        "High-resolution file",
+        "One round of changes"
+      ]
+    },
+    {
+      "name": "Half body",
+      "text": "Waist up, with room for a pose and a prop.",
+      "price": "",
+      "includes": [
+        "Full colour",
+        "High-resolution file",
+        "Two rounds of changes"
+      ]
+    },
+    {
+      "name": "Full illustration",
+      "text": "Full figure with a finished background. Poster ready.",
+      "price": "",
+      "includes": [
+        "Full colour and background",
+        "Print-ready file",
+        "Two rounds of changes"
+      ]
+    }
+  ],
+  "processLabel": "The process",
+  "processTitle": "How it works",
+  "steps": [
+    {
+      "title": "Send the idea",
+      "text": "Who or what, the mood, and any reference pictures you have."
+    },
+    {
+      "title": "Quote and sketch",
+      "text": "You get a price and a rough sketch to approve before any colour goes down."
+    },
+    {
+      "title": "Colour and finish",
+      "text": "The piece is inked and painted, with progress shots along the way."
+    },
+    {
+      "title": "Delivery",
+      "text": "A high-resolution file lands in your inbox, ready to print or post."
+    }
+  ],
+  "requestLabel": "Request",
+  "requestTitle": "Tell me the idea",
+  "closedTitle": "Join the queue",
+  "closedText": "The books are closed for now. Send the idea anyway and you will hear back when a slot opens.",
+  "notes": [
+    "Personal use unless we agree otherwise.",
+    "Fan art and original characters are both welcome.",
+    "Turnaround depends on the queue; ask and I will tell you where it stands."
+  ]
+}

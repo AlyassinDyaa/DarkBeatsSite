@@ -1,0 +1,17 @@
+{
+  "pages": {
+    "work": true,
+    "gallery": true,
+    "commissions": true,
+    "about": true,
+    "contact": true
+  },
+  "home": {
+    "ticker": true,
+    "latest": true,
+    "gallery": true,
+    "redraws": true,
+    "commissions": true,
+    "events": true
+  }
+}

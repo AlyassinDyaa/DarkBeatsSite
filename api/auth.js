@@ -6,7 +6,7 @@ import { configured, newPass, same } from './_session.js'
    Decap expects from a login window. The person logging in needs no GitHub account. */
 const shell = (body) => `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>DarkBeats admin</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/favicon.png">
 <style>
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #09070d radial-gradient(60% 50% at 100% 0%, rgba(232, 62, 173, 0.16), transparent 70%); color: #ece8df; font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif; }
   form, .note { box-sizing: border-box; width: min(340px, calc(100vw - 40px)); padding: 30px 28px 28px; background: #120e19; border: 1px solid rgba(232, 230, 224, 0.09);  text-align: center; }
