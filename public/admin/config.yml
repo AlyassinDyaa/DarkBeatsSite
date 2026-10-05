@@ -343,12 +343,13 @@ collections:
               - { name: text, label: What it helps with, widget: text, required: false }
               - { name: url, label: Payment link, widget: string, required: false, hint: 'The address of a payment page for this amount: a Stripe Payment Link (buy.stripe.com/...), or a Ko-fi, PayPal.me or Buy Me a Coffee address. Without a link the amount is shown with no button.' }
           - { name: customLabel, label: 'Any amount: button', widget: string }
-          - { name: customUrl, label: 'Any amount: payment link', widget: string, required: false, hint: 'A payment page where the giver types the amount. In Stripe: Payment Links, New, "Customers choose what to pay".' }
-          - { name: payNote, label: Line under the buttons, widget: text, required: false }
+          - { name: customUrl, label: 'Any amount: payment link', widget: string, required: false, hint: 'A payment page where the giver types the amount. In Stripe: Payment Links, New, "Customers choose what to pay". Visitors can type their own amount on the site; with a Stripe or PayPal.me link it is carried over, so the payment page opens with it already filled in.' }
+          - { name: giveArt, label: Picture beside the amounts, widget: image, choose_url: false, required: false, hint: 'A cut-out with a see-through background works best. Optional.' }
+          - { name: payNote, label: Line under the button, widget: text, required: false }
           - { name: soonTitle, label: 'Before any link is in: heading', widget: string, required: false }
           - { name: soonText, label: 'Before any link is in: text', widget: string, required: false, hint: 'Shown with your email address after it, until the first payment link is added.' }
           - { name: goalLabel, label: What you are raising for, widget: string, required: false, hint: 'For example "Print run for issue 1". The bar only shows once the target is above 0.' }
-          - { name: goalSign, label: Currency sign, widget: string, required: false, default: '$' }
+          - { name: goalSign, label: Currency sign, widget: string, required: false, default: '$', hint: 'Shown before the goal figures and before the amount a visitor types.' }
           - { name: goalRaised, label: Raised so far, widget: number, value_type: int, required: false, default: 0, hint: 'You update this by hand.' }
           - { name: goalTarget, label: Target, widget: number, value_type: int, required: false, default: 0 }
           - name: notes

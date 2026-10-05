@@ -70,7 +70,9 @@ The Support page never handles money itself and holds no keys. Each amount on it
 - **Stripe Payment Links** (recommended): in the Stripe dashboard, *Payment Links → New*. Make one link per fixed amount, and one with *Customers choose what to pay* for "any amount". Each link looks like `https://buy.stripe.com/...`.
 - A Ko-fi, PayPal.me or Buy Me a Coffee address works the same way.
 
-Until the first link is in, the page shows the amounts without buttons and says support opens soon. An amount with no link is shown without a button. The goal bar is filled in by hand (raised so far, target).
+Visitors can also type an amount of their own. It uses the "any amount" link; with a Stripe or PayPal.me link the typed amount is carried over, so the payment page opens with it filled in.
+
+Until the first link is in, the page shows the amounts with the button switched off and says support opens soon. An amount with no link is shown without a button. The goal bar is filled in by hand (raised so far, target).
 
 Never put a secret key from a payment service into the admin: everything typed there is saved to this repository.
 
