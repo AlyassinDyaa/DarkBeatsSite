@@ -8,6 +8,7 @@
   <link rel="icon" type="image/png" href="../favicon.png" />
   <!-- the theme that repaints the panel to match the public site -->
   <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="login.css" />
   <!-- Netlify Identity: email login for admins. Remove if you use a different backend. -->
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
@@ -18,22 +19,8 @@
   <script src="decap-cms.js"></script>
   <!-- Fixed left navigation, back-to-list after publishing, friendlier picture picker -->
   <script src="shell.js"></script>
-  <script>
-    // Which login? On this computer and on Netlify: whatever config.yml says (local proxy, or
-    // Netlify Identity). On Vercel the build leaves a backend.json: log in with the admin passcode
-    // at this site's own /api/auth, save through /api/gh (which holds the GitHub token, so nobody
-    // logging in needs a GitHub account), and every Save goes straight to the site.
-    fetch('backend.json', { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .catch(() => null) // no such file (the dev server answers with a page, which is not JSON)
-      .then((backend) => {
-        if (backend && backend.name) {
-          window.CMS.init({ config: { backend: { ...backend, base_url: location.origin, auth_endpoint: 'api/auth', api_root: `${location.origin}/api/gh` }, publish_mode: 'simple' } })
-        } else {
-          window.CMS.init()
-        }
-      })
-  </script>
+  <!-- Starts the panel; on Vercel it first asks for the passcode, on this page (no second window) -->
+  <script src="login.js"></script>
   <script>
     // After an invited user sets a password, send them to the admin instead of the home page.
     if (window.netlifyIdentity) {

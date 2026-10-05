@@ -262,7 +262,7 @@ html[data-ia-home] body:has([class*='AppHeader'], [class*='ToolbarContainer']) .
 [class*='PaginationMessage'], [class*='NoEntriesMessage'], [class*='Loader'] { color: var(--dim) !important; }
 
 /* entries: a real grid, or one row per line */
-[class*='CardsGrid'] { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important; gap: 12px; margin: 12px 0 0 !important; padding: 0 !important; }
+[class*='CardsGrid'] { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important; gap: 12px; margin: 12px 0 0 !important; padding: 0 !important; }
 [class*='CardsGrid']:has(> [class*='ListCard']) { grid-template-columns: 1fr !important; gap: 8px; }
 [class*='CardsGrid'] > li { width: auto !important; max-width: none !important; margin: 0 !important; flex: none !important; height: auto !important; }
 [class*='ListCard-'], [class*='GridCard-'] { border-radius: 12px !important; overflow: hidden; transition: border-color 0.2s, background 0.2s; }
@@ -281,14 +281,16 @@ html[data-ia-home] body:has([class*='AppHeader'], [class*='ToolbarContainer']) .
 /* cards: picture on top, name underneath */
 [class*='GridCardLink'] { display: flex !important; flex-direction: column-reverse; justify-content: flex-end; height: auto !important; min-height: 0 !important; }
 [class*='GridCardLink'] > [class*='StyledImage'], [class*='GridCard-'] [class*='CardImage'] {
-  flex: 0 0 180px !important; height: 180px !important; background-color: var(--field) !important;
+  flex: 0 0 140px !important; height: 140px !important; background-color: var(--field) !important;
   background-size: cover !important; background-position: center 20% !important; border-bottom: 1px solid var(--line);
 }
-[class*='CardBody'] { height: auto !important; min-height: 0 !important; padding: 16px 20px !important; overflow: visible !important; color: var(--text) !important; }
-[class*='CardHeading'] { font-size: 1.05rem !important; line-height: 1.3 !important; margin: 0 !important; }
+/* the picture shell.js puts on a card (see "pictures on the cards" there) */
+.ia-thumb { flex: 0 0 140px; display: block; background: var(--field) center 20% / cover no-repeat; border-bottom: 1px solid var(--line); }
+[class*='CardBody'] { height: auto !important; min-height: 0 !important; padding: 12px 14px !important; overflow: visible !important; color: var(--text) !important; }
+[class*='CardHeading'] { font-size: 0.95rem !important; line-height: 1.3 !important; margin: 0 !important; }
 [class*='CardBody']::after {
   content: 'Edit  \2192' !important; display: block !important; position: static !important; width: auto !important; height: auto !important; box-shadow: none !important;
-  margin-top: 12px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mute); transition: color 0.2s;
+  margin-top: 8px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mute); transition: color 0.2s;
 }
 [class*='GridCard-']:hover [class*='CardBody']::after { color: var(--accent); }
 
@@ -301,13 +303,16 @@ html[data-ia-view='compact'] [class*='ListCard-']:hover { background: var(--pane
 html[data-ia-view='compact'] [class*='ListCardLink'] { min-height: 38px; padding: 6px 16px !important; }
 html[data-ia-view='compact'] [class*='ListCardTitle'] { font-size: 0.9rem !important; }
 /* big pictures: tall tiles, the picture first; a tile without one gets a quiet placeholder */
-html[data-ia-view='gallery'] [class*='CardsGrid']:has(> [class*='GridCard']) { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important; gap: 16px; }
-html[data-ia-view='gallery'] [class*='GridCardLink'] > [class*='StyledImage'], html[data-ia-view='gallery'] [class*='GridCard-'] [class*='CardImage'] { flex: 0 0 290px !important; height: 290px !important; }
-html[data-ia-view='gallery'] [class*='GridCardLink']:not(:has([class*='CardImage'], [class*='StyledImage']))::after {
-  content: 'No picture yet'; flex: 0 0 290px; display: grid; place-items: center; border-bottom: 1px solid var(--line);
+html[data-ia-view='gallery'] [class*='CardsGrid']:has(> [class*='GridCard']) { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important; gap: 14px; }
+html[data-ia-view='gallery'] [class*='GridCardLink'] > [class*='StyledImage'], html[data-ia-view='gallery'] [class*='GridCard-'] [class*='CardImage'] { flex: 0 0 auto !important; height: auto !important; aspect-ratio: 5 / 6; }
+html[data-ia-view='gallery'] .ia-thumb { flex: 0 0 auto; aspect-ratio: 5 / 6; }
+/* an entry that has no picture, in a section where entries normally do */
+[class*='GridCardLink'][data-ia-thumb='none']::after {
+  content: 'No picture yet'; flex: 0 0 140px; display: grid; place-items: center; border-bottom: 1px solid var(--line);
   background: var(--field) radial-gradient(rgba(232, 230, 224, 0.07) 1px, transparent 1.6px) 0 0 / 10px 10px;
-  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
 }
+html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::after { flex: 0 0 auto; aspect-ratio: 5 / 6; }
 
 /* =====================================================================
    6. Entry pages: header card + form card, in the same column as list pages
@@ -461,6 +466,27 @@ html[data-ia-view='gallery'] [class*='GridCardLink']:not(:has([class*='CardImage
 [class*='-multiValue'] { background: rgba(232, 230, 224, 0.1) !important; border-radius: 6px !important; }
 [class*='-multiValue'] div { color: var(--fg) !important; }
 [class*='-noOptionsMessage'], [class*='-loadingMessage'] { color: var(--mute) !important; }
+
+/* The outline of a form, shown the instant one is asked for and until its fields arrive
+   (shell.js, "waiting"). It sits exactly where the form's heading bar and panel will be. */
+.ia-wait { position: fixed; inset: 0 0 0 var(--side); z-index: 320; overflow: hidden; background: var(--bg); font-family: var(--body); }
+.ia-wait-bar { display: flex; align-items: center; gap: 16px; height: 84px; width: min(var(--col), calc(100% - 80px)); margin: 80px auto 12px; padding: 0 20px; box-sizing: border-box; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); }
+.ia-wait-back { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line-strong); }
+.ia-wait-bar strong { font-family: var(--display); font-weight: 800; font-size: 1.4rem; letter-spacing: -0.02em; color: var(--fg); }
+.ia-wait-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 24px; width: min(var(--col), calc(100% - 80px)); margin: 0 auto; padding: 44px 32px 36px; box-sizing: border-box; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); }
+.ia-wait-field { display: grid; gap: 10px; }
+.ia-wait-field.wide { grid-column: 1 / -1; }
+.ia-wait-field i { width: 120px; height: 10px; border-radius: 4px; background: rgba(232, 230, 224, 0.1); }
+.ia-wait-field b { height: 48px; border-radius: var(--r-field); background: linear-gradient(90deg, rgba(232, 230, 224, 0.05) 25%, rgba(232, 230, 224, 0.1) 50%, rgba(232, 230, 224, 0.05) 75%) 0 0 / 200% 100%; animation: ia-wait 1.1s linear infinite; }
+@keyframes ia-wait { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .ia-wait-field b { animation: none; } }
+@media (max-width: 899px) {
+  .ia-wait { inset: var(--bar) 0 0 0; }
+  .ia-wait-bar { width: 100%; height: 70px; margin: 0; border-radius: 0; border-width: 0 0 1px; }
+  .ia-wait-bar strong { font-size: 1.05rem; }
+  .ia-wait-form { grid-template-columns: 1fr; width: calc(100% - 20px); margin-top: 10px; padding: 26px 14px; }
+  .ia-wait-field.wide { grid-column: auto; }
+}
 
 /* A group of fields that is always open needs no bar with an arrow to open it. (A list keeps
    its bar: that is where its "Add" button lives.) */

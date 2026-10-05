@@ -1,0 +1,52 @@
+/* The admin's login page (login.js; the small fallback page in api/auth.js uses it too).
+   The site's own look: near-black, one purple, the slanted poster capitals of the name. */
+@font-face { font-family: 'Anton'; font-style: normal; font-weight: 400; font-display: swap; src: url(anton.woff2) format('woff2'); }
+
+.dl {
+  --purple: #b55cf0;
+  position: fixed; inset: 0; z-index: 100000; overflow-y: auto;
+  display: grid; place-items: center; padding: 24px 16px;
+  color: #f4eff8; font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:
+    repeating-linear-gradient(-58deg, transparent 0 46px, rgba(181, 92, 240, 0.07) 46px 48px, transparent 48px 118px, rgba(181, 92, 240, 0.045) 118px 124px),
+    radial-gradient(60% 55% at 100% 0%, rgba(128, 48, 190, 0.38), transparent 70%),
+    radial-gradient(45% 50% at 0% 100%, rgba(52, 60, 170, 0.22), transparent 70%),
+    #09070d;
+}
+.dl *, .dl *::before, .dl *::after { box-sizing: border-box; }
+.dl-box {
+  width: min(380px, 100%); margin: 0; padding: 36px 30px 26px; text-align: center;
+  background: rgba(18, 14, 25, 0.92); border: 1px solid rgba(244, 239, 248, 0.12); border-top: 4px solid var(--purple);
+  box-shadow: 14px 14px 0 rgba(181, 92, 240, 0.9);
+}
+.dl-logo { display: block; width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%; }
+.dl-name { margin: 0; font-family: 'Anton', Impact, 'Arial Narrow Bold', sans-serif; font-weight: 400; font-size: 2.6rem; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; transform: skewX(-7deg); }
+.dl-name b { font-weight: 400; color: var(--purple); }
+.dl-kicker { margin: 8px 0 26px; font: 600 0.7rem/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(244, 239, 248, 0.5); }
+.dl-label { display: block; margin: 0 0 8px; text-align: left; font: 600 0.68rem/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(244, 239, 248, 0.6); }
+.dl-field { position: relative; }
+.dl-field input {
+  width: 100%; height: 50px; padding: 0 70px 0 14px; border-radius: 0; outline: 0;
+  background: #09070d; color: #f4eff8; border: 1px solid rgba(244, 239, 248, 0.28); font: inherit; font-size: 1rem; letter-spacing: 0.04em;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.dl-field input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(181, 92, 240, 0.25); }
+.dl-show { position: absolute; top: 5px; right: 5px; height: 40px; padding: 0 12px; border: 0; background: transparent; color: rgba(244, 239, 248, 0.6); font: 600 0.68rem/1 ui-monospace, 'Cascadia Mono', Consolas, monospace; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+.dl-show:hover, .dl-show:focus-visible { color: #f4eff8; }
+.dl-show:focus-visible, .dl-back:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.dl-note { min-height: 1.5em; margin: 10px 0 14px; text-align: left; font-size: 0.86rem; color: rgba(244, 239, 248, 0.6); }
+.dl-note.bad { color: #ff7d8f; }
+.dl-submit {
+  display: flex; align-items: center; justify-content: center; gap: 0.6em; width: 100%; height: 54px; padding: 0 24px; border: 0; cursor: pointer;
+  font-family: 'Anton', Impact, 'Arial Narrow Bold', sans-serif; font-size: 1.1rem; letter-spacing: 0.07em; text-transform: uppercase;
+  background: var(--purple); color: #0a0710; clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+  transition: background 0.2s;
+}
+.dl-submit i { font-style: normal; transition: transform 0.25s; }
+.dl-submit:hover, .dl-submit:focus-visible { background: #f4eff8; outline: 0; }
+.dl-submit:hover i { transform: translateX(5px); }
+.dl-submit:disabled { opacity: 0.6; cursor: default; }
+.dl-back { display: inline-block; margin-top: 20px; font-size: 0.82rem; color: rgba(244, 239, 248, 0.55); text-decoration: none; }
+.dl-back:hover { color: #f4eff8; }
+@media (max-width: 420px) { .dl-box { padding: 30px 20px 22px; box-shadow: 8px 8px 0 rgba(181, 92, 240, 0.9); } .dl-name { font-size: 2.2rem; } }
+@media (prefers-reduced-motion: reduce) { .dl * { transition: none !important; } }

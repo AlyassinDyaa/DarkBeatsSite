@@ -24,16 +24,50 @@ const ADMIN_PORT = 8082
 // Without the helper the panel only shows a login it cannot complete, so `npm run dev` starts
 // the helper too, unless one is already running, and stops it again on the way out.
 const startAdminBackend = (server) => {
-  const probe = connect({ port: ADMIN_PORT, host: '127.0.0.1' })
-  probe.once('connect', () => probe.destroy()) // already there: leave it alone
-  probe.once('error', () => {
+  const launch = () => {
     const child = spawn(process.execPath, [resolve('node_modules/decap-server/dist/index.js')], { stdio: 'ignore', windowsHide: true, env: { ...process.env, PORT: String(ADMIN_PORT) } })
     child.on('error', (e) => server.config.logger.warn(`admin backend did not start: ${e.message}`))
     const stop = () => { if (!child.killed) child.kill() }
     server.httpServer?.once('close', stop)
     process.once('exit', stop)
     server.config.logger.info(`  admin backend started on port ${ADMIN_PORT}`)
-  })
+  }
+  // Is one answering already? When this dev server has just restarted itself (after an edit to
+  // this file) the helper of the server it replaced may still answer for a moment and then go,
+  // so a "yes" is asked again shortly afterwards before it is believed.
+  const look = (again) => {
+    const probe = connect({ port: ADMIN_PORT, host: '127.0.0.1' })
+    probe.once('connect', () => { probe.destroy(); if (again) setTimeout(() => look(again - 1), 1500) })
+    probe.once('error', launch)
+  }
+  look(2)
+}
+
+/* The admin's lists can show each entry as a card with its picture. Decap only finds a picture
+   in a field called "image", and a gallery section or a then-and-now set keeps its pictures
+   inside a list, so the admin gets this index instead: entry -> the picture that stands for it.
+   Served live while developing, and written beside the admin on build. */
+const thumbs = () => {
+  const read = (dir) => {
+    try {
+      return readdirSync(resolve('content', dir)).filter((f) => f.endsWith('.json'))
+        .map((f) => ({ slug: f.replace(/\.json$/, ''), data: JSON.parse(readFileSync(resolve('content', dir, f), 'utf8')) }))
+    } catch { return [] }
+  }
+  const work = read('work').sort((a, b) => String(b.data.date).localeCompare(String(a.data.date)))
+  const index = {}
+  for (const piece of work) if (piece.data.src) index[`work/${piece.slug}`] = piece.data.src
+  for (const section of read('gallery-sections')) {
+    const from = section.data.from
+    const pulled = from && from !== 'none' ? work.find((p) => p.data.src && (from === 'all' || p.data.category === from))?.data.src : undefined
+    const picture = pulled || (section.data.items || []).find((item) => item && item.src)?.src
+    if (picture) index[`gallery_sections/${section.slug}`] = picture
+  }
+  for (const set of read('redraws')) {
+    const picture = [...(set.data.stages || [])].reverse().find((stage) => stage && stage.src)?.src
+    if (picture) index[`redraws/${set.slug}`] = picture
+  }
+  return index
 }
 
 const adminBundle = () => ({
@@ -46,6 +80,7 @@ const adminBundle = () => ({
       // "/admin" and "/admin/" would otherwise fall through to the site's own router.
       if (path === '/admin') { res.statusCode = 302; res.setHeader('Location', '/admin/'); return res.end() }
       if (name === '') { res.setHeader('Content-Type', 'text/html'); return res.end(readFileSync(resolve('public/admin/index.html'))) }
+      if (name === 'thumbs.json') { res.setHeader('Content-Type', 'application/json'); res.setHeader('Cache-Control', 'no-store'); return res.end(JSON.stringify(thumbs())) }
       if (!name.endsWith('.js') || !existsSync(resolve(CMS_DIR, name))) return next()
       res.setHeader('Content-Type', 'application/javascript')
       res.end(readFileSync(resolve(CMS_DIR, name)))
@@ -55,6 +90,7 @@ const adminBundle = () => ({
     try {
       mkdirSync(resolve('dist/admin'), { recursive: true })
       for (const f of cmsFiles()) copyFileSync(resolve(CMS_DIR, f), resolve('dist/admin', f))
+      writeFileSync(resolve('dist/admin/thumbs.json'), JSON.stringify(thumbs()))
       // On Vercel there is no Netlify login, so the admin logs people in with a passcode instead
       // (the functions in /api) and saves to the repository and branch this build came from.
       // The admin page reads this file; where it is missing it keeps the backend in config.yml.

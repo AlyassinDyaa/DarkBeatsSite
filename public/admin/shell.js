@@ -233,8 +233,14 @@
   /* Decap only loads an entry when its editor opens. Going directly from one entry to another
      (for instance clicking "Home page" while a piece is open) keeps the editor open and
      would show the first entry's values in the second entry's form. So such a jump goes by way
-     of the section list, which closes the editor first; anything else (back/forward buttons)
-     falls back to a clean reload. */
+     of an address Decap has nothing to show for, which closes the editor without loading
+     anything, and straight on to the form that was asked for; anything else (back/forward
+     buttons) falls back to a clean reload.
+
+     While a form is on its way, Decap blanks the page and writes "Loading entry...". In its
+     place the panel shows the outline of the form at once, under the right heading, and the
+     real fields replace it as soon as they arrive (see "waiting" below). */
+  const BETWEEN = '#/between'
   const isEntry = (hash) => /^#\/collections\/[^/]+\/(new|entries\/)/.test(hash)
   const editorOpen = () => !!document.querySelector('[class*="ToolbarContainer"]')
   let steering = false
@@ -245,13 +251,44 @@
     if (!isEntry(target) || !isEntry(location.hash) || target === location.hash) return
     e.preventDefault()
     steering = true
-    location.hash = `#/collections/${currentSection()}` // Decap asks first if there are unsaved changes
+    const back = location.hash
+    waiting(target)
+    location.hash = BETWEEN // Decap asks first if there are unsaved changes
     let tries = 0
     const go = setInterval(() => {
-      if (!editorOpen()) { clearInterval(go); location.hash = target; setTimeout(() => { steering = false }, 300) }
-      else if (++tries > 40) { clearInterval(go); steering = false } // the admin chose to stay
-    }, 50)
+      if (location.hash === back && tries > 2) { clearInterval(go); steering = false; waiting(null) } // the admin chose to stay
+      else if (!editorOpen()) { clearInterval(go); location.hash = target; setTimeout(() => { steering = false }, 300) }
+      else if (++tries > 60) { clearInterval(go); steering = false; waiting(null) }
+    }, 20)
   }, true)
+
+  /* ---------- waiting: the outline of a form, shown until the form itself is there ---------- */
+  let outline = null
+  const waiting = (hash) => {
+    if (outline) { clearInterval(outline.watch); outline.box.remove(); outline = null }
+    if (!hash || !isEntry(hash)) return
+    const [, name, , file] = hash.match(/^#\/collections\/([^/]+)\/(new|entries\/([^/?]+))/) || []
+    const section = known.find((s) => s.name === name && (s.file ? s.file === file : true))
+    const title = !section ? '' : section.file ? section.label : /\/new/.test(hash) ? `New ${section.singular.toLowerCase()}` : section.label
+    const row = (wide) => el('div', { className: `ia-wait-field ${wide ? 'wide' : ''}` }, [el('i'), el('b')])
+    const box = el('div', { className: 'ia-wait', ariaHidden: 'true' }, [
+      el('div', { className: 'ia-wait-bar' }, [el('span', { className: 'ia-wait-back' }), el('strong', { textContent: title })]),
+      el('div', { className: 'ia-wait-form' }, [row(true), row(), row(), row(true), row(), row()]),
+    ])
+    document.body.append(box)
+    const since = Date.now()
+    const watch = setInterval(() => {
+      const ready = location.hash === hash && document.querySelector('[class*="ControlPaneContainer"] label')
+      if (ready || Date.now() - since > 12000) waiting(null)
+    }, 30)
+    outline = { box, watch }
+  }
+  // the same outline when a form is opened from a list, a tile or the navigation
+  addEventListener('hashchange', (e) => {
+    const to = new URL(e.newURL).hash
+    if (isEntry(to) && !outline && !document.querySelector('[class*="ControlPaneContainer"] label')) waiting(to)
+    if (!isEntry(to) && to !== BETWEEN) waiting(null)
+  })
   addEventListener('hashchange', (e) => {
     const from = new URL(e.oldURL).hash, to = new URL(e.newURL).hash
     const saved = /^#\/collections\/[^/]+\/new/.test(from) && /\/entries\//.test(to) // a new entry getting its address
@@ -314,8 +351,41 @@
       if (required !== label.hasAttribute('data-ia-required')) label.toggleAttribute('data-ia-required', required)
     }
   }
+  /* ---------- pictures on the cards ----------
+     The two card views show a picture for each entry. Which picture belongs to which entry comes
+     from thumbs.json (see vite.config.js); it is asked for again whenever a list is opened, since
+     a save may have changed it. An entry without a picture says so; a section that never has
+     pictures (Conventions) gets plain cards with no empty frame. */
+  let thumbs = {}, thumbsAt = 0
+  const loadThumbs = () => {
+    if (Date.now() - thumbsAt < 10000) return
+    thumbsAt = Date.now()
+    fetch('thumbs.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : {})).then((found) => { thumbs = found || {}; paintThumbs() }).catch(() => { /* cards simply stay without pictures */ })
+  }
+  const paintThumbs = () => {
+    const section = currentSection()
+    const cards = document.querySelectorAll('[class*="GridCardLink"]')
+    if (!section || !cards.length) return
+    loadThumbs()
+    const any = Object.keys(thumbs).some((key) => key.startsWith(`${section}/`))
+    for (const link of cards) {
+      if (link.querySelector('[class*="CardImage"], [class*="StyledImage"]')) continue // Decap found a picture itself
+      const slug = ((link.getAttribute('href') || '').match(/\/entries\/([^/?]+)/) || [])[1]
+      const picture = slug && thumbs[`${section}/${decodeURIComponent(slug)}`]
+      let frame = link.querySelector(':scope > .ia-thumb')
+      if (picture) {
+        if (!frame) { frame = el('span', { className: 'ia-thumb' }); link.append(frame) }
+        const image = `url("${new URL(`..${picture}`, location.href.split('#')[0]).href}")`
+        if (frame.dataset.image !== image) { frame.dataset.image = image; frame.style.backgroundImage = image }
+      } else if (frame) frame.remove()
+      // only touch the attribute when it is wrong, so this never loops with the observer below
+      const state = picture ? 'picture' : any ? 'none' : 'plain'
+      if (link.dataset.iaThumb !== state) link.dataset.iaThumb = state
+    }
+  }
+
   let tagTimer
-  const scheduleTag = () => { clearTimeout(tagTimer); tagTimer = setTimeout(() => { tagFields(); syncViews() }, 60) }
+  const scheduleTag = () => { clearTimeout(tagTimer); tagTimer = setTimeout(() => { tagFields(); syncViews(); paintThumbs() }, 60) }
 
   /* ---------- list views ----------
      Decap offers rows or cards, one choice for the whole admin. Here every list gets four views
@@ -531,12 +601,25 @@
     document.body.append(note)
     setTimeout(() => note.remove(), 20000)
   }
+  /* Before it opens a form on the live site, Decap asks GitHub which version of each file in that
+     folder is the current one. The answer is the same for every form in the folder until
+     something is saved, so it is kept for a minute and thrown away on any save: after the first
+     form has opened, its neighbours open without a trip to the server. */
+  const kept = new Map() // address -> { at, answer }
+  const KEEP = 60 * 1000
   const plainFetch = window.fetch.bind(window)
   window.fetch = async (...args) => {
+    const where = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || ''
+    const how = String((args[1] && args[1].method) || (args[0] && args[0].method) || 'GET').toUpperCase()
+    const reusable = how === 'GET' && where.includes('/api/gh/') && where.includes('/git/trees/')
+    if (how !== 'GET' && where.includes('/api/gh/')) kept.clear()
+    if (reusable) {
+      const had = kept.get(where)
+      if (had && Date.now() - had.at < KEEP) return had.answer.clone()
+    }
     const answer = await plainFetch(...args)
+    if (reusable && answer.ok) kept.set(where, { at: Date.now(), answer: answer.clone() })
     try {
-      const where = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || ''
-      const how = String((args[1] && args[1].method) || (args[0] && args[0].method) || 'GET').toUpperCase()
       if (where.includes('/api/gh/') && !answer.ok) {
         const said = await answer.clone().json().then((j) => j && j.message, () => '')
         if (answer.status === 401) tell('You are logged out', 'Your login has run out. Press Sign out, log in again, then save once more.')
