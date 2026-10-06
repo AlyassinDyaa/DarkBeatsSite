@@ -118,7 +118,8 @@ a.nav-status:hover { border-color: var(--fg); }
 /* with a character at its left, the whole column steps aside for it; the name is a little smaller so both fit beside the wall */
 .hero-copy.has-figure { margin-left: calc(var(--gutter) * -0.35); padding-left: calc(var(--name) * 1.4); }
 .hero-copy .label { margin-bottom: 22px; }
-.hero-name { font-family: var(--display); font-size: var(--name); line-height: 0.86; letter-spacing: 0.005em; text-transform: uppercase; transform-style: preserve-3d; }
+.hero-name { font-family: var(--display); font-size: var(--name); line-height: 0.86; letter-spacing: 0.005em; text-transform: uppercase; transform-style: preserve-3d; width: fit-content; text-align: center; }
+/* (as wide as the longer part of the name, with the shorter part centred under or over it) */
 /* The name in depth (see Hero in pages/Home.jsx): first word at the back, second word at the
    front, the character between them. Each line leans by itself now, so the top one is nudged
    across to keep the two on one slanted edge. */
