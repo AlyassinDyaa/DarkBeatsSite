@@ -1,4 +1,4 @@
-/* DarkBeats admin.
+/* JBeatsArt admin.
    Decap CMS draws the panel; this sheet restyles it (and styles the parts shell.js adds).
    Decap's class names end in the component name (css-<hash>-ListCard-card), so rules match on
    those name fragments. Decap applies its own styles last, hence the !important.

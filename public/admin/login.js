@@ -40,7 +40,7 @@
     const submit = el('button', { type: 'submit', className: 'dl-submit' }, [el('span', { textContent: 'Log in' }), el('i', { textContent: '→', ariaHidden: 'true' })])
     const form = el('form', { className: 'dl-box', noValidate: true }, [
       el('img', { className: 'dl-logo', src: '../favicon.png', alt: '', width: 72, height: 72 }),
-      el('h1', { className: 'dl-name' }, ['Dark', el('b', { textContent: 'Beats' })]),
+      el('h1', { className: 'dl-name' }, ['JBeats', el('b', { textContent: 'Art' })]),
       el('div', { className: 'dl-kicker', textContent: 'Admin' }),
       el('label', { className: 'dl-label', htmlFor: 'dl-passcode', textContent: 'Passcode' }),
       el('div', { className: 'dl-field' }, [passcode, show]),

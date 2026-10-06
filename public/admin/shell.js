@@ -1,4 +1,4 @@
-/* DarkBeats admin shell.
+/* JBeatsArt admin shell.
    Decap CMS renders the editing screens; this adds what makes them easy to get around:
    1. a left navigation that never goes away, in three groups (what you add to, the words on
       each page, the whole site), with an overview screen of tiles in the same groups;
@@ -166,7 +166,7 @@
     })
     media.addEventListener('click', () => openMedia())
     const side = el('aside', { className: 'ia-side' }, [
-      el('a', { className: 'ia-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('span', {}, [el('strong', { textContent: 'DarkBeats' }), el('small', { textContent: 'Admin' })])]),
+      el('a', { className: 'ia-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('span', {}, [el('strong', { textContent: 'JBeatsArt' }), el('small', { textContent: 'Admin' })])]),
       form,
       // the list of sections scrolls by itself on a short screen; the brand above and the foot below stay put
       el('div', { className: 'ia-scroll' }, [
@@ -192,7 +192,7 @@
     const mediaTile = el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [icon('pictures')]), el('h3', { textContent: 'Pictures' }), el('p', { textContent: 'Every picture uploaded to the site. Upload new ones or remove old ones.' }), el('div', { className: 'ia-tile-actions' }, [(() => { const b = el('button', { type: 'button', className: 'ia-btn', textContent: 'Open the library' }); b.addEventListener('click', () => openMedia()); return b })()])])
     const homeScreen = el('main', { className: 'ia-home' }, [
       el('div', { className: 'ia-home-inner' }, [
-        el('div', { className: 'ia-kicker', textContent: 'DarkBeats admin' }),
+        el('div', { className: 'ia-kicker', textContent: 'JBeatsArt admin' }),
         el('h1', { textContent: 'What do you want to update?' }),
         el('p', { className: 'ia-lead', textContent: 'Pick a part of the site. Changes go live when you press Save.' }),
         ...groups.map((g, i) => el('section', { className: 'ia-group' }, [
@@ -204,7 +204,7 @@
     ])
     // ---- phones and small tablets: the navigation is a drawer, opened from a bar across the top
     const menu = el('button', { type: 'button', className: 'ia-menu', ariaLabel: 'Menu' }, [icon('menu')])
-    const top = el('div', { className: 'ia-top' }, [menu, el('a', { className: 'ia-top-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('strong', { textContent: 'DarkBeats' }), el('small', { textContent: 'Admin' })])])
+    const top = el('div', { className: 'ia-top' }, [menu, el('a', { className: 'ia-top-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('strong', { textContent: 'JBeatsArt' }), el('small', { textContent: 'Admin' })])])
     const shade = el('div', { className: 'ia-shade' })
     const drawer = (open) => { document.documentElement.toggleAttribute('data-ia-menu', open); menu.setAttribute('aria-expanded', String(open)) }
     menu.addEventListener('click', () => drawer(!document.documentElement.hasAttribute('data-ia-menu')))

@@ -7,7 +7,7 @@ import { configured, goodPass, repo } from './_session.js'
    and lays them over what it has (src/data/site.js, showLatest). Visitors never call this: they
    get the rebuilt site a minute later. When nothing is newer the answer is just { fresh: false }. */
 const github = (path) => fetch(`https://api.github.com${path}`, {
-  headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'darkbeats-admin' },
+  headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'jbeatsart-admin' },
 })
 const KINDS = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', svg: 'image/svg+xml', avif: 'image/avif' }
 const PICTURE_ROOM = 3.2 * 1024 * 1024 // the answer itself may only be about 4 MB

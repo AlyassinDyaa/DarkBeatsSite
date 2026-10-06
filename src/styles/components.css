@@ -1,4 +1,4 @@
-/* DarkBeats — components */
+/* JBeatsArt — components */
 
 /* ---------- opening card and the slash between pages ---------- */
 /* The opening card (components/Preloader.jsx). One dark sheet in the site's own backdrop; the
@@ -110,8 +110,10 @@ a.nav-status:hover { border-color: var(--fg); }
    screens wider than the page column. */
 /* The hero is allowed a wider column than the rest of the page, so on a big screen the name
    stays near the left edge and the wall gets the room that opens up on the right. */
-.hero-inner { position: relative; display: grid; align-content: center; width: min(100% - 2 * var(--gutter), 1720px); min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; --name: clamp(5.5rem, 15.5vw, 17rem); --wall: calc(var(--name) * 2.95); }
-.hero-inner:has(.has-figure) { --name: clamp(4.6rem, 12.8vw, 14rem); --wall: calc(var(--name) * 4.15); }
+.hero-inner { position: relative; display: grid; align-content: center; width: min(100% - 2 * var(--gutter), 1720px); min-height: 100svh; padding-block: calc(var(--nav) + 32px) 56px; --fit: min(1, calc(5.3 / var(--letters, 5))); --name: calc(clamp(5.5rem, 15.5vw, 17rem) * var(--fit)); --wall: calc(var(--name) * (0.45 + 0.47 * max(var(--letters, 5), 5.3))); }
+/* (--letters is the length of the longer part of the name: a longer name is set smaller, and the
+   wall starts far enough along for it, about half a letter-height per letter) */
+.hero-inner:has(.has-figure) { --name: calc(clamp(4.6rem, 12.8vw, 14rem) * var(--fit)); --wall: calc(var(--name) * (1.75 + 0.47 * max(var(--letters, 5), 5.3))); }
 .hero-copy { position: relative; z-index: 2; max-width: calc(var(--wall) + 3rem); perspective: 1400px; }
 /* with a character at its left, the whole column steps aside for it; the name is a little smaller so both fit beside the wall */
 .hero-copy.has-figure { margin-left: calc(var(--gutter) * -0.35); padding-left: calc(var(--name) * 1.4); }
@@ -172,8 +174,8 @@ a.nav-status:hover { border-color: var(--fg); }
 .wall-item:hover, .wall-item:focus-visible { transform: translate(-5px, -5px); box-shadow: 9px 9px 0 var(--accent); outline: 0; }
 @media (max-width: 899px) {
   .hero-inner { min-height: 0; padding-bottom: 0; }
-  .hero-inner { --name: 31vw; }
-  .hero-inner:has(.has-figure) { --name: 21vw; }
+  .hero-inner { --name: calc(31vw * var(--fit)); }
+  .hero-inner:has(.has-figure) { --name: calc(21vw * var(--fit)); }
   .hero-copy { max-width: none; }
   /* on a phone only the name steps aside; the text below it runs the full width, so the character fades out at the knee before it */
   .hero-copy.has-figure { margin-left: 0; padding-left: 0; }

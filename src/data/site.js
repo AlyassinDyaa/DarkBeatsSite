@@ -70,7 +70,7 @@ function assemble(content) {
 
   // Every piece of text has a built-in wording, so a content file that predates a field still works.
   visibility = site('visibility')
-  brand = { name: 'DarkBeats', hue: 312, ...name }
+  brand = { name: 'JBeatsArt', hue: 312, ...name }
   hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, ...given({ kicker, text, primaryLabel, secondaryLabel, figure }) }
   marquee = words || []
   home = {
@@ -179,11 +179,13 @@ export const money = (amount) => {
 /* An address typed into the admin is only ever used as a link when it is an ordinary web address. */
 export const safeUrl = (url) => (/^https?:\/\//i.test(String(url || '').trim()) ? String(url).trim() : null)
 
-/* A two-part name ("DarkBeats") is split where its second capital starts, so the second half can
-   take the brand colour; any other name comes back whole. */
+/* A name written in parts ("JBeatsArt") is split before its last capital that follows a small
+   letter (JBeats | Art), so the second half can take the brand colour; a name with a space, or
+   with nowhere to split, comes back whole. */
 export const nameParts = (name = '') => {
-  const cut = name.slice(1).search(/[A-Z]/)
-  return cut < 0 || name.includes(' ') ? [name, ''] : [name.slice(0, cut + 1), name.slice(cut + 1)]
+  let cut = -1
+  for (let i = 1; i < name.length; i++) if (/[A-Z]/.test(name[i]) && /[a-z]/.test(name[i - 1])) cut = i
+  return cut < 0 || name.includes(' ') ? [name, ''] : [name.slice(0, cut), name.slice(cut)]
 }
 
 /* "2026-07-26" -> "26 Jul 2026" (and "Jul 26" for the short form). Dates are plain calendar days,

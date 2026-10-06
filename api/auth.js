@@ -8,13 +8,13 @@ import { configured, newPass, same } from './_session.js'
    exchange Decap expects from a login window: that is the way in if Decap ever shows its own
    "Log in" button (for instance when a pass runs out in the middle of a session). */
 const shell = (body) => `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>DarkBeats admin</title>
+<meta name="robots" content="noindex"><title>JBeatsArt admin</title>
 <link rel="icon" type="image/png" href="/favicon.png"><link rel="stylesheet" href="/admin/login.css">
 <main class="dl">${body}</main></html>`
 
 const form = (wrong) => shell(`<form class="dl-box" method="post" autocomplete="off">
   <img class="dl-logo" src="/favicon.png" alt="" width="72" height="72">
-  <h1 class="dl-name">Dark<b>Beats</b></h1>
+  <h1 class="dl-name">JBeats<b>Art</b></h1>
   <div class="dl-kicker">Admin</div>
   <label class="dl-label" for="dl-passcode">Passcode</label>
   <div class="dl-field"><input type="password" name="passcode" id="dl-passcode" required autofocus></div>

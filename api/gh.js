@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
   const init = {
     method: req.method,
-    headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: req.headers.accept || 'application/vnd.github+json', 'User-Agent': 'darkbeats-admin' },
+    headers: { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: req.headers.accept || 'application/vnd.github+json', 'User-Agent': 'jbeatsart-admin' },
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     init.headers['Content-Type'] = 'application/json'

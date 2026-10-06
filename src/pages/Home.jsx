@@ -41,7 +41,8 @@ function Hero({ onOpen }) {
   const rise = (delay) => ({ initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { delay, duration: 0.8, ease: [0.16, 1, 0.3, 1] } })
   return (
     <section ref={ref} className="hero" onMouseMove={move} onMouseLeave={rest}>
-      <div className="container hero-inner">
+      {/* the longer part of the name sets how large the name can be (components.css, .hero-inner) */}
+      <div className="container hero-inner" style={{ '--letters': Math.max(a.length, b.length, 1) }}>
         <div className={`hero-copy ${figure ? 'has-figure' : ''} ${figure?.ground ? 'has-ground' : ''} ${figure?.layer === 'behind' ? 'is-behind' : ''}`}>
           <motion.div className="label accent" {...rise(1.0)}>{hero.kicker}</motion.div>
           <motion.h1

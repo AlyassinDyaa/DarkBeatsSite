@@ -1,6 +1,6 @@
-# DarkBeats — website
+# JBeatsArt — website
 
-Portfolio site for DarkBeats, the digital illustration of Jordan Beattie ([@jbeatsart](https://www.instagram.com/jbeatsart/)).
+Portfolio site for JBeatsArt, the digital illustration of Jordan Beattie ([@jbeatsart](https://www.instagram.com/jbeatsart/)).
 
 Built with Vite, React 19, React Router, Framer Motion and Lenis. Fonts are bundled with the site.
 Content is edited through an admin panel at `/admin` (see below).

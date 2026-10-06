@@ -1,4 +1,4 @@
-# DarkBeats — admin panel configuration (Decap CMS)
+# JBeatsArt — admin panel configuration (Decap CMS)
 # Everything on the site that the artist can edit is described here.
 # Changes are saved as commits to the repository; the site rebuilds automatically.
 #
@@ -373,7 +373,7 @@ collections:
         label: Name, colour and contact
         file: content/site/brand.json
         fields:
-          - { name: name, label: Site name, widget: string, hint: 'Written with a capital in the middle ("DarkBeats"), the second half takes the brand colour.' }
+          - { name: name, label: Site name, widget: string, hint: 'Written with capitals where the parts start ("JBeatsArt"), the last part takes the brand colour.' }
           - { name: artist, label: Your name, widget: string }
           - { name: tagline, label: Tagline, widget: string }
           - { name: blurb, label: One or two sentences about the site, widget: text, hint: 'Shown in the footer, and by search engines and link previews.' }
