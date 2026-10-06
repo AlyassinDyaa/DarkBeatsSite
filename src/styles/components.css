@@ -219,7 +219,8 @@ a.nav-status:hover { border-color: var(--fg); }
 }
 
 /* ---------- then and now ---------- */
-.compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: clamp(28px, 4vw, 56px); max-width: 1040px; }
+/* the sets sit in the middle of the page, each at most a comfortable size */
+.compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 440px)); justify-content: center; gap: clamp(28px, 4vw, 64px); }
 .compare { margin: 0; }
 .compare-stage { position: relative; aspect-ratio: 5 / 7; overflow: hidden; background: var(--bg-2); user-select: none; }
 .compare-stage .poster { position: absolute; inset: 0; aspect-ratio: auto; }

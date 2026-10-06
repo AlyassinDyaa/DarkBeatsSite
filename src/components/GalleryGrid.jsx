@@ -76,7 +76,16 @@ export default function GalleryGrid({ items, view = 'wall' }) {
   // pictures are dealt out across the columns in turn, so they read left to right in the order
   // the artist put them in and no column is left empty when there are only a few.
   const wide = useMedia('(min-width: 1200px)'), mid = useMedia('(min-width: 700px)')
-  const count = wide ? 4 : mid ? 3 : 2
+  // The screen sets a usual number of columns. One more, or one fewer (never fewer than three), is
+  // taken when that fills the last row better (10 pictures: 5 + 5 rather than 4 + 4 + 2), so no
+  // corner of the wall is left bare. Fewer pictures than columns keep their usual size and sit in
+  // the middle instead of stretching.
+  const usual = wide ? 4 : mid ? 3 : 2
+  const n = Math.max(items.length, 1)
+  const empty = (cols) => (cols - (n % cols)) % cols
+  const choices = [usual, usual + 1, ...(usual - 1 >= 3 ? [usual - 1] : [])]
+  const count = usual === 2 || n <= usual ? Math.min(usual, n) : choices.reduce((best, cols) => (empty(cols) < empty(best) ? cols : best))
+  const narrow = n < usual ? { maxWidth: `${(n / usual) * 100}%`, marginInline: 'auto' } : null
   const columns = Array.from({ length: count }, (_, c) => items.map((g, i) => ({ g, i })).filter((x) => x.i % count === c))
   const shot = (g, i) => (
     <Reveal as="li" key={`${g.src}-${i}`} delay={Math.min(i, 8) * 0.05} y={20}>
@@ -92,7 +101,7 @@ export default function GalleryGrid({ items, view = 'wall' }) {
       {view === 'spotlight' && <Spotlight items={items} open={setSel} />}
       {tiles && <ul className="tiles">{items.map(shot)}</ul>}
       {view !== 'strip' && view !== 'spotlight' && !tiles && (
-        <div className="masonry" style={{ '--columns': count }}>
+        <div className="masonry" style={{ '--columns': count, ...narrow }}>
           {columns.map((column, c) => <ul key={c}>{column.map(({ g, i }) => shot(g, i))}</ul>)}
         </div>
       )}
