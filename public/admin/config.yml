@@ -481,6 +481,15 @@ collections:
           - { name: enabled, label: Online purchases, widget: boolean, default: false, hint: 'On: every piece with a price shows it, with a Buy button that opens a Stripe payment page. Off: no prices and no buttons anywhere.' }
           - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
           - { name: buttonLabel, label: Wording of the Buy button, widget: string }
+          - name: cartIcon
+            label: Cart button icon
+            widget: select
+            default: bag
+            required: false
+            options:
+              - { label: 'Shopping bag', value: bag }
+              - { label: 'Shopping cart', value: cart }
+            hint: 'The button in the top bar that opens the cart.'
           - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'One line under every price and on the payment page, for example "A3 print, signed."' }
           - { name: signedChoice, label: Buyers can add a signature, widget: boolean, default: false, required: false, hint: 'On: every piece has a "Signed by …" switch beside its price, off to start with; the order says signed or unsigned (in Stripe, after the title). Off: no switch.' }
           - { name: signedExtra, label: Extra for a signed print, widget: number, value_type: float, min: 0, default: 0, required: false, hint: 'Added to the price when the buyer switches the signature on. 0 for no extra cost.' }
@@ -534,3 +543,9 @@ collections:
               - { name: commissions, label: Commissions, widget: boolean, default: true }
               - { name: support, label: Your own project (Support), widget: boolean, default: true }
               - { name: events, label: Conventions, widget: boolean, default: true }
+          - name: shop
+            label: Parts of the Shop page
+            widget: object
+            collapsed: false
+            fields:
+              - { name: redraws, label: Then and now, widget: boolean, default: true, hint: 'The before-and-after drawings under the pieces.' }

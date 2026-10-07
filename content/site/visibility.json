@@ -15,5 +15,8 @@
     "commissions": false,
     "events": true,
     "support": false
+  },
+  "shop": {
+    "redraws": true
   }
 }

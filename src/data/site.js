@@ -124,7 +124,7 @@ function assemble(content) {
     ...given(page('support')),
   }
   shop = {
-    enabled: false, currency: 'aud', buttonLabel: 'Buy', shipping: true, pricePlace: 'corner', tagPlace: 'corner', signedChoice: false, signedExtra: 0,
+    enabled: false, currency: 'aud', buttonLabel: 'Buy', shipping: true, pricePlace: 'corner', tagPlace: 'corner', signedChoice: false, signedExtra: 0, cartIcon: 'bag',
     thanksTitle: 'Thank you.', thanksText: 'Your order is in. A receipt is on its way to your email.',
     ...given(site('shop')),
   }

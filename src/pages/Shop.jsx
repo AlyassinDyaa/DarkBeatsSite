@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, buyable, canBuy, categories, day, home, money, nowPrice, onSale, pages, redraws, shop, soldOut, work } from '../data/site'
+import { badge, buyable, canBuy, categories, day, home, money, nowPrice, onSale, pages, redraws, shop, shows, soldOut, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
@@ -105,7 +105,7 @@ export default function Shop() {
         </div>
       </section>
 
-      {redraws.length > 0 && filter === 'All' && (
+      {shows('shop', 'redraws') && redraws.length > 0 && filter === 'All' && (
         <section className="section">
           <div className="container">
             <div className="section-head">

@@ -38,7 +38,9 @@ export default function Nav() {
           {hire && <Link className="nav-status" to="/commissions"><Status /></Link>}
           {shop.enabled && (
             <button type="button" className="nav-cart" onClick={() => { setOpen(false); cart.setOpen(true) }} aria-label={`Cart, ${cart.count} ${cart.count === 1 ? 'print' : 'prints'}`}>
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5h14l-1.1 11.6a1.2 1.2 0 0 1-1.2 1.1H7.3a1.2 1.2 0 0 1-1.2-1.1z" /><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5" /></svg>
+              {shop.cartIcon === 'cart'
+                ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 4h2.6l2.3 10.6a1.2 1.2 0 0 0 1.2.9h8.6a1.2 1.2 0 0 0 1.2-.9L20.5 8H6" /><circle cx="9.5" cy="19.5" r="1.4" /><circle cx="17" cy="19.5" r="1.4" /></svg>
+                : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5h14l-1.1 11.6a1.2 1.2 0 0 1-1.2 1.1H7.3a1.2 1.2 0 0 1-1.2-1.1z" /><path d="M9 10.5V7a3 3 0 0 1 6 0v3.5" /></svg>}
               {cart.count > 0 && <span key={cart.count} className="nav-cart-count">{cart.count}</span>}
             </button>
           )}
