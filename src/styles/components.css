@@ -59,10 +59,11 @@
 .nav-status { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px; font-family: var(--mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg); border: 1px solid var(--line-strong); transition: border-color 0.2s; }
 a.nav-status:hover { border-color: var(--fg); }
 /* the cart button in the top bar */
-.nav-cart { position: relative; display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid var(--line-strong); color: var(--fg); transition: border-color 0.2s, background 0.2s; }
-.nav-cart:hover { border-color: var(--accent); background: var(--accent-soft); }
-.nav-cart svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.nav-cart-count { position: absolute; top: -8px; right: -8px; display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; font-family: var(--mono); font-size: 0.72rem; font-weight: 700; background: var(--accent); color: var(--on-accent); border-radius: 999px; animation: cart-pop 0.4s var(--ease-out); }
+.nav-cart { position: relative; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 1px solid var(--line-strong); color: var(--fg); transition: border-color 0.2s, background 0.2s, color 0.2s; }
+.nav-cart:hover, .nav-cart:focus-visible { border-color: var(--accent); background: var(--accent-soft); outline: 0; }
+.nav-cart svg { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* how many prints: a small slanted purple tag on the corner, like the price tags */
+.nav-cart-count { position: absolute; top: -9px; right: -12px; min-width: 26px; height: 20px; padding: 0 8px; display: grid; place-items: center; font-family: var(--display); font-size: 0.85rem; line-height: 1; background: var(--accent); color: var(--on-accent); clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%); animation: cart-pop 0.4s var(--ease-out); }
 @keyframes cart-pop { from { transform: scale(0.4); } 60% { transform: scale(1.2); } }
 .burger { display: none; position: relative; width: 48px; height: 48px; border: 1px solid var(--line-strong); }
 .burger span { position: absolute; left: 13px; right: 13px; height: 2px; background: var(--fg); top: 50%; transition: transform 0.4s var(--ease); }
