@@ -376,7 +376,14 @@ html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::afte
   [data-ia-group][data-ia-half]::before { width: calc(200% + 24px); box-sizing: border-box; }
   [data-ia-group][data-ia-half] + [data-ia-half] { padding-top: 77px; }
   [class*='ControlPaneContainer'] > [data-ia-group][data-ia-half]:first-child + [data-ia-half] { padding-top: 40px; }
+  /* ...and always starts a new row on the left, even when the field before it was a half on its own */
+  [class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) > [data-ia-group][data-ia-half] { grid-column: 1 / span 1; }
 }
+/* An on/off switch is drawn as a box of its own, so a heading that opens a group with one sits
+   above the box, not inside it. */
+[data-ia-group]:has(> div > [class*='ToggleContainer']) { position: relative; overflow: visible; margin-top: 70px !important; }
+[data-ia-group]:has(> div > [class*='ToggleContainer'])::before { position: absolute; left: -1px; right: -1px; bottom: calc(100% + 12px); margin: 0; }
+[class*='ControlPaneContainer'] > [data-ia-group]:first-child:has(> div > [class*='ToggleContainer']) { margin-top: 40px !important; }
 @media (max-width: 1100px) { [class*='ControlPaneContainer']:not([class*='PreviewPaneContainer']) > [data-ia-half] { grid-column: 1 / -1; } }
 
 /* short fields inside a group of fields share rows (shell.js marks them) */

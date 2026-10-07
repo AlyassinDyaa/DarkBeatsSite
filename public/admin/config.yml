@@ -479,10 +479,10 @@ collections:
         fields:
           - { name: enabled, label: Online purchases, widget: boolean, default: false, hint: 'On: every piece with a price shows it, with a Buy button that opens a Stripe payment page. Off: no prices and no buttons anywhere.' }
           - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
-          - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'One line under every price and on the payment page, for example "A3 print, signed."' }
           - { name: buttonLabel, label: Wording of the Buy button, widget: string }
+          - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'One line under every price and on the payment page, for example "A3 print, signed."' }
           - name: pricePlace
-            label: Where the price shows on a card
+            label: Price on the cards
             widget: select
             default: corner
             required: false
@@ -490,10 +490,11 @@ collections:
               - { label: 'Top corner of the picture', value: corner }
               - { label: 'Under the picture, beside the title', value: below }
           - name: tagPlace
-            label: Where the tags show (New, Sale, Sold out)
+            label: Tags on the cards
             widget: select
             default: corner
             required: false
+            hint: 'The New, Sale and Sold out tags.'
             options:
               - { label: 'Top corner of the picture', value: corner }
               - { label: 'Under the title', value: below }

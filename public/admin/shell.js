@@ -67,7 +67,7 @@
       half: ['label', 'title', 'logo', 'figure', 'aboutLabel', 'aboutTitle', 'artLabel', 'artTitle', 'supportLabel', 'supportTitle', 'customLabel', 'customUrl', 'soonTitle', 'soonText', 'goalSign', 'goalLabel', 'goalRaised', 'goalTarget'],
     },
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
-    'site/shop': { groups: { currency: 'What you sell', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
+    'site/shop': { groups: { enabled: 'Selling online', currency: 'What you sell', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 

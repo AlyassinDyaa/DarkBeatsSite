@@ -5,6 +5,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { spawn } from 'node:child_process'
 import { connect } from 'node:net'
+import { createHash } from 'node:crypto'
 
 // Copies index.html to 404.html after build so GitHub Pages serves the SPA on deep links.
 const spaFallback = () => ({
@@ -71,32 +72,59 @@ const thumbs = () => {
   return index
 }
 
-/* The browser tab icon chosen in the admin (Brand & contact → Browser tab icon) goes straight into
-   the site's page and the admin's page, so it shows before any script runs and in link previews.
-   Without one, the logo files in public/ stay. */
+/* The browser tab icon chosen in the admin (Brand & contact → Browser tab icon) is used on every
+   device. The build makes each size a device asks for out of it, in place of the logo's: the tab
+   icon, the iPhone and iPad home-screen icon, and the Android and installed-app icons (the web
+   manifest). Every link to them carries a version taken from the picture, so a phone or tablet
+   that kept the old icon fetches the new one. Without a chosen icon, the logo files in public/
+   stay. While developing, the picture itself is used. */
 let siteBase = '/'
+let building = false
+const at = (path) => siteBase.replace(/\/$/, '') + path
 const chosenIcon = () => {
   let icon = ''
   try { icon = JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')).icon || '' } catch { /* no brand file: keep the logo */ }
-  return typeof icon === 'string' && icon.startsWith('/uploads/') ? siteBase.replace(/\/$/, '') + icon : ''
+  if (typeof icon !== 'string' || !/^\/uploads\/[^/]+$/.test(icon)) return null
+  const file = resolve('public' + icon)
+  return existsSync(file) ? { path: icon, file } : null
+}
+const iconLinks = () => {
+  const icon = chosenIcon()
+  if (!icon) return null
+  if (!building) return { icon: at(icon.path), touch: at(icon.path), manifest: at('/manifest.webmanifest') }
+  const v = createHash('sha1').update(readFileSync(icon.file)).digest('hex').slice(0, 10)
+  return { icon: at(`/favicon.png?v=${v}`), touch: at(`/apple-touch-icon.png?v=${v}`), manifest: at(`/manifest.webmanifest?v=${v}`), v }
 }
 const adminIcon = (html) => {
-  const href = chosenIcon()
-  return href ? html.replace('<link rel="icon" type="image/png" href="../favicon.png" />', `<link rel="icon" href="${href}" />`) : html
+  const links = iconLinks()
+  return links ? html.replace('<link rel="icon" type="image/png" href="../favicon.png" />', `<link rel="icon" type="image/png" href="${links.icon}" />
+  <link rel="apple-touch-icon" href="${links.touch}" />`) : html
 }
-const brandIcon = () => {
-  return {
-    name: 'brand-icon',
-    configResolved(config) { siteBase = config.base },
-    transformIndexHtml(html) {
-      const href = chosenIcon()
-      if (!href) return html
-      return html
-        .replace('<link rel="icon" type="image/png" href="/favicon.png" />', `<link rel="icon" href="${href}" />`)
-        .replace('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />', `<link rel="apple-touch-icon" href="${href}" />`)
-    },
-  }
-}
+const brandIcon = () => ({
+  name: 'brand-icon',
+  configResolved(config) { siteBase = config.base; building = config.command === 'build' },
+  transformIndexHtml(html) {
+    const links = iconLinks()
+    if (!links) return html
+    return html
+      .replace('<link rel="icon" type="image/png" href="/favicon.png" />', `<link rel="icon" type="image/png" href="${links.icon}" />`)
+      .replace('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />', `<link rel="apple-touch-icon" href="${links.touch}" />`)
+      .replace('<link rel="manifest" href="/manifest.webmanifest" />', `<link rel="manifest" href="${links.manifest}" />`)
+  },
+  async closeBundle() {
+    const icon = chosenIcon()
+    if (!building || !icon) return
+    const { v } = iconLinks()
+    const { default: sharp } = await import('sharp')
+    const dark = { r: 9, g: 7, b: 13, alpha: 1 }
+    const make = (size, out, background) => sharp(icon.file).resize(size, size, { fit: 'contain', background: background || { r: 0, g: 0, b: 0, alpha: 0 } }).flatten(background ? { background } : false).png().toFile(resolve('dist', out))
+    // the tab keeps any see-through edges; home screens fill them with the site's dark background
+    await Promise.all([make(96, 'favicon.png'), make(180, 'apple-touch-icon.png', dark), make(192, 'icon-192.png', dark), make(512, 'icon-512.png', dark)])
+    const manifest = JSON.parse(readFileSync(resolve('dist/manifest.webmanifest'), 'utf8'))
+    manifest.icons = (manifest.icons || []).map((i) => ({ ...i, src: `${String(i.src).split('?')[0]}?v=${v}` }))
+    writeFileSync(resolve('dist/manifest.webmanifest'), JSON.stringify(manifest, null, 2))
+  },
+})
 
 const adminBundle = () => ({
   name: 'admin-bundle',
