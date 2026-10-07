@@ -2,19 +2,19 @@
   "redrawTitle": "Then and now",
   "buttons": [
     {
+      "page": "shop",
+      "style": "filled",
+      "label": "Go to Shop"
+    },
+    {
       "label": "See the work",
       "page": "work",
-      "style": "filled"
+      "style": "outline"
     },
     {
       "label": "Commission a piece",
       "page": "commissions",
       "style": "outline"
-    },
-    {
-      "page": "shop",
-      "style": "outline",
-      "label": "Go to Shop"
     }
   ],
   "marquee": [
