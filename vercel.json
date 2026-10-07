@@ -23,6 +23,9 @@
   "functions": {
     "api/checkout.js": {
       "includeFiles": "content/**"
+    },
+    "api/auth.js": {
+      "includeFiles": "content/site/**"
     }
   }
 }

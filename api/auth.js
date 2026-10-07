@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { configured, newPass, same } from './_session.js'
 
 /* Admin login on Vercel: the passcode (ADMIN_PASSCODE in the Vercel project settings) is traded
@@ -7,9 +9,13 @@ import { configured, newPass, same } from './_session.js'
    back. A plain visit to this address still answers with a small page of its own, in the message
    exchange Decap expects from a login window: that is the way in if Decap ever shows its own
    "Log in" button (for instance when a pass runs out in the middle of a session). */
+// the browser tab icon chosen in the admin (vercel.json ships content/site with this function)
+const icon = (() => {
+  try { const chosen = JSON.parse(readFileSync(join(process.cwd(), 'content/site/brand.json'), 'utf8')).icon; return typeof chosen === 'string' && chosen.startsWith('/uploads/') ? chosen : '/favicon.png' } catch { return '/favicon.png' }
+})()
 const shell = (body) => `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex"><title>JBeatsArt admin</title>
-<link rel="icon" type="image/png" href="/favicon.png"><link rel="stylesheet" href="/admin/login.css">
+<link rel="icon" href="${icon}"><link rel="stylesheet" href="/admin/login.css">
 <main class="dl">${body}</main></html>`
 
 const form = (wrong) => shell(`<form class="dl-box" method="post" autocomplete="off">

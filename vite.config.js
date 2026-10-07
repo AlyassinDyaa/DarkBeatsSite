@@ -72,18 +72,25 @@ const thumbs = () => {
 }
 
 /* The browser tab icon chosen in the admin (Brand & contact → Browser tab icon) goes straight into
-   the page, so it shows before any script runs and in link previews. Without one, the logo files
-   in public/ stay. */
+   the site's page and the admin's page, so it shows before any script runs and in link previews.
+   Without one, the logo files in public/ stay. */
+let siteBase = '/'
+const chosenIcon = () => {
+  let icon = ''
+  try { icon = JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')).icon || '' } catch { /* no brand file: keep the logo */ }
+  return typeof icon === 'string' && icon.startsWith('/uploads/') ? siteBase.replace(/\/$/, '') + icon : ''
+}
+const adminIcon = (html) => {
+  const href = chosenIcon()
+  return href ? html.replace('<link rel="icon" type="image/png" href="../favicon.png" />', `<link rel="icon" href="${href}" />`) : html
+}
 const brandIcon = () => {
-  let base = '/'
   return {
     name: 'brand-icon',
-    configResolved(config) { base = config.base },
+    configResolved(config) { siteBase = config.base },
     transformIndexHtml(html) {
-      let icon = ''
-      try { icon = JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')).icon || '' } catch { /* no brand file: keep the logo */ }
-      if (typeof icon !== 'string' || !icon.startsWith('/uploads/')) return html
-      const href = base.replace(/\/$/, '') + icon
+      const href = chosenIcon()
+      if (!href) return html
       return html
         .replace('<link rel="icon" type="image/png" href="/favicon.png" />', `<link rel="icon" href="${href}" />`)
         .replace('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />', `<link rel="apple-touch-icon" href="${href}" />`)
@@ -113,7 +120,7 @@ const adminBundle = () => ({
       const name = (req.url || '').split('?')[0].replace(/^\//, '')
       // "/admin" and "/admin/" would otherwise fall through to the site's own router.
       if (path === '/admin') { res.statusCode = 302; res.setHeader('Location', '/admin/'); return res.end() }
-      if (name === '') { res.setHeader('Content-Type', 'text/html'); return res.end(readFileSync(resolve('public/admin/index.html'))) }
+      if (name === '') { res.setHeader('Content-Type', 'text/html'); return res.end(adminIcon(readFileSync(resolve('public/admin/index.html'), 'utf8'))) }
       if (name === 'thumbs.json') { res.setHeader('Content-Type', 'application/json'); res.setHeader('Cache-Control', 'no-store'); return res.end(JSON.stringify(thumbs())) }
       if (!name.endsWith('.js') || !existsSync(resolve(CMS_DIR, name))) return next()
       res.setHeader('Content-Type', 'application/javascript')
@@ -123,6 +130,7 @@ const adminBundle = () => ({
   closeBundle() {
     try {
       mkdirSync(resolve('dist/admin'), { recursive: true })
+      writeFileSync(resolve('dist/admin/index.html'), adminIcon(readFileSync(resolve('dist/admin/index.html'), 'utf8')))
       for (const f of cmsFiles()) copyFileSync(resolve(CMS_DIR, f), resolve('dist/admin', f))
       writeFileSync(resolve('dist/admin/thumbs.json'), JSON.stringify(thumbs()))
       // On Vercel there is no Netlify login, so the admin logs people in with a passcode instead
