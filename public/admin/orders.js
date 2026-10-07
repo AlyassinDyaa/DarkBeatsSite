@@ -220,15 +220,6 @@
     return [o.name, o.email, o.phone, o.id, o.track.number, ...o.items.map((i) => i.name), ...addressLines(o.address)].join(' ').toLowerCase().includes(q)
   }
 
-  // a "Delete test data" button for each screen (shown only while there is test data)
-  const clearButtons = []
-  const clearBtn = () => {
-    const b = el('button', { type: 'button', className: 'ia-btn ghost io-clear', textContent: 'Delete test data', hidden: true })
-    b.addEventListener('click', () => clearTest())
-    clearButtons.push(b)
-    return b
-  }
-
   // ---------- pages: a long list shows 10, 15, 20 or 50 at a time (the choice is remembered here)
   const opager = el('nav', { className: 'io-pager', ariaLabel: 'Pages of orders' })
   const cpager = el('nav', { className: 'io-pager', ariaLabel: 'Pages of customers' })
@@ -294,7 +285,7 @@
           el('h1', { textContent: 'Orders' }),
           el('p', { className: 'ia-lead', textContent: 'Everything paid through Stripe: prints from the Shop and support. Mark each order as you pack and post it; the tracking number goes with it.' }),
         ]),
-        el('div', { className: 'io-actions' }, [clearBtn(), download, refresh]),
+        el('div', { className: 'io-actions' }, [download, refresh]),
       ]),
       sampleNote(),
       stats,
@@ -330,7 +321,6 @@
     }))
     badge()
 
-    syncClear()
     if (!state.loaded) { list.replaceChildren(state.problem ? problemBox() : el('div', { className: 'io-empty', textContent: 'Fetching the orders from Stripe…' })); foot.replaceChildren(); opager.replaceChildren(); return }
     if (!visible().length) opager.replaceChildren()
     const shown = visible()
@@ -554,7 +544,7 @@
           el('h1', { textContent: 'Customers' }),
           el('p', { className: 'ia-lead', textContent: 'Everyone who has bought a print or given support, gathered from the orders. Open someone to see what they bought and get in touch.' }),
         ]),
-        el('div', { className: 'io-actions' }, [clearBtn(), cdownload, crefresh]),
+        el('div', { className: 'io-actions' }, [cdownload, crefresh]),
       ]),
       sampleNote(),
       cstats,
@@ -690,7 +680,7 @@
           el('h1', { textContent: 'Discounts' }),
           el('p', { className: 'ia-lead', textContent: 'Make a discount code for chosen customers (each gets a code of their own) or for anyone you give the code to. Buyers type it in the discount box when they pay.' }),
         ]),
-        el('div', { className: 'io-actions' }, [clearBtn(), drefresh]),
+        el('div', { className: 'io-actions' }, [drefresh]),
       ]),
       sampleNote(),
       dform,
@@ -807,7 +797,6 @@
     const shown = all.filter((d) => discIn(d, disc.view) && (!q || [d.code, d.name, d.email, d.label].join(' ').toLowerCase().includes(q))).sort(by[disc.sort] || by.new)
     dsummary.replaceChildren(el('span', { textContent: `${shown.length === all.length ? 'All' : `${shown.length} of`} ${many(all.length, 'code')}` }))
     if (!shown.length) dpager.replaceChildren()
-    syncClear()
     dlist.replaceChildren(...(shown.length ? paged('codes', shown, [disc.view, disc.q, disc.sort].join('|'), dpager, paintDiscountList).map(discRow) : [el('div', { className: 'io-empty' }, [el('strong', { textContent: all.length ? 'Nothing here' : 'No discount codes yet' }), el('span', { textContent: all.length ? 'Try another filter.' : 'Make the first one above.' })])]))
   }
 
@@ -968,13 +957,19 @@
     run: async () => { await dropCodes([d]); paintDiscounts() },
   })
 
-  // test data: payments and codes made with Stripe's test keys, cleared in one go
-  const syncClear = () => { const any = state.orders.some((o) => o.test) || disc.list.some((d) => d.test); clearButtons.forEach((b) => { b.hidden = !any }) }
+  // test data: the samples, or payments and codes made with Stripe's test keys, cleared in one go.
+  // Its button lives on Site → Show / hide, under the sample data switch.
   const clearTest = async () => {
-    if (!disc.loaded && !disc.loading) await loadDiscounts()
+    await checkSamples(true)
+    if (!state.loaded) await load(true)
+    if (!disc.loaded) await loadDiscounts()
     const orders = state.orders.filter((o) => o.test)
     const codes = disc.list.filter((d) => d.test)
     const buyers = new Set(orders.map(who)).size
+    if (!orders.length && !codes.length) {
+      modal({ title: 'No test data', content: [el('p', { textContent: state.problem || disc.problem ? 'The orders could not be read just now, so there is nothing to delete. Try again in a moment.' : 'There are no test orders, customers or discount codes to delete.' })], actions: (close) => { const b = el('button', { type: 'button', className: 'ia-btn', textContent: 'Close' }); b.addEventListener('click', close); return [b] } })
+      return
+    }
     sure({
       title: 'Delete all test data?',
       lines: [`${many(orders.length, 'test order')} (from ${many(buyers, 'test customer')}) and ${many(codes.length, 'test discount code')} leave the admin for good. Test codes stop working.`, sampleMode ? 'This is the sample data: it comes back when the page reloads, until it is switched off under Site → Show / hide → Admin.' : 'Only things made with Stripe test keys are touched. Real orders and codes stay as they are.'],
@@ -1036,6 +1031,21 @@
       },
     })
   }
+
+  const testBox = el('div', { className: 'io-testbox' }, [
+    el('div', {}, [el('strong', { textContent: 'Test data' }), el('span', { textContent: 'Deletes every test order, test customer and test discount code from Orders, Customers and Discounts: the sample data, and anything paid with Stripe test keys. Real orders and codes are never touched. You are asked first.' })]),
+    (() => {
+      const b = el('button', { type: 'button', className: 'ia-btn ghost io-clear', textContent: 'Delete test data' })
+      b.addEventListener('click', async () => { b.disabled = true; b.textContent = 'Checking…'; try { await clearTest() } finally { b.disabled = false; b.textContent = 'Delete test data' } })
+      return b
+    })(),
+  ])
+  // the form is drawn by the admin itself: the box goes in under the switch whenever the form is showing
+  setInterval(() => {
+    if (!location.hash.startsWith('#/collections/site/entries/visibility')) return
+    const field = document.querySelector('label[for^="samples-field"]')?.closest('[class*="ControlContainer"]')
+    if (field && field.nextElementSibling !== testBox) field.after(testBox)
+  }, 400)
 
   // ---------- its place in the navigation, with the number still to post
   const count = el('span', { className: 'io-count', hidden: true })

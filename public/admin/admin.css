@@ -1021,3 +1021,9 @@ html[data-ia-orders='discounts'] body:has([class*='AppHeader'], [class*='Toolbar
   .io-modal { max-height: calc(100svh - 20px); }
   .io-pager { justify-content: center; }
 }
+
+/* Site → Show / hide: deleting the test data, under the sample data switch */
+.io-testbox { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-top: 12px; padding: 14px 16px; border: 1px solid rgba(255, 107, 127, 0.35); border-radius: var(--r-field); background: rgba(255, 107, 127, 0.05); font-family: var(--body); }
+.io-testbox > div { display: grid; gap: 3px; flex: 1 1 280px; }
+.io-testbox strong { font-size: 0.78rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg); }
+.io-testbox span { font-size: 0.84rem; line-height: 1.45; color: var(--dim); }
