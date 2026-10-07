@@ -27,10 +27,10 @@
   ],
   "galleryLabel": "The work",
   "figure": {
-    "src": "/uploads/yr.webp",
+    "src": "/uploads/leonk.webp",
     "layer": "behind",
     "ground": false,
-    "size": 65,
+    "size": 107,
     "x": -19,
     "y": -31
   },
