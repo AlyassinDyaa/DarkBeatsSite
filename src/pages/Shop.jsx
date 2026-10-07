@@ -63,8 +63,8 @@ export default function Shop() {
   const count = (field, value, other, otherValue) => work.filter((p) => (value === 'All' || p[field] === value) && (otherValue === 'All' || p[other] === otherValue)).length
   const choose = (c) => { setSel(null); setFilter(c) }
   const chooseKind = (t) => { setSel(null); setKind(t) }
-  const subjectOptions = ['All', ...categories].map((c) => ({ value: c, label: c === 'All' ? 'All subjects' : c, count: count('category', c, 'type', kind) }))
-  const typeOptions = ['All', ...types].map((t) => ({ value: t, label: t === 'All' ? 'All products' : t, count: count('type', t, 'category', filter) }))
+  const subjectOptions = ['All', ...categories].map((c) => ({ value: c, label: c === 'All' ? 'All categories' : c, count: count('category', c, 'type', kind) }))
+  const typeOptions = ['All', ...types].map((t) => ({ value: t, label: t === 'All' ? 'All types' : t, count: count('type', t, 'category', filter) }))
   return (
     <Page title="Shop">
       <header className="page-head container">
@@ -86,8 +86,8 @@ export default function Shop() {
         )}
         {(categories.length > 1 || types.length > 1) && (
           <div className="shop-filters">
-            {types.length > 1 && <FilterMenu label="Product" value={kind} options={typeOptions} onChange={chooseKind} />}
-            {categories.length > 1 && <FilterMenu label="Subject" value={filter} options={subjectOptions} onChange={choose} />}
+            {types.length > 1 && <FilterMenu label="Type" value={kind} options={typeOptions} onChange={chooseKind} />}
+            {categories.length > 1 && <FilterMenu label="Category" value={filter} options={subjectOptions} onChange={choose} />}
             {(filter !== 'All' || kind !== 'All') && <button type="button" className="shop-filters-clear" onClick={() => { choose('All'); chooseKind('All') }}>Clear</button>}
             <span className="shop-filters-count">{shown.length} {shown.length === 1 ? 'piece' : 'pieces'}</span>
           </div>

@@ -90,7 +90,7 @@
     'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
-    'site/categories': 'The Shop’s two lists: subjects (Heroes, Villains...) and products (Posters, Stickers...).',
+    'site/categories': 'The Shop’s two lists: categories (Heroes, Villains...) and types (Posters, Stickers...).',
     'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
   }
   Object.assign(ICONS, {
@@ -332,6 +332,16 @@
     }
     markRequired(pane)
     nameTheForm()
+    for (const input of pane.querySelectorAll('.ia-compact input:not([placeholder])')) {
+      const label = input.closest('[class*="ControlContainer"]')?.querySelector('label')
+      if (label) input.placeholder = label.textContent.replace(/\s*\(optional\)\s*$/i, '')
+    }
+    // the lists of Shop categories are drawn as compact rows
+    for (const field of pane.querySelectorAll('[class*="ControlContainer"]')) {
+      const name = (field.querySelector(':scope > [class*="ControlTopbar"] label[for]') || {}).htmlFor || ''
+      const compact = currentSection() === 'site' && /^(subjects|types)-field/.test(name)
+      if (compact !== field.classList.contains('ia-compact')) field.classList.toggle('ia-compact', compact)
+    }
   }
 
   /* Decap heads every form "Writing in X collection". Say what is being edited instead: the
