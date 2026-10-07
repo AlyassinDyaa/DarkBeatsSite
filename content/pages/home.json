@@ -13,7 +13,7 @@
     },
     {
       "page": "shop",
-      "style": "filled",
+      "style": "outline",
       "label": "Go to Shop"
     }
   ],
