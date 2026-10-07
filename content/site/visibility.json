@@ -11,7 +11,7 @@
     "ticker": true,
     "latest": true,
     "gallery": true,
-    "redraws": true,
+    "redraws": false,
     "commissions": false,
     "events": true,
     "support": false
