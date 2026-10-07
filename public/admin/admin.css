@@ -1118,8 +1118,8 @@ html[data-ia-orders='discounts'] body:has([class*='AppHeader'], [class*='Toolbar
 .io-piece-ph svg { width: 22px; height: 22px; }
 .io-piece-info { min-width: 0; display: grid; align-content: start; gap: 8px; }
 .io-piece-info strong { font-size: 0.95rem; color: var(--fg); line-height: 1.25; overflow-wrap: anywhere; }
-.io-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.io-chip { display: inline-flex; align-items: baseline; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; color: var(--fg); background: rgba(232, 230, 224, 0.07); }
-.io-chip small { font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); }
+.io-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.io-tag { display: inline-flex; align-items: baseline; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: 0.78rem; color: var(--fg); background: rgba(232, 230, 224, 0.07); }
+.io-tag small { font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mute); }
 .io-piece-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .io-piece-foot b { font-variant-numeric: tabular-nums; color: var(--fg); }

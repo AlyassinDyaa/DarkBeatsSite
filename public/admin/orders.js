@@ -284,7 +284,7 @@
         el('div', {}, [
           el('div', { className: 'ia-kicker' }, ['Orders ', testNote]),
           el('h1', { textContent: 'Orders' }),
-          el('p', { className: 'ia-lead', textContent: 'Everything paid through Stripe: prints from the Shop and support. Mark each order as you pack and post it; the tracking number goes with it.' }),
+          el('p', { className: 'ia-lead', textContent: 'Everything paid by card (Stripe) or PayPal: prints from the Shop and support. Mark each order as you pack and post it; the buyer sees each step and the tracking number in their account.' }),
         ]),
         el('div', { className: 'io-actions' }, [download, refresh]),
       ]),
@@ -376,12 +376,12 @@
 
   /* What was bought, piece by piece: its picture, size, type, signed or not, how many, and a way
      into the piece itself. The details come from the site's content, matched by the line's name. */
-  const chip = (k, v) => (v === '' || v == null ? null : el('span', { className: 'io-chip' }, [el('small', { textContent: k }), String(v)]))
+  const chip = (k, v) => (v === '' || v == null ? null : el('span', { className: 'io-tag' }, [el('small', { textContent: k }), String(v)]))
   const piecesPanel = (o) => el('div', { className: 'io-pieces' }, o.items.map((i) => el('div', { className: 'io-piece' }, [
     i.src ? el('img', { src: i.src, alt: '', loading: 'lazy' }) : el('span', { className: 'io-piece-ph' }, [svg(PICTURE)]),
     el('div', { className: 'io-piece-info' }, [
       el('strong', { textContent: i.title || i.name }),
-      el('div', { className: 'io-chips' }, [
+      el('div', { className: 'io-tags' }, [
         chip('Size', i.size || (i.slug ? 'Standard' : '')),
         chip('Type', i.type),
         chip('Signed', i.signed == null ? '' : i.signed ? 'Yes' : 'No'),
