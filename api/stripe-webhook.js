@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { recordOrder, shapeAddress } from './_orders.js'
+import { readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -69,6 +69,8 @@ export default async function handler(req, res) {
         test: !o.livemode,
         createdAt: new Date((o.created || Date.now() / 1000) * 1000),
       })
+      // paid: what was bought leaves the buyer's saved cart, even if they never come back to the site
+      await takeFromCart(userId, readBought(o.metadata && o.metadata.bought))
     }
     if (event.type === 'charge.refunded' && o && o.payment_intent && o.refunded) {
       await (await db()).collection('orders').updateOne({ pi: o.payment_intent }, { $set: { status: 'refunded', updatedAt: new Date() } })

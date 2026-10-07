@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Page from '../components/Page'
-import { accountPage, asset, brand, canBuy, faceLook, money, priceOf, priceVaries, soldOut, work } from '../data/site'
+import { accountPage, asset, brand, canBuy, faceLook, money, priceOf, priceVaries, shop, soldOut, work } from '../data/site'
 import Poster from '../components/Poster'
 import Wordmark from '../components/Wordmark'
 import { useAccount } from '../hooks/useAccount'
@@ -339,7 +339,7 @@ const STATUS_TEXT = { new: 'Being prepared', packed: 'Packed', shipped: 'On its 
 const longDay = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
 const priced = (n, code) => { try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: code || 'AUD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n) } catch { return money(n) } }
 
-function OrderCard({ o }) {
+function OrderCard({ o, onRemove }) {
   const at = STEPS.findIndex(([k]) => k === o.status)
   const support = o.kind === 'support'
   return (
@@ -349,7 +349,14 @@ function OrderCard({ o }) {
           <strong>{support ? 'Support' : `Order ${o.number}`}</strong>
           <small>{longDay(o.createdAt)}{o.provider === 'paypal' ? ' · PayPal' : ''}</small>
         </div>
-        <span className={`acc-pill is-${o.status}`}>{support ? 'Thank you' : STATUS_TEXT[o.status] || 'Paid'}</span>
+        <span className="acc-order-right">
+          <span className={`acc-pill is-${o.status}`}>{support ? 'Thank you' : STATUS_TEXT[o.status] || 'Paid'}</span>
+          {onRemove && (
+            <button type="button" className="acc-order-del" onClick={() => onRemove(o)} title="Remove from your account" aria-label={support ? 'Remove this support payment from your account' : `Remove order ${o.number} from your account`}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6" /></svg>
+            </button>
+          )}
+        </span>
       </header>
       <ul className="acc-items">
         {o.items.map((i, n) => {
@@ -387,21 +394,76 @@ function OrderCard({ o }) {
 }
 
 // the customer's orders, fetched once for the whole account page
-function useOrders() {
+function useOrders(justPaid = false) {
   const { call, user } = useAccount()
   const [orders, setOrders] = useState(null)
   const [problem, setProblem] = useState('')
   const verified = Boolean(user && user.verified) // confirming the email can bring more orders
   useEffect(() => {
     let stale = false
-    call('orders').then((s) => { if (!stale) setOrders(s.orders || []) }).catch((e) => { if (!stale) setProblem(e.message) })
-    return () => { stale = true }
-  }, [call, verified])
-  return { orders, problem }
+    const ask = () => call('orders').then((s) => { if (!stale) setOrders(s.orders || []) }).catch((e) => { if (!stale) setProblem(e.message) })
+    ask()
+    // just back from paying: the payment service tells the site a moment later, so ask again a few times
+    const later = justPaid ? [2500, 6000, 12000].map((ms) => setTimeout(ask, ms)) : []
+    // back on this tab: the admin may have posted something meanwhile (status, tracking)
+    const back = () => { if (document.visibilityState === 'visible') ask() }
+    document.addEventListener('visibilitychange', back)
+    return () => { stale = true; later.forEach(clearTimeout); document.removeEventListener('visibilitychange', back) }
+  }, [call, verified, justPaid])
+  const drop = useCallback((o) => setOrders((list) => (list || []).filter((x) => x !== o)), [])
+  return { orders, problem, drop }
 }
 
-function Orders({ orders, problem }) {
+/* Removing an order from the account: only with the password. The shop keeps its own record. */
+function RemoveOrder({ order, onClose, onRemoved }) {
+  const { call } = useAccount()
+  const f = useForm({ password: '' })
+  const open = Boolean(order)
+  const box = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const before = document.activeElement
+    const key = (e) => { if (e.key === 'Escape') onClose() }
+    addEventListener('keydown', key)
+    const t = setTimeout(() => box.current?.querySelector('input')?.focus(), 60)
+    window.__lenis?.stop?.()
+    return () => { removeEventListener('keydown', key); clearTimeout(t); window.__lenis?.start?.(); before?.focus?.() }
+  }, [open, onClose])
+  const live = order && !['delivered', 'refunded'].includes(order.status) && order.kind !== 'support'
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="acc-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onMouseDown={(e) => { if (e.target === e.currentTarget && !f.busy) onClose() }}>
+          <motion.form ref={box} className="acc-modal-box" role="alertdialog" aria-modal="true" aria-labelledby="acc-del-title" aria-describedby="acc-del-text" noValidate
+            initial={{ opacity: 0, y: 18, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
+            onSubmit={(e) => f.run(e, async () => { await call('removeOrder', { number: order.number, password: f.values.password }); f.set('password')(''); onRemoved(order) })}>
+            <button type="button" className="acc-modal-x" onClick={onClose} aria-label="Close" disabled={f.busy}>×</button>
+            <span className="acc-modal-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6" /></svg></span>
+            <h2 id="acc-del-title">Remove this order?</h2>
+            <p id="acc-del-text">
+              {order.kind === 'support' ? 'This support payment' : `Order ${order.number}`} leaves your account for good.
+              {live ? ' It has not reached you yet: it is still posted to you, but its tracking will no longer show here.' : ''}
+              {' '}The shop keeps its own record of the sale. Type your password to be sure.
+            </p>
+            <div className="acc-modal-field">
+              <Field label="Your password" type="password" autoComplete="current-password" value={f.values.password} onChange={f.set('password')} error={errorFor(f.problem, 'password')} />
+            </div>
+            <Problem text={f.problem.field ? '' : f.problem.text} />
+            <div className="acc-modal-actions">
+              <button type="button" className="btn ghost sm" onClick={onClose} disabled={f.busy}>Keep it</button>
+              <button type="submit" className="btn sm acc-modal-yes" disabled={f.busy || !f.values.password}>{f.busy ? 'Removing…' : 'Remove order'}</button>
+            </div>
+          </motion.form>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+function Orders({ orders, problem, onRemoved }) {
   const { user } = useAccount()
+  const [removing, setRemoving] = useState(null)
+  const close = useCallback(() => setRemoving(null), [])
   if (problem) return <p className="acc-problem">{problem}</p>
   if (!orders) return <p className="acc-wait">Fetching your orders…</p>
   if (!orders.length) return (
@@ -411,7 +473,12 @@ function Orders({ orders, problem }) {
       <Link className="btn sm" to="/shop">Go to the Shop <span className="arrow">→</span></Link>
     </div>
   )
-  return <div className="acc-orders">{orders.map((o) => <OrderCard key={`${o.number}${o.createdAt}`} o={o} />)}</div>
+  return (
+    <>
+      <div className="acc-orders">{orders.map((o) => <OrderCard key={`${o.number}${o.createdAt}`} o={o} onRemove={onRemoved ? setRemoving : undefined} />)}</div>
+      <RemoveOrder order={removing} onClose={close} onRemoved={(o) => { setRemoving(null); onRemoved(o) }} />
+    </>
+  )
 }
 
 function Details({ owned = [] }) {
@@ -634,7 +701,11 @@ function Home() {
   const [params, setParams] = useSearchParams()
   const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'overview'
   const [resent, setResent] = useState('')
-  const { orders, problem } = useOrders()
+  const paid = params.get('thanks') === '1'
+  const { orders, problem, drop } = useOrders(paid)
+  // back from paying: what was bought leaves the cart
+  const { settle } = useCart()
+  useEffect(() => { if (paid) settle() }, [paid, settle])
   const [leaving, setLeaving] = useState(false) // the 'log out?' window
   const owned = [...new Map((orders || []).filter((o) => o.kind !== 'support').flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
   const grid = useRef(null)
@@ -642,7 +713,7 @@ function Home() {
   useEffect(() => { const name = TABS.find(([k]) => k === tab)[1]; document.title = `${tab === 'overview' ? 'Your account' : name} — ${brand.name}` }, [tab])
   if (!user) return <Navigate to="/account/login?next=/account" replace />
   const first = (user.name || '').split(' ')[0]
-  const note = params.get('welcome') ? `Welcome${first ? `, ${first}` : ''}. Your account is ready.` : params.get('reset') ? 'Your new password is saved, and you are logged in.' : ''
+  const note = paid ? `${shop.thanksTitle} ${shop.thanksText}` : params.get('welcome') ? `Welcome${first ? `, ${first}` : ''}. Your account is ready.` : params.get('reset') ? 'Your new password is saved, and you are logged in.' : ''
   // another section: the page stays where it is; only if the panel and the section start above the
   // screen does it glide up to them (never back to the very top)
   const go = (k) => {
@@ -737,7 +808,7 @@ function Home() {
               </div>
             )}
             {tab === 'overview' && <Overview orders={orders} go={go} />}
-            {tab === 'orders' && <Orders orders={orders} problem={problem} />}
+            {tab === 'orders' && <Orders orders={orders} problem={problem} onRemoved={drop} />}
             {tab === 'saved' && <Saved />}
             {tab === 'details' && <Details owned={owned} />}
             {tab === 'security' && <Security />}

@@ -24,6 +24,7 @@ import {
         { action: 'saved', saved }                         the pieces kept for later (slugs)
         { action: 'cart', cart }                          keeps the cart with the account
         { action: 'orders' }                              this customer's orders, newest first
+        { action: 'removeOrder', number, password }       takes an order out of their account (the shop keeps it)
         { action: 'everywhere' }                          logs out every device
         { action: 'delete', password }                    deletes the account (orders stay, unlinked)
 
@@ -234,8 +235,22 @@ export default async function handler(req, res) {
     if (action === 'orders') {
       // orders placed while logged in, and (once the address is confirmed) any placed with it as a guest
       const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] } }).sort({ createdAt: -1 }).limit(100).toArray()
+      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true } }).sort({ createdAt: -1 }).limit(100).toArray()
       return say(res, 200, { orders: list.map(forCustomer) })
+    }
+
+    if (action === 'removeOrder') {
+      // out of the customer's account, once they type their password. The shop keeps the sale on
+      // record (posting, refunds, tax) and the admin still sees it.
+      if (await tooMany(`login:${user.email}`, 8, 15)) return say(res, 429, { message: 'Too many tries. Wait 15 minutes.' })
+      if (!(await checkPassword(body.password, user.password))) { await noteTry(`login:${user.email}`); return say(res, 400, { message: 'The password is not right.', field: 'password' }) }
+      const number = String(body.number || '').trim().toUpperCase().slice(0, 20)
+      const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
+      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true } }).limit(200).toArray()
+      const order = number && list.find((o) => forCustomer(o).number === number)
+      if (!order) return say(res, 404, { message: 'That order is not in your account any more.' })
+      await d.collection('orders').updateOne({ ref: order.ref }, { $set: { customerRemoved: true, removedAt: new Date() } })
+      return say(res, 200, { removed: number })
     }
 
     if (action === 'everywhere') {

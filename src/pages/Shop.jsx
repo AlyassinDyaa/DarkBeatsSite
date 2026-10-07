@@ -53,8 +53,9 @@ export default function Shop() {
   const thanks = params.get('thanks') === '1'
   const cart = useCart()
   const account = useAccount()
-  const clearCart = cart.clear
-  useEffect(() => { if (thanks) clearCart() }, [thanks, clearCart])
+  // back from paying: what was bought leaves the cart, and a logged-in buyer goes on to their orders
+  const settle = cart.settle
+  useEffect(() => { if (thanks) settle() }, [thanks, settle])
   // PayPal sends the buyer back here with ?paypal=back&token=<order>; the payment is only taken now
   const navigate = useNavigate()
   const paypalOrder = params.get('paypal') === 'back' ? params.get('token') : null
@@ -67,12 +68,12 @@ export default function Shop() {
         const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ capture: paypalOrder }) })
         const said = await answer.json().catch(() => ({}))
         if (stale) return
-        if (answer.ok && said.paid) navigate('/shop?thanks=1', { replace: true })
+        if (answer.ok && said.paid) navigate(account.user ? '/account?tab=orders&thanks=1' : '/shop?thanks=1', { replace: true })
         else setPayProblem(said.message || 'PayPal did not confirm the payment. Nothing was charged.')
       } catch { if (!stale) setPayProblem('Could not reach the shop to confirm the PayPal payment. Check the connection and reload this page.') }
     })()
     return () => { stale = true }
-  }, [paypalOrder, navigate])
+  }, [paypalOrder, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
   const [filter, setFilter] = useState('All') // subject
   const [kind, setKind] = useState('All') // type
   const [sel, setSel] = useState(null)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useCart } from '../hooks/useCart'
+import { notePaying, useCart } from '../hooks/useCart'
 import { useAccount } from '../hooks/useAccount'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -50,7 +50,7 @@ export default function Buy({ piece }) {
     try {
       const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: way, slug: piece.slug, ...(choice ? { signed } : {}), ...(chosen ? { size: chosen } : {}) }) })
       const said = await answer.json().catch(() => ({}))
-      if (answer.ok && said.url) { window.location.assign(said.url); return } // stays "busy" while the page changes
+      if (answer.ok && said.url) { notePaying([{ slug: piece.slug, size: chosen || '', signed: choice && signed }]); window.location.assign(said.url); return } // stays "busy" while the page changes
       setNote(said.message || 'The checkout did not answer. Try again in a moment.')
     } catch {
       setNote('Could not reach the checkout. Check the connection and try again.')

@@ -1330,3 +1330,11 @@ a.buy-btn { text-decoration: none; }
 .acct2-id > .acct-avatar { margin-top: 0; }
 .acct2-actions { padding-bottom: 0; }
 @media (max-width: 799px) { .acct2-id { padding-top: 24px; gap: 12px; } .acct2-id > .acct-avatar { margin-top: 0; width: 112px; height: 112px; } }
+
+/* removing an order from the account: a small bin beside its status, and its password window */
+.acc-order-right { display: inline-flex; align-items: center; gap: 10px; }
+.acc-order-del { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line); color: var(--fg-mute); cursor: pointer; transition: color 0.2s, border-color 0.2s; }
+.acc-order-del svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.acc-order-del:hover, .acc-order-del:focus-visible { color: #ff8a9b; border-color: rgba(255, 107, 127, 0.55); outline: 0; }
+.acc-modal-field { margin-top: 18px; }
+.acc-modal-box .acc-problem { margin-top: 12px; }

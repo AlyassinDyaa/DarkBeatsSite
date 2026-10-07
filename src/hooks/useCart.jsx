@@ -8,8 +8,15 @@ import { useAccount } from './useAccount'
    from the content, never from what was stored. The checkout reads the prices again itself.
    With a customer logged in, the cart is the account's: it arrives with the login (joined with
    whatever was added before logging in), every change is saved to the account, and logging out
-   empties it on this device. */
+   empties it on this device.
+   Paying: what goes to the payment page is noted first (notePaying). Back from paying, settle()
+   takes exactly those lines out of the cart, also when the account's saved cart arrives a moment
+   later (the server takes them out of the saved cart too, once the payment is confirmed). */
 const KEY = 'jb.cart'
+const PAYING = 'jb.paying'
+export const notePaying = (lines) => {
+  try { sessionStorage.setItem(PAYING, JSON.stringify(lines.map((l) => [l.slug, l.size || '', l.signed ? 1 : 0]))) } catch { /* then the whole cart empties after paying */ }
+}
 const MAX_QTY = 10
 const Cart = createContext(null)
 const clamp = (n) => Math.min(MAX_QTY, Math.max(1, Math.round(Number(n) || 1)))
@@ -25,10 +32,17 @@ export function CartProvider({ children }) {
   const account = useAccount()
   const who = account.user ? account.user.email : ''
   const owner = useRef(null) // whose cart this is now
+  const paidFor = useRef(undefined) // back from paying: which lines are bought (read once per page load)
+  const bought = useRef(null) // those lines, still to leave a saved cart that has not arrived yet
   const fromAccount = account.user ? account.user.cart : null
   useEffect(() => {
     if (!account.ready) return
-    if (who && owner.current !== who) { owner.current = who; setRaw(Array.isArray(fromAccount) ? fromAccount : []) }
+    if (who && owner.current !== who) {
+      owner.current = who
+      const gone = bought.current
+      bought.current = null
+      setRaw(Array.isArray(fromAccount) ? fromAccount.filter((l) => !(gone && gone(l))) : [])
+    }
     else if (!who && owner.current) { owner.current = null; setRaw([]) }
   }, [who, account.ready]) // eslint-disable-line react-hooks/exhaustive-deps
   const save = account.call
@@ -59,10 +73,20 @@ export function CartProvider({ children }) {
   const setQty = useCallback((slug, signed, size, qty) => setRaw((r) => r.map((l) => (same(l, slug, signed, size) ? { ...l, qty: clamp(qty) } : l))), [])
   const remove = useCallback((slug, signed, size) => setRaw((r) => r.filter((l) => !same(l, slug, signed, size))), [])
   const clear = useCallback(() => setRaw([]), [])
+  const settle = useCallback(() => {
+    if (paidFor.current === undefined) {
+      try { paidFor.current = JSON.parse(sessionStorage.getItem(PAYING) || 'null'); sessionStorage.removeItem(PAYING) } catch { paidFor.current = null }
+    }
+    const list = paidFor.current
+    // nothing noted (paid from another tab or device): the whole cart empties, as it always did
+    const gone = Array.isArray(list) ? (l) => list.some(([slug, size, signed]) => l.slug === slug && (l.size || '') === size && Boolean(l.signed) === Boolean(signed)) : () => true
+    if (!owner.current) bought.current = gone
+    setRaw((r) => r.filter((l) => !gone(l)))
+  }, [])
 
   const count = lines.reduce((n, l) => n + l.qty, 0)
   const total = lines.reduce((n, l) => n + l.qty * l.each, 0)
-  const value = { lines, count, total, add, setQty, remove, clear, open, setOpen, max: MAX_QTY, stored: raw }
+  const value = { lines, count, total, add, setQty, remove, clear, settle, open, setOpen, max: MAX_QTY, stored: raw }
   return <Cart.Provider value={value}>{children}</Cart.Provider>
 }
 

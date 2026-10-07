@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { asset, brand, money, payLine, payWays, shop } from '../data/site'
-import { useCart } from '../hooks/useCart'
+import { notePaying, useCart } from '../hooks/useCart'
 import { useAccount } from '../hooks/useAccount'
 import { Link } from 'react-router-dom'
 
@@ -13,7 +13,7 @@ async function checkout(items, provider) {
   try {
     const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, provider }) })
     const said = await answer.json().catch(() => ({}))
-    if (answer.ok && said.url) { window.location.href = said.url; return null }
+    if (answer.ok && said.url) { notePaying(items); window.location.href = said.url; return null }
     return said.message || 'The checkout did not answer. Try again in a moment.'
   } catch {
     return 'Could not reach the checkout. Check the connection and try again.'

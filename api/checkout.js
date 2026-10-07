@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { currentUser } from './_users.js'
-import { dbReady, recordOrder, shapeAddress } from './_orders.js'
+import { boughtOf, dbReady, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
@@ -67,6 +67,8 @@ const savePaypal = async (id, said) => {
     address: a ? shapeAddress({ line1: a.address_line_1, line2: a.address_line_2, city: a.admin_area_2, state: a.admin_area_1, postal_code: a.postal_code, country: a.country_code }, ship.name && ship.name.full_name) : null,
     ...(before ? {} : { kind: 'shop', amount: Number(capture.amount && capture.amount.value) || 0, currency: (capture.amount && capture.amount.currency_code) || '', items: [], test: process.env.PAYPAL_MODE !== 'live' }),
   })
+  // paid: what was bought leaves the buyer's saved cart
+  if (before && before.userId) await takeFromCart(before.userId, readBought(before.bought))
 }
 
 export default async function handler(req, res) {
@@ -186,7 +188,7 @@ export default async function handler(req, res) {
       }
       // kept as waiting until the buyer comes back and the payment is taken
       try {
-        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100 })), amount: total / 100, discount: 0, currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
+        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100 })), bought: boughtOf(lines), amount: total / 100, discount: 0, currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
       } catch (e) { console.error('paypal order not saved:', e.message) }
       return res.status(200).json({ url: link.href })
     } catch (e) {
@@ -198,7 +200,8 @@ export default async function handler(req, res) {
   // ---- Stripe: one checkout page
   const ask = new URLSearchParams()
   ask.set('mode', 'payment')
-  ask.set('success_url', `${origin}/shop?thanks=1`)
+  // paid: a logged-in buyer goes to the orders in their account; anyone else back to the shop
+  ask.set('success_url', user ? `${origin}/account?tab=orders&thanks=1` : `${origin}/shop?thanks=1`)
   ask.set('cancel_url', `${origin}/shop`)
   // a box for a discount code, made in the admin's Discounts screen (Stripe checks the code)
   ask.set('allow_promotion_codes', 'true')
@@ -213,7 +216,12 @@ export default async function handler(req, res) {
   })
   ask.set('metadata[order]', summary.slice(0, 500))
   // a logged-in buyer: the order is tied to their account (api/stripe-webhook.js reads this back)
-  if (user) { ask.set('client_reference_id', user._id); ask.set('customer_email', user.email) }
+  if (user) {
+    ask.set('client_reference_id', user._id); ask.set('customer_email', user.email)
+    // what is bought, so the webhook can take it out of their saved cart (Stripe keeps 500 characters)
+    const bought = JSON.stringify(boughtOf(lines))
+    if (bought.length <= 500) ask.set('metadata[bought]', bought)
+  }
   if (shop.shipping !== false) {
     const countries = (Array.isArray(shop.countries) ? shop.countries : []).map((c) => String(c).trim().toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c))
     ;(countries.length ? countries : ['AU']).forEach((c, i) => ask.set(`shipping_address_collection[allowed_countries][${i}]`, c))

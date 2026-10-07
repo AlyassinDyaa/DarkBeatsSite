@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { spawn } from 'node:child_process'
 import { connect } from 'node:net'
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 
 // Copies index.html to 404.html after build so GitHub Pages serves the SPA on deep links.
 const spaFallback = () => ({
@@ -137,28 +137,30 @@ const adminBundle = () => ({
     // These functions run on Vercel. While developing, the same files answer here, so the Buy
     // button and the accounts behave as they will live (without their keys they say so). The
     // Stripe webhook reads its message as it arrived, so its body is left alone.
-    for (const name of ['checkout', 'account', 'stripe-webhook']) {
+    // The admin's Orders and Discounts screens read the Stripe sandbox (and the test database) too.
+    // On Vercel they need the admin's login; this copy has no login (the admin here saves straight
+    // to the files on this computer), so they answer only to this computer, with a pass made here.
+    const ADMIN = ['orders', 'discounts']
+    if (!process.env.ADMIN_PASSCODE) process.env.ADMIN_PASSCODE = randomBytes(24).toString('hex')
+    if (!process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = randomBytes(24).toString('hex')
+    for (const name of ['checkout', 'account', 'stripe-webhook', ...ADMIN]) {
       server.middlewares.use(`/api/${name}`, async (req, res) => {
+        res.status = (code) => { res.statusCode = code; return res }
+        res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }
+        if (ADMIN.includes(name)) {
+          if (!/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(String(req.socket.remoteAddress || ''))) return res.status(403).json({ message: 'Only from this computer.' })
+          const { newPass } = await import(`${pathToFileURL(resolve('api/_session.js')).href}`)
+          req.headers.authorization = `Bearer ${newPass()}`
+        }
         if (name !== 'stripe-webhook') {
           const chunks = []
           for await (const chunk of req) chunks.push(chunk)
           try { req.body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch { req.body = {} }
         }
-        res.status = (code) => { res.statusCode = code; return res }
-        res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }
         try {
           const { default: handler } = await import(`${pathToFileURL(resolve(`api/${name}.js`)).href}?t=${Date.now()}`)
           await handler(req, res)
         } catch (e) { res.status(500).json({ message: `The ${name} function failed: ${e.message}` }) }
-      })
-    }
-    // Orders and discounts live in Stripe and go through the admin's login, which only exists on
-    // Vercel: here those screens say where to find them instead.
-    for (const path of ['/api/orders', '/api/discounts']) {
-      server.middlewares.use(path, (req, res) => {
-        res.statusCode = 503
-        res.setHeader('Content-Type', 'application/json')
-        res.end(JSON.stringify({ setup: true, message: 'Orders and discounts are read from Stripe on the live admin (jbeatsart.vercel.app/admin). This copy on your computer cannot see them.' }))
       })
     }
     server.middlewares.use('/admin', (req, res, next) => {
