@@ -66,6 +66,8 @@ export default async function handler(req, res) {
   ask.set('mode', 'payment')
   ask.set('success_url', `${origin}/shop?thanks=1`)
   ask.set('cancel_url', `${origin}/shop`)
+  // a box for a discount code, made in the admin's Discounts screen (Stripe checks the code)
+  ask.set('allow_promotion_codes', 'true')
   lines.forEach((l, i) => {
     const at = `line_items[${i}]`
     ask.set(`${at}[quantity]`, String(l.qty))

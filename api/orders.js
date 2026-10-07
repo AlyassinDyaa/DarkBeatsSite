@@ -43,6 +43,7 @@ const shape = (s) => {
     created: s.created,
     kind,
     amount: cents(s.amount_total),
+    discount: cents(s.total_details && s.total_details.amount_discount),
     currency: String(s.currency || '').toUpperCase(),
     paid: s.payment_status === 'paid',
     refunded,
