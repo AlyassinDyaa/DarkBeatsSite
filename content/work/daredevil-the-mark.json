@@ -1,15 +1,21 @@
 {
   "src": "/uploads/daredevil-the-mark.webp",
+  "universe": "Marvel",
   "price": 40,
   "hidden": false,
   "featured": false,
   "date": "2026-03-29",
+  "sizes": [
+    {
+      "name": "8x8",
+      "price": 15
+    }
+  ],
   "note": "",
   "status": "soldout",
   "hue": 18,
   "title": "The Devils Mark",
   "type": "Foil posters",
   "link": "https://www.instagram.com/jbeatsart/p/DWdjYAeAfM6/",
-  "category": "Heroes",
-  "universe": "Marvel"
+  "category": "Heroes"
 }
