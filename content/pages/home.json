@@ -45,6 +45,7 @@
       "column": "any"
     }
   ],
+  "wallAddNew": true,
   "wallSpeed": 100,
   "figure": {
     "src": "/uploads/hero-bust.webp",

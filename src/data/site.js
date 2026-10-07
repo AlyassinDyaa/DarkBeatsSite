@@ -64,7 +64,7 @@ function assemble(content) {
   const page = (name) => content[`content/pages/${name}.json`] || {}
   const site = (name) => content[`content/site/${name}.json`] || {}
   const { social: links, footerLine, footerFine, ...name } = site('brand')
-  const { kicker, text, primaryLabel, secondaryLabel, figure, wall, wallSpeed, marquee: words, ...sections } = page('home')
+  const { kicker, text, primaryLabel, secondaryLabel, figure, wall, wallSpeed, wallAddNew, marquee: words, ...sections } = page('home')
   const lists = page('lists')
   // every file of one folder, each with the name of its file
   const folder = (name) => Object.entries(content)
@@ -139,7 +139,10 @@ function assemble(content) {
     if (piece) return { ...piece, column }
     return w.picture ? { title: w.title || '', src: w.picture, column } : null
   }).filter(Boolean)
-  heroWall = placed.length ? placed : work.map((p) => ({ ...p, column: 'auto' }))
+  // Shop pieces that are not in the list join the end of it (unless that is switched off), so a
+  // new piece shows on the wall without a second trip to the admin.
+  const missing = wallAddNew === false && placed.length ? [] : work.filter((p) => !placed.some((w) => w.slug === p.slug)).map((p) => ({ ...p, column: 'auto' }))
+  heroWall = [...placed, ...missing]
 
   // a section's "also show pieces from Work" choice: none, every piece, or one category
   const fromWork = (from) => (!from || from === 'none' ? [] : work)

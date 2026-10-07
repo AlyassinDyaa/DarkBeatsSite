@@ -192,6 +192,7 @@ collections:
                   - { label: 'Right', value: right }
               - { name: picture, label: Or a picture of its own, widget: image, choose_url: false, required: false }
               - { name: title, label: Its title, widget: string, required: false }
+          - { name: wallAddNew, label: New Shop pieces join the wall by themselves, widget: boolean, default: true, required: false, hint: 'On: a Shop piece that is not in the list above is added at its end. Off: the wall shows only the list.' }
           - { name: wallSpeed, label: How fast the wall drifts, widget: slider, min: 25, max: 300, step: 5, default: 100, unit: '%', required: false, hint: '100 is the usual pace; 200 twice as fast, 50 half.' }
           - name: figure
             label: Character
