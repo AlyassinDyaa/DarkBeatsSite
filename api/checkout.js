@@ -29,7 +29,11 @@ export default async function handler(req, res) {
   if (piece && piece.status === 'soldout') return res.status(409).json({ message: 'This piece has sold out.' })
   // the sale price while the piece is on sale (and it is below the usual price), otherwise the price
   const usual = Number(piece && piece.price), sale = Number(piece && piece.salePrice)
-  const amount = piece && piece.status === 'sale' && sale > 0 && sale < usual ? sale : usual
+  const base = piece && piece.status === 'sale' && sale > 0 && sale < usual ? sale : usual
+  // signed or unsigned: only while the admin offers the choice; the extra for signing is read here too
+  const choice = Boolean(shop.signedChoice)
+  const signed = choice ? req.body && req.body.signed !== false : null
+  const amount = base + (signed ? Math.max(0, Number(shop.signedExtra) || 0) : 0)
   const cents = Math.round(amount * 100)
   if (!piece || piece.hidden || !(cents >= 50)) return res.status(404).json({ message: 'That piece is not for sale.' })
 
@@ -41,10 +45,11 @@ export default async function handler(req, res) {
   ask.set('line_items[0][quantity]', '1')
   ask.set('line_items[0][price_data][currency]', String(shop.currency || 'aud').toLowerCase())
   ask.set('line_items[0][price_data][unit_amount]', String(cents))
-  ask.set('line_items[0][price_data][product_data][name]', String(piece.title || slug).slice(0, 250))
+  ask.set('line_items[0][price_data][product_data][name]', `${String(piece.title || slug).slice(0, 230)}${choice ? (signed ? ' (signed)' : ' (unsigned)') : ''}`)
   if (shop.note) ask.set('line_items[0][price_data][product_data][description]', String(shop.note).slice(0, 500))
   if (typeof piece.src === 'string' && piece.src.startsWith('/')) ask.set('line_items[0][price_data][product_data][images][0]', origin + piece.src)
   ask.set('metadata[piece]', slug)
+  if (choice) ask.set('metadata[signed]', signed ? 'yes' : 'no')
   if (shop.shipping !== false) {
     const countries = (Array.isArray(shop.countries) ? shop.countries : []).map((c) => String(c).trim().toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c))
     ;(countries.length ? countries : ['AU']).forEach((c, i) => ask.set(`shipping_address_collection[allowed_countries][${i}]`, c))

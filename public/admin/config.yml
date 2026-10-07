@@ -482,6 +482,8 @@ collections:
           - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
           - { name: buttonLabel, label: Wording of the Buy button, widget: string }
           - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'One line under every price and on the payment page, for example "A3 print, signed."' }
+          - { name: signedChoice, label: Buyers choose signed or unsigned, widget: boolean, default: false, required: false, hint: 'On: every piece offers Signed and Unsigned, and the order says which (in Stripe, after the title). Off: no choice.' }
+          - { name: signedExtra, label: Extra for a signed print, widget: number, value_type: float, min: 0, default: 0, required: false, hint: 'Added to the price when Signed is chosen. 0 for no difference.' }
           - name: pricePlace
             label: Price on the cards
             widget: select

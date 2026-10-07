@@ -14,5 +14,7 @@
     "GB"
   ],
   "thanksText": "Your order is in. A receipt is on its way to your email.",
-  "pricePlace": "below"
+  "pricePlace": "below",
+  "signedChoice": false,
+  "signedExtra": 0
 }

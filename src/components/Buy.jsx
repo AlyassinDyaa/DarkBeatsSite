@@ -20,15 +20,19 @@ function shipsTo(codes) {
 export default function Buy({ piece }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  // signed or not, when the admin offers the choice; signed is picked to start with
+  const [signed, setSigned] = useState(true)
   if (!buyable(piece)) return null
   const where = shop.shipping !== false ? shipsTo(shop.countries) : ''
   const out = soldOut(piece)
+  const choice = Boolean(shop.signedChoice)
+  const extra = choice && signed ? Math.max(0, Number(shop.signedExtra) || 0) : 0
   const tag = badge(piece)
   const buy = async () => {
     if (busy || out) return
     setBusy(true); setNote('')
     try {
-      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: piece.slug }) })
+      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(choice ? { slug: piece.slug, signed } : { slug: piece.slug }) })
       const said = await answer.json().catch(() => ({}))
       if (answer.ok && said.url) { window.location.href = said.url; return } // stays "busy" while the page changes
       setNote(said.message || 'The checkout did not answer. Try again in a moment.')
@@ -41,11 +45,21 @@ export default function Buy({ piece }) {
     <motion.div className="buy" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45, ease: EASE }}>
       {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       <div className="buy-head">
-        {onSale(piece) && <s className="buy-was">{money(piece.price, true)}</s>}
-        <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece))}</span>
+        {onSale(piece) && <s className="buy-was">{money(Number(piece.price) + extra, true)}</s>}
+        <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece) + extra)}</span>
         {shop.note && <span className="buy-what">{shop.note}</span>}
       </div>
       {onSale(piece) && !out && <p className="buy-save">You save {money(Number(piece.price) - nowPrice(piece))}</p>}
+      {choice && !out && (
+        <div className="buy-options" role="radiogroup" aria-label="Signed or unsigned">
+          {[[true, 'Signed'], [false, 'Unsigned']].map(([value, label]) => (
+            <button key={label} type="button" role="radio" aria-checked={signed === value} className={signed === value ? 'on' : ''} onClick={() => setSigned(value)}>
+              <span>{label}</span>
+              {value && Number(shop.signedExtra) > 0 && <small>+{money(shop.signedExtra, true)}</small>}
+            </button>
+          ))}
+        </div>
+      )}
       {out ? (
         <>
           <span className="buy-btn is-out" aria-disabled="true"><span className="buy-btn-label">Sold out</span></span>
