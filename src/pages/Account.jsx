@@ -299,6 +299,11 @@ function Confirm({ open, title, text, yes, onYes, onClose }) {
 /* ---------- the account ---------- */
 // the piece an order line is about ("The Rider · A2 (signed)" → The Rider); the longest title wins
 const pieceFor = (name) => work.filter((p) => p.title && String(name || '').startsWith(p.title)).sort((a, b) => b.title.length - a.title.length)[0] || null
+/* The prints a customer holds: from their shop orders, leaving out refunded ones (orders the admin
+   deleted never reach the page). The member card, the profile line and their pictures use these. */
+const keptOrders = (orders) => (orders || []).filter((o) => o.kind !== 'support' && o.status !== 'refunded')
+const printsIn = (orders) => keptOrders(orders).reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
+const ownedIn = (orders) => [...new Map(keptOrders(orders).flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
 const greeting = () => { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Up late' }
 const monthYear = (d) => new Date(d).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })
 const initialsOf = (u) => ((u.name || u.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join(''))
@@ -670,9 +675,9 @@ function Security() {
 function Overview({ orders, go }) {
   const { user } = useAccount()
   const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
-  const collected = shopOrders.reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
+  const collected = printsIn(orders)
   // the pieces they own, once each, newest first
-  const owned = [...new Map(shopOrders.flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
+  const owned = ownedIn(orders)
   const saved = (user.saved || []).map((slug) => work.find((p) => p.slug === slug)).filter(Boolean)
   const latest = shopOrders[0]
   return (
@@ -778,7 +783,7 @@ function Home() {
   const { settle } = useCart()
   useEffect(() => { if (paid) settle() }, [paid, settle])
   const [leaving, setLeaving] = useState(false) // the 'log out?' window
-  const owned = [...new Map((orders || []).filter((o) => o.kind !== 'support').flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
+  const owned = ownedIn(orders)
   const grid = useRef(null)
   // the browser tab's title follows the section, without the page's own scroll-to-top on a new title
   useEffect(() => { const name = TABS.find(([k]) => k === tab)[1]; document.title = `${tab === 'overview' ? 'Your account' : name} — ${brand.name}` }, [tab])
@@ -798,7 +803,7 @@ function Home() {
   }
   const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
   const counts = { orders: shopOrders.length, saved: (user.saved || []).length }
-  const prints = shopOrders.reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
+  const prints = printsIn(orders)
   // the banner: a strip of panels. Their own art first (the print they picked as their picture,
   // the prints they own, the ones they saved), then the newest work, so it is never empty
   const chosen = user.avatar && !user.avatar.startsWith('icon:') ? work.find((p) => p.slug === user.avatar) : null
