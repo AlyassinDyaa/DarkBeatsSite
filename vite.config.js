@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -130,6 +130,10 @@ const adminBundle = () => ({
   name: 'admin-bundle',
   configureServer(server) {
     startAdminBackend(server)
+    // Payment keys for trying the checkout on this computer: put them in .env.local (never
+    // committed: *.local is in .gitignore). On Vercel they come from the project settings instead.
+    const keys = loadEnv('development', process.cwd(), '')
+    for (const k of ['STRIPE_SECRET_KEY', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_MODE']) if (keys[k] && !process.env[k]) process.env[k] = keys[k]
     // The checkout function runs on Vercel. While developing, the same file answers here, so the
     // Buy button behaves as it will live (with no STRIPE_SECRET_KEY set it says so).
     server.middlewares.use('/api/checkout', async (req, res) => {

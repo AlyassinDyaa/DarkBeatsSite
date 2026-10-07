@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, brand, buyable, money, priceOf, shop, sizesOf, soldOut } from '../data/site'
+import { badge, brand, buyable, money, payLine, payWays, priceOf, shop, sizesOf, soldOut } from '../data/site'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -39,13 +39,14 @@ export default function Buy({ piece }) {
   const choice = Boolean(shop.signedChoice)
   const extra = choice && signed ? Math.max(0, Number(shop.signedExtra) || 0) : 0
   const tag = badge(piece)
-  const buy = async () => {
+  // `busy` names the way to pay that is opening (stripe or paypal)
+  const buy = async (way) => {
     if (busy || out) return
-    setBusy(true); setNote('')
+    setBusy(way); setNote('')
     try {
-      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: piece.slug, ...(choice ? { signed } : {}), ...(chosen ? { size: chosen } : {}) }) })
+      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: way, slug: piece.slug, ...(choice ? { signed } : {}), ...(chosen ? { size: chosen } : {}) }) })
       const said = await answer.json().catch(() => ({}))
-      if (answer.ok && said.url) { window.location.href = said.url; return } // stays "busy" while the page changes
+      if (answer.ok && said.url) { window.location.assign(said.url); return } // stays "busy" while the page changes
       setNote(said.message || 'The checkout did not answer. Try again in a moment.')
     } catch {
       setNote('Could not reach the checkout. Check the connection and try again.')
@@ -102,12 +103,16 @@ export default function Buy({ piece }) {
             <span className="buy-btn-icon" aria-hidden="true">{added ? '✓' : <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14 M5 12h14" /></svg>}</span>
           </button>
           <div className="buy-also">
-            <button type="button" className={`buy-now ${busy ? 'is-busy' : ''}`} onClick={buy} aria-busy={busy}>{busy ? 'Opening secure checkout…' : `${shop.buttonLabel} now`} <span aria-hidden="true">→</span></button>
+            {payWays().map((way, i) => (
+              <button key={way} type="button" className={`buy-now ${way === 'paypal' ? 'is-paypal' : ''} ${busy === way ? 'is-busy' : ''}`} onClick={() => buy(way)} aria-busy={busy === way} disabled={Boolean(busy)}>
+                {busy === way ? (way === 'paypal' ? 'Opening PayPal…' : 'Opening secure checkout…') : way === 'paypal' ? (i ? 'or PayPal' : `${shop.buttonLabel} with PayPal`) : `${shop.buttonLabel} now`} <span aria-hidden="true">→</span>
+              </button>
+            ))}
             {inCart > 0 && <button type="button" className="buy-incart" onClick={() => cart.setOpen(true)}>{inCart} in your cart</button>}
           </div>
           <p className="buy-secure">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10.5h12v9.5H6z M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
-            <span>Secure checkout by Stripe{where ? ` · Ships to ${where}` : ''}</span>
+            <span>{payLine()}{where ? ` · Ships to ${where}` : ''}</span>
           </p>
         </>
       )}

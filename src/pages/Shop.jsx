@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '../hooks/useCart'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { asset, badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, shop, shows, soldOut, types, work } from '../data/site'
 import Page from '../components/Page'
@@ -53,6 +53,24 @@ export default function Shop() {
   const cart = useCart()
   const clearCart = cart.clear
   useEffect(() => { if (thanks) clearCart() }, [thanks, clearCart])
+  // PayPal sends the buyer back here with ?paypal=back&token=<order>; the payment is only taken now
+  const navigate = useNavigate()
+  const paypalOrder = params.get('paypal') === 'back' ? params.get('token') : null
+  const [payProblem, setPayProblem] = useState('')
+  useEffect(() => {
+    if (!paypalOrder) return
+    let stale = false
+    ;(async () => {
+      try {
+        const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ capture: paypalOrder }) })
+        const said = await answer.json().catch(() => ({}))
+        if (stale) return
+        if (answer.ok && said.paid) navigate('/shop?thanks=1', { replace: true })
+        else setPayProblem(said.message || 'PayPal did not confirm the payment. Nothing was charged.')
+      } catch { if (!stale) setPayProblem('Could not reach the shop to confirm the PayPal payment. Check the connection and reload this page.') }
+    })()
+    return () => { stale = true }
+  }, [paypalOrder, navigate])
   const [filter, setFilter] = useState('All') // subject
   const [kind, setKind] = useState('All') // type
   const [sel, setSel] = useState(null)
@@ -78,6 +96,12 @@ export default function Shop() {
             <i aria-hidden="true">✓</i>
             <div><strong>{shop.thanksTitle}</strong><span>{shop.thanksText}</span></div>
           </motion.div>
+        )}
+        {paypalOrder && (
+          <div className={`thanks ${payProblem ? 'is-problem' : 'is-waiting'}`} role="status">
+            <i aria-hidden="true">{payProblem ? '!' : '…'}</i>
+            <div><strong>{payProblem ? 'The payment did not go through' : 'Confirming your PayPal payment…'}</strong><span>{payProblem || 'One moment: do not close this page.'}</span></div>
+          </div>
         )}
         {shop.enabled && !thanks && (
           <ol className="how-buy">

@@ -506,7 +506,17 @@ collections:
         label: Shop and payments
         file: content/site/shop.json
         fields:
-          - { name: enabled, label: Online purchases, widget: boolean, default: false, hint: 'On: every piece with a price shows it, with a Buy button that opens a Stripe payment page. Off: no prices and no buttons anywhere.' }
+          - { name: enabled, label: Online purchases, widget: boolean, default: false, hint: 'On: every piece with a price shows it, with a Buy button that opens a payment page. Off: no prices and no buttons anywhere.' }
+          - name: payments
+            label: Payment methods
+            widget: select
+            default: stripe
+            required: false
+            options:
+              - { label: 'Stripe (cards, Apple Pay, Google Pay)', value: stripe }
+              - { label: 'PayPal', value: paypal }
+              - { label: 'Both: buyers choose', value: both }
+            hint: 'Each needs its keys in the Vercel project settings: STRIPE_SECRET_KEY for Stripe; PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET for PayPal (sandbox keys while testing; add PAYPAL_MODE = live for real ones). Discount codes and the Orders screen work with Stripe payments; PayPal payments show in your PayPal account.'
           - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
           - { name: buttonLabel, label: Wording of the Buy button, widget: string }
           - name: cartIcon

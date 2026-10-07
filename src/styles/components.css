@@ -784,3 +784,17 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 /* ---------- not found ---------- */
 .notfound { display: grid; align-content: center; justify-items: start; gap: 6px; min-height: 80svh; padding-top: var(--nav); }
 .notfound .lead { margin: 18px 0 28px; }
+
+/* PayPal, when the admin offers it: its own gold, so buyers know it at a glance */
+.buy-btn.is-paypal { background: #ffc439; color: #111; }
+.buy-btn.is-paypal:hover { background: #f2b52b; }
+.cart-foot .buy-btn + .buy-btn { margin-top: 10px; }
+.buy-btn:disabled:not(.is-busy) { opacity: 0.55; cursor: default; }
+.buy-now.is-paypal { color: #ffc439; }
+.buy-now.is-paypal:hover { color: #ffd76e; border-color: #ffc439; }
+.buy-now:disabled:not(.is-busy) { opacity: 0.5; cursor: default; }
+/* back from PayPal: waiting for the payment to be confirmed, or why it was not */
+.thanks.is-waiting { border-color: var(--line-strong); background: oklch(0.3 0.13 var(--h) / 0.3); }
+.thanks.is-waiting i { background: var(--accent); color: var(--on-accent); }
+.thanks.is-problem { border-color: rgba(255, 107, 127, 0.55); background: rgba(255, 107, 127, 0.08); }
+.thanks.is-problem i { background: #ff6b7f; color: #1a0710; }

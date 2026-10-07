@@ -244,6 +244,12 @@ export const priceOf = (piece, size) => {
 }
 /* "From" goes before a tile's price when the sizes do not all cost the same. */
 export const priceVaries = (piece) => new Set(sizesOf(piece).map((s) => priceOf(piece, s.name).now)).size > 1
+/* The ways to pay the admin offers (Shop & payments → Payment methods), in the order they show. */
+export const payWays = () => (shop.payments === 'both' ? ['stripe', 'paypal'] : shop.payments === 'paypal' ? ['paypal'] : ['stripe'])
+export const payName = (way) => (way === 'paypal' ? 'PayPal' : 'Stripe')
+/* "Secure checkout by Stripe or PayPal" */
+export const payLine = () => `Secure checkout by ${payWays().map(payName).join(' or ')}`
+
 /* A piece shows its price while online purchases are switched on and it has a price. */
 export const buyable = (piece) => Boolean(shop.enabled && piece && piece.slug && priceOf(piece).was > 0)
 /* Its status, set in the admin: "new", "sale" (with a discount price below the price) or "soldout". */

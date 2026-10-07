@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { asset, brand, money, shop } from '../data/site'
+import { asset, brand, money, payLine, payWays, shop } from '../data/site'
 import { useCart } from '../hooks/useCart'
 
 const EASE = [0.16, 1, 0.3, 1]
 
 /* Open the checkout for everything in the cart: the site's checkout function makes one Stripe
    payment page with a line per print, and sends the visitor there. */
-async function checkout(items) {
+async function checkout(items, provider) {
   try {
-    const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) })
+    const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, provider }) })
     const said = await answer.json().catch(() => ({}))
     if (answer.ok && said.url) { window.location.href = said.url; return null }
     return said.message || 'The checkout did not answer. Try again in a moment.'
@@ -37,10 +37,11 @@ export default function CartDrawer() {
     return () => { removeEventListener('keydown', key); document.body.style.overflow = before; if (!document.querySelector('.lightbox')) window.__lenis?.start?.() }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const pay = async () => {
+  // `busy` names the way to pay that is opening (stripe or paypal)
+  const pay = async (way) => {
     if (busy || !lines.length) return
-    setBusy(true); setNote('')
-    const problem = await checkout(lines.map((l) => ({ slug: l.slug, size: l.size, signed: l.signed, qty: l.qty })))
+    setBusy(way); setNote('')
+    const problem = await checkout(lines.map((l) => ({ slug: l.slug, size: l.size, signed: l.signed, qty: l.qty })), way)
     if (problem) { setNote(problem); setBusy(false) }
   }
 
@@ -81,7 +82,7 @@ export default function CartDrawer() {
                             <span className="cart-price">{money(l.each * l.qty)}</span>
                           </div>
                         </div>
-                        <button type="button" className="cart-remove" onClick={() => cart.remove(l.slug, l.signed)} aria-label={`Remove ${l.piece.title}`}>×</button>
+                        <button type="button" className="cart-remove" onClick={() => cart.remove(l.slug, l.signed, l.size)} aria-label={`Remove ${l.piece.title}`}>×</button>
                       </motion.li>
                     ))}
                   </AnimatePresence>
@@ -90,13 +91,15 @@ export default function CartDrawer() {
                 <footer className="cart-foot">
                   <div className="cart-total"><span>Total</span><strong>{money(cart.total)}</strong></div>
                   {shop.shipping !== false && <p className="cart-small">You enter your delivery address on the next page.</p>}
-                  <button type="button" className={`buy-btn ${busy ? 'is-busy' : ''}`} onClick={pay} aria-busy={busy}>
-                    <span className="buy-btn-label">{busy ? 'Opening secure checkout' : 'Checkout'}</span>
-                    <span className="buy-btn-icon" aria-hidden="true">{busy ? <i className="buy-spin" /> : '→'}</span>
-                  </button>
+                  {payWays().map((way) => (
+                    <button key={way} type="button" className={`buy-btn ${way === 'paypal' ? 'is-paypal' : ''} ${busy === way ? 'is-busy' : ''}`} onClick={() => pay(way)} aria-busy={busy === way} disabled={Boolean(busy)}>
+                      <span className="buy-btn-label">{busy === way ? (way === 'paypal' ? 'Opening PayPal' : 'Opening secure checkout') : way === 'paypal' ? 'Pay with PayPal' : payWays().length > 1 ? 'Pay by card' : 'Checkout'}</span>
+                      <span className="buy-btn-icon" aria-hidden="true">{busy === way ? <i className="buy-spin" /> : '→'}</span>
+                    </button>
+                  ))}
                   <p className="buy-secure">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10.5h12v9.5H6z M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
-                    <span>Secure checkout by Stripe</span>
+                    <span>{payLine()}</span>
                   </p>
                   <AnimatePresence>
                     {note && (
