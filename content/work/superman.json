@@ -1,13 +1,13 @@
 {
-  "title": "Superman",
-  "category": "Heroes",
-  "type": "Posters",
-  "date": "2026-04-18",
-  "hue": 88,
   "src": "/uploads/superman.webp",
-  "link": "https://www.instagram.com/jbeatsart/p/DXSdoVskx80/",
-  "note": "",
-  "featured": true,
+  "price": 40,
   "hidden": false,
-  "price": 40
+  "featured": true,
+  "date": "2026-04-18",
+  "note": "",
+  "hue": 88,
+  "title": "Man of Steel",
+  "type": "Posters",
+  "link": "https://www.instagram.com/jbeatsart/p/DXSdoVskx80/",
+  "category": "Heroes"
 }
