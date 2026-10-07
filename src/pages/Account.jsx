@@ -95,7 +95,7 @@ function CollectorCard({ name, since, number, prints }) {
         <div className={`acc-card3d-name ${shown ? '' : 'is-empty'}`} aria-hidden="true">{shown || 'Your name here'}</div>
         <div className="acc-card3d-foot" aria-hidden="true">
           <span><small>Member since</small>{since}</span>
-          <span><small>Card no.</small>{number}</span>
+          <span><small>Member no.</small>{number}</span>
           <span><small>Prints</small>{prints}</span>
         </div>
       </div>
@@ -103,13 +103,13 @@ function CollectorCard({ name, since, number, prints }) {
   )
 }
 // the same four digits for the same customer, every time
-const cardNumber = (seed) => { let h = 7; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return String(1000 + (h % 9000)) }
+// member 1 reads #0001
+const memberNumber = (n) => (n ? `#${String(n).padStart(4, '0')}` : '#----')
 
 function AuthArt({ cardName }) {
-  const [number] = useState(() => String(Math.floor(1000 + Math.random() * 9000)))
   return (
     <aside className="acc-art">
-      <CollectorCard name={cardName} since={new Date().getFullYear()} number={number} prints="Your collection" />
+      <CollectorCard name={cardName} since={new Date().getFullYear()} number={memberNumber(null)} prints="Your collection" />
       <ul className="acc-perks">
         {PERKS.map(([t, d]) => <li key={t}><i aria-hidden="true" /><div><b>{t}</b><span>{d}</span></div></li>)}
       </ul>
@@ -271,10 +271,11 @@ const initialsOf = (u) => ((u.name || u.email || '?').split(/[\s@.]+/).filter(Bo
 
 /* the customer's picture: one of the artist's pieces they chose, or their initials */
 function Avatar({ user, size = 'md' }) {
-  const piece = user.avatar ? work.find((p) => p.slug === user.avatar && p.src) : null
+  const icon = user.avatar && user.avatar.startsWith('icon:') ? user.avatar.slice(5) : ''
+  const piece = user.avatar && !icon ? work.find((p) => p.slug === user.avatar && p.src) : null
   return (
     <span className={`acct-avatar is-${size}`} aria-hidden="true">
-      {piece ? <img src={asset(piece.src)} alt="" /> : <b>{initialsOf(user)}</b>}
+      {icon ? <img src={asset(icon)} alt="" /> : piece ? <img src={asset(piece.src)} alt="" /> : <b>{initialsOf(user)}</b>}
     </span>
   )
 }
@@ -379,12 +380,12 @@ function Orders({ orders, problem }) {
   return <div className="acc-orders">{orders.map((o) => <OrderCard key={`${o.number}${o.createdAt}`} o={o} />)}</div>
 }
 
-function Details() {
+function Details({ owned = [] }) {
   const { user, call } = useAccount()
   const f = useForm({ name: user.name, phone: user.phone, marketing: user.marketing, avatar: user.avatar || '' })
   const [saved, setSaved] = useState(false)
   const [resent, setResent] = useState('')
-  const choices = work.filter((p) => p.src).slice(0, 18)
+  const mine = owned.filter((p) => p.src)
   return (
     <form className="acc-card" onSubmit={(e) => f.run(e, async () => { await call('profile', f.values); setSaved(true); setTimeout(() => setSaved(false), 2500) })} noValidate>
       {/* the email, with whether it is confirmed (and a way to send the link again) */}
@@ -412,14 +413,34 @@ function Details() {
       </label>
       <fieldset className="acct-pick">
         <legend>Your picture</legend>
-        <p>Pick a favourite piece to be your picture, or keep your initials.</p>
-        <div className="acct-pick-grid" role="radiogroup" aria-label="Your picture">
-          <button type="button" role="radio" aria-checked={!f.values.avatar} className={`acct-pick-one is-initials ${!f.values.avatar ? 'on' : ''}`} onClick={() => f.set('avatar')('')}><b>{initialsOf(user)}</b></button>
-          {choices.map((p) => (
-            <button key={p.slug} type="button" role="radio" aria-checked={f.values.avatar === p.slug} aria-label={p.title} title={p.title} className={`acct-pick-one ${f.values.avatar === p.slug ? 'on' : ''}`} onClick={() => f.set('avatar')(p.slug)}>
-              <img src={asset(p.src)} alt="" loading="lazy" />
-            </button>
-          ))}
+        <p>Choose one for your profile and your collector card, or keep your initials.</p>
+        <div className="acct-pick-group" role="radiogroup" aria-label="Free pictures">
+          <span className="acct-pick-label">Free for everyone</span>
+          <div className="acct-pick-grid">
+            <button type="button" role="radio" aria-checked={!f.values.avatar} title="Your initials" className={`acct-pick-one is-initials ${!f.values.avatar ? 'on' : ''}`} onClick={() => f.set('avatar')('')}><b>{initialsOf(user)}</b></button>
+            {accountPage.icons.map((i) => {
+              const v = `icon:${i.picture}`
+              return (
+                <button key={i.picture} type="button" role="radio" aria-checked={f.values.avatar === v} aria-label={i.name || 'Picture'} title={i.name || ''} className={`acct-pick-one ${f.values.avatar === v ? 'on' : ''}`} onClick={() => f.set('avatar')(v)}>
+                  <img src={asset(i.picture)} alt="" loading="lazy" />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="acct-pick-group is-mine" role="radiogroup" aria-label="From your collection">
+          <span className="acct-pick-label">From your collection <em>only yours</em></span>
+          {mine.length ? (
+            <div className="acct-pick-grid">
+              {mine.map((p) => (
+                <button key={p.slug} type="button" role="radio" aria-checked={f.values.avatar === p.slug} aria-label={p.title} title={p.title} className={`acct-pick-one is-mine ${f.values.avatar === p.slug ? 'on' : ''}`} onClick={() => f.set('avatar')(p.slug)}>
+                  <img src={asset(p.src)} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="acct-pick-locked"><i aria-hidden="true">✦</i>Every print you buy becomes a picture here that only you can use. <Link to="/shop">Find one in the Shop</Link></p>
+          )}
         </div>
       </fieldset>
       <Problem text={f.problem.text} />
@@ -487,7 +508,7 @@ function Overview({ orders, go }) {
         <CollectorCard
           name={user.name || user.email.split('@')[0]}
           since={new Date(user.createdAt).getFullYear()}
-          number={cardNumber(user.email)}
+          number={memberNumber(user.memberNo)}
           prints={orders ? `${collected} ${collected === 1 ? 'print' : 'prints'}` : '…'}
         />
       <div className="acct-stats is-stacked">
@@ -579,6 +600,7 @@ function Home() {
   const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'overview'
   const [resent, setResent] = useState('')
   const { orders, problem } = useOrders()
+  const owned = [...new Map((orders || []).filter((o) => o.kind !== 'support').flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
   const grid = useRef(null)
   // the browser tab's title follows the section, without the page's own scroll-to-top on a new title
   useEffect(() => { const name = TABS.find(([k]) => k === tab)[1]; document.title = `${tab === 'overview' ? 'Your account' : name} — ${brand.name}` }, [tab])
@@ -647,7 +669,7 @@ function Home() {
             {tab === 'overview' && <Overview orders={orders} go={go} />}
             {tab === 'orders' && <Orders orders={orders} problem={problem} />}
             {tab === 'saved' && <Saved />}
-            {tab === 'details' && <Details />}
+            {tab === 'details' && <Details owned={owned} />}
             {tab === 'security' && <Security />}
           </motion.div>
         </div>

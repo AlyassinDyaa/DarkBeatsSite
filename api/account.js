@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
 import { forCustomer } from './_orders.js'
 import {
@@ -16,7 +18,9 @@ import {
         { action: 'verify', token }                       confirms the email address
         { action: 'resend' }                              a new confirmation email
         { action: 'password', current, password }         change it (other devices are logged out)
-        { action: 'profile', name, phone, marketing, avatar }   (avatar: a piece's slug, or '')
+        { action: 'profile', name, phone, marketing, avatar }
+             avatar: '' (initials), 'icon:<picture>' (one of the free pictures set in the admin),
+             or a piece's slug (only a piece this customer has bought)
         { action: 'saved', saved }                         the pieces kept for later (slugs)
         { action: 'cart', cart }                          keeps the cart with the account
         { action: 'orders' }                              this customer's orders, newest first
@@ -28,6 +32,46 @@ const RESET_MINUTES = 60
 const VERIFY_HOURS = 48
 
 const say = (res, status, body) => res.status(status).json(body)
+
+// ---------- member numbers: 1 for the first customer, 2 for the next... never handed out twice
+const nextMemberNo = async (d) => {
+  const c = await d.collection('counters').findOneAndUpdate({ _id: 'members' }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: 'after' })
+  const doc = c && c.value !== undefined && c.ok !== undefined ? c.value : c // older drivers wrap the document
+  return doc && doc.seq
+}
+// a customer from before member numbers gets the next one the first time they come back
+const withMemberNo = async (d, user) => {
+  if (!user || user.memberNo) return user
+  const memberNo = await nextMemberNo(d)
+  await d.collection('users').updateOne({ _id: user._id }, { $set: { memberNo } })
+  return { ...user, memberNo }
+}
+
+// ---------- which profile pictures a customer may use
+const readJson = (path) => { try { return JSON.parse(readFileSync(join(process.cwd(), path), 'utf8')) } catch { return null } }
+const freePictures = () => {
+  const page = readJson('content/pages/account.json') || {}
+  return (Array.isArray(page.icons) ? page.icons : []).map((i) => i && String(i.picture || '')).filter(Boolean)
+}
+const pieces = () => {
+  try {
+    return readdirSync(join(process.cwd(), 'content/work')).filter((f) => f.endsWith('.json')).map((f) => ({ slug: f.slice(0, -5), ...(readJson(`content/work/${f}`) || {}) })).filter((p) => p.title)
+  } catch { return [] }
+}
+// the prints this customer has bought (an order line "The Rider · A2 (signed)" is The Rider)
+const ownedSlugs = async (d, user) => {
+  const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
+  const orders = await d.collection('orders').find({ ...match, status: 'paid' }).sort({ createdAt: -1 }).limit(200).toArray()
+  const all = pieces().sort((a, b) => b.title.length - a.title.length)
+  const owned = new Set()
+  for (const o of orders) for (const i of o.items || []) { const p = all.find((x) => String(i.name || '').startsWith(x.title)); if (p) owned.add(p.slug) }
+  return owned
+}
+const pictureAllowed = async (d, user, avatar) => {
+  if (!avatar) return true
+  if (avatar.startsWith('icon:')) return freePictures().includes(avatar.slice(5))
+  return /^[a-z0-9-]{1,80}$/.test(avatar) && (await ownedSlugs(d, user)).has(avatar)
+}
 
 const sendVerify = async (req, user) => {
   const token = await makeToken(user._id, 'verify', VERIFY_HOURS * 60)
@@ -46,7 +90,12 @@ export default async function handler(req, res) {
   try {
     const d = await db()
     const users = d.collection('users')
-    if (req.method === 'GET') return say(res, 200, { enabled: true, user: publicUser(await currentUser(req)) })
+    if (req.method === 'GET') {
+      let me = await withMemberNo(d, await currentUser(req))
+      // a picture that is no longer theirs to use (an old choice, or a free picture taken out) goes back to initials
+      if (me && me.avatar && !(await pictureAllowed(d, me, me.avatar))) { await users.updateOne({ _id: me._id }, { $set: { avatar: '' } }); me = { ...me, avatar: '' } }
+      return say(res, 200, { enabled: true, user: publicUser(me) })
+    }
     if (req.method !== 'POST') return say(res, 405, { message: 'Use GET or POST.' })
     if (!fromThisSite(req)) return say(res, 403, { message: 'That request did not come from this site.' })
     const body = req.body && typeof req.body === 'object' ? req.body : {}
@@ -63,7 +112,7 @@ export default async function handler(req, res) {
       if (await tooMany(`signup:${ip}`, 10, 60)) return say(res, 429, { message: 'Too many new accounts from here. Try again in an hour.' })
       await noteTry(`signup:${ip}`)
       if (await users.findOne({ email })) return say(res, 409, { message: 'There is already an account with that email. Log in, or reset the password.', field: 'email' })
-      const user = { _id: newId('u'), email, name, phone: '', password: await hashPassword(body.password), verified: false, marketing: Boolean(body.marketing), cart: cleanCart(body.cart), createdAt: new Date() }
+      const user = { _id: newId('u'), memberNo: await nextMemberNo(d), email, name, phone: '', password: await hashPassword(body.password), verified: false, marketing: Boolean(body.marketing), cart: cleanCart(body.cart), createdAt: new Date() }
       try { await users.insertOne(user) } catch (e) {
         if (e && e.code === 11000) return say(res, 409, { message: 'There is already an account with that email. Log in, or reset the password.', field: 'email' })
         throw e
@@ -87,7 +136,7 @@ export default async function handler(req, res) {
       // the visit before this one, so the account can show what is new since
       await users.updateOne({ _id: user._id }, { $set: { cart, lastLogin: new Date(), prevLogin: user.lastLogin || user.createdAt } })
       await startSession(req, res, user._id)
-      return say(res, 200, { user: publicUser({ ...user, cart, prevLogin: user.lastLogin || user.createdAt }) })
+      return say(res, 200, { user: publicUser(await withMemberNo(d, { ...user, cart, prevLogin: user.lastLogin || user.createdAt })) })
     }
 
     if (action === 'logout') {
@@ -161,7 +210,11 @@ export default async function handler(req, res) {
 
     if (action === 'profile') {
       const set = { name: clean(body.name, 80), phone: clean(body.phone, 30), marketing: Boolean(body.marketing) }
-      if (body.avatar !== undefined) set.avatar = /^[a-z0-9-]{1,80}$/.test(String(body.avatar)) ? String(body.avatar) : ''
+      if (body.avatar !== undefined) {
+        const avatar = clean(body.avatar, 300)
+        if (!(await pictureAllowed(d, user, avatar))) return say(res, 400, { message: 'That picture is not one you can use.', field: 'avatar' })
+        set.avatar = avatar
+      }
       await users.updateOne({ _id: user._id }, { $set: set })
       return say(res, 200, { user: publicUser({ ...user, ...set }) })
     }

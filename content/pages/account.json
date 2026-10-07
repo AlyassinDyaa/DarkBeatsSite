@@ -3,5 +3,42 @@
   "note": "Thank you for being here. Every print is checked and packed by hand before it leaves the studio on the Gold Coast. If anything is not quite right with an order, just write to me and I will sort it out.",
   "signature": "Jordan",
   "collectionTitle": "Your collection",
-  "savedTitle": "Saved for later"
+  "savedTitle": "Saved for later",
+  "icons": [
+    {
+      "picture": "/avatars/skull.svg",
+      "name": "Skull"
+    },
+    {
+      "picture": "/avatars/moon.svg",
+      "name": "Moon"
+    },
+    {
+      "picture": "/avatars/bolt.svg",
+      "name": "Bolt"
+    },
+    {
+      "picture": "/avatars/star.svg",
+      "name": "Star"
+    },
+    {
+      "picture": "/avatars/ghost.svg",
+      "name": "Ghost"
+    },
+    {
+      "picture": "/avatars/flame.svg",
+      "name": "Flame"
+    },
+    {
+      "picture": "/avatars/crown.svg",
+      "name": "Crown"
+    },
+    {
+      "picture": "/avatars/eye.svg",
+      "name": "Eye"
+    },
+    {
+      "picture": "/uploads/cc20.webp"
+    }
+  ]
 }

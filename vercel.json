@@ -26,6 +26,9 @@
     },
     "api/auth.js": {
       "includeFiles": "content/site/**"
+    },
+    "api/account.js": {
+      "includeFiles": "content/**"
     }
   }
 }

@@ -393,6 +393,17 @@ collections:
           - { name: signature, label: Signed, widget: string, required: false }
           - { name: collectionTitle, label: Heading over the prints they own, widget: string, required: false }
           - { name: savedTitle, label: Heading over the pieces they saved, widget: string, required: false }
+          - name: icons
+            label: Free profile pictures
+            label_singular: picture
+            widget: list
+            collapsed: false
+            required: false
+            summary: '{{fields.name}}'
+            hint: 'Pictures any customer can choose for their profile (square works best). Prints a customer buys also become pictures that only they can use.'
+            fields:
+              - { name: picture, label: Picture, widget: image, choose_url: false }
+              - { name: name, label: Name, widget: string, required: false }
 
       - name: support
         label: Support page
