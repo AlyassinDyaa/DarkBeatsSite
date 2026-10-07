@@ -96,9 +96,9 @@ export default async function handler(req, res) {
       const already = Array.isArray(said.details) && said.details.some((d) => d.issue === 'ORDER_ALREADY_CAPTURED')
       if (answer.ok && said.status === 'COMPLETED') {
         try { await savePaypal(id, said) } catch (e) { console.error('paypal order not saved:', e.message) }
-        return res.status(200).json({ paid: true })
+        return res.status(200).json({ paid: true, account: Boolean(user) })
       }
-      if (already) return res.status(200).json({ paid: true })
+      if (already) return res.status(200).json({ paid: true, account: Boolean(user) })
       console.error('paypal refused the capture:', answer.status, said && (said.name || said.message))
       return res.status(402).json({ message: 'PayPal did not take the payment, so nothing was charged. Try again, or pay another way.' })
     } catch (e) {

@@ -68,7 +68,7 @@ export default function Shop() {
         const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ capture: paypalOrder }) })
         const said = await answer.json().catch(() => ({}))
         if (stale) return
-        if (answer.ok && said.paid) navigate(account.user ? '/account?tab=orders&thanks=1' : '/shop?thanks=1', { replace: true })
+        if (answer.ok && said.paid) navigate(said.account || account.user ? '/account?tab=orders&thanks=1' : '/shop?thanks=1', { replace: true }) // logged in: on to their orders, as after paying by card
         else setPayProblem(said.message || 'PayPal did not confirm the payment. Nothing was charged.')
       } catch { if (!stale) setPayProblem('Could not reach the shop to confirm the PayPal payment. Check the connection and reload this page.') }
     })()
