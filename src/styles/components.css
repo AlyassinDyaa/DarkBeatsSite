@@ -180,24 +180,24 @@ a.nav-status:hover { border-color: var(--fg); }
 .wall-item:hover, .wall-item:focus-visible { transform: translate(-5px, -5px); box-shadow: 9px 9px 0 var(--accent); outline: 0; }
 @media (max-width: 899px) {
   .hero-inner { min-height: 0; padding-bottom: 0; }
-  .hero-inner { --name: min(calc(31vw * var(--fit)), 9rem); }
-  .hero-inner:has(.has-figure) { --name: min(calc(21vw * var(--fit)), 6.4rem); }
+  /* the name on one line, its two parts joined (JBEATSART), sized so the whole word fits the width */
+  .hero-inner, .hero-inner:has(.has-figure) { --name: min(calc((100vw - 2 * var(--gutter)) / (var(--total, 9) * 0.5)), 7rem); }
   /* Phones and small tablets: one centred column. The character stands behind the middle of the
      name, head above it, and fades out just under it, so it never runs into the words below. Its
      size comes from the admin; its sideways and up-down sliders are for wide screens. */
-  .hero-inner { padding-top: calc(var(--nav) + 18px); }
+  .hero-inner { padding-top: calc(var(--nav) + 8px); }
   .hero-copy, .hero-copy.has-figure { max-width: none; margin-left: 0; padding-left: 0; perspective: none; text-align: center; }
   .hero-copy .label { justify-content: center; margin-bottom: 16px; font-size: 0.64rem; letter-spacing: 0.12em; white-space: nowrap; }
-  .hero-name { position: relative; margin-inline: auto; transform-style: flat; }
-  .hero-line, .is-behind .hero-line { position: relative; z-index: 1; transform: translateX(0.113em) skewX(var(--slant)); }
+  .hero-name { position: relative; margin-inline: auto; transform-style: flat; white-space: nowrap; }
+  .hero-line, .is-behind .hero-line { position: relative; z-index: 1; display: inline-block; vertical-align: bottom; transform: skewX(var(--slant)); }
   .hero-line.is-front, .is-behind .hero-line.is-front, .hero-line:only-of-type { position: relative; z-index: 1; transform: skewX(var(--slant)); }
   /* the character takes the space above the name, and its lower half fades out behind the words */
-  .has-figure .hero-name { margin-top: calc(var(--name) * 2.15); margin-bottom: calc(var(--name) * 0.3); }
+  .has-figure .hero-name { margin-top: calc(var(--name) * 2.15 + 14px); margin-bottom: calc(var(--name) * 0.2); }
   .hero-figure, .is-behind .hero-figure { z-index: 0; left: 50%; top: -2.15em; height: calc(3.6em * var(--fig-size, 1)); transform: translateX(-50%); }
   .hero-aura, .is-behind .hero-aura { z-index: 0; left: 50%; top: -2em; width: 3.4em; height: 3.2em; transform: translateX(-50%); }
-  .hero-figure img, .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 60%, transparent 90%); mask-image: linear-gradient(#000 60%, transparent 90%); }
+  .hero-figure img, .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 58%, transparent 86%); mask-image: linear-gradient(#000 58%, transparent 86%); }
   .has-ground .hero-figure > span { -webkit-mask-image: none; mask-image: none; }
-  .hero-tag { margin-top: 18px; }
+  .hero-tag { margin-top: 22px; }
   .hero .lead { margin-inline: auto; }
   /* the buttons share the width evenly, one beside the other when they fit */
   .hero-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; max-width: 520px; margin: 24px auto 0; }
