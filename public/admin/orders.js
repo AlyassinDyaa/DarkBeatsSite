@@ -49,6 +49,10 @@
   const CSORTS = [['recent', 'Most recent'], ['spent', 'Spent the most'], ['orders', 'Most orders'], ['name', 'Name A–Z'], ['first', 'Customer the longest']]
   const DAY = 864e5
   const TAG = 'M3 12V4h8l10 10-8 8z M7.500 8.500h.01'
+  const CARD = 'M3 5h18v14H3z M8.500 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M5.500 16a3 3 0 0 1 6 0 M14 9h4 M14 12h4 M14 15h2'
+  const TRASH = 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6'
+  const CROSS = 'M6 6l12 12 M18 6L6 18'
+  const PAGE_SIZES = [10, 15, 20, 50]
   const DVIEWS = [['active', 'Active'], ['usedup', 'Used up'], ['ended', 'Ended'], ['off', 'Switched off'], ['all', 'All']]
   const DSORTS = [['new', 'Newest first'], ['ending', 'Ending soonest'], ['big', 'Biggest discount'], ['used', 'Most used']]
   const LENGTHS = [['7', '1 week'], ['14', '2 weeks'], ['30', '1 month'], ['90', '3 months'], ['180', '6 months'], ['date', 'Until a date…'], ['none', 'No end date']]
@@ -58,10 +62,135 @@
   const state = { orders: [], more: false, next: null, loaded: false, loading: false, problem: null, view: 'topost', q: '', period: 'all', sort: 'new', open: new Set(), keep: new Set(), drafts: {}, saving: {}, saved: {} }
 
   const pass = () => { try { return JSON.parse(localStorage.getItem('decap-cms-user') || '{}').token || '' } catch { return '' } }
-  const ask = async (url, init = {}) => {
+  const realAsk = async (url, init = {}) => {
     const answer = await fetch(url, { ...init, headers: { Authorization: `Bearer ${pass()}`, ...(init.body ? { 'Content-Type': 'application/json' } : {}) } })
     const said = await answer.json().catch(() => ({}))
     return { ok: answer.ok, status: answer.status, said }
+  }
+
+  const ask = (url, init = {}) => (sampleMode ? fakeAsk(url, init) : realAsk(url, init))
+
+  // ---------- sample data (Site → Show / hide → Admin): made-up orders, customers and discount
+  // codes, so every screen can be tried before real orders exist. The screens talk to a stand-in
+  // instead of Stripe while it is on; changes to the samples last until the page is reloaded.
+  let sampleMode = false
+  const makeSamples = () => {
+    let seed = 7
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646 }
+    const pick = (list) => list[Math.floor(rnd() * list.length)]
+    const people = [
+      ['Mia Thompson', '14 Ocean Pde', 'Burleigh Heads', 'QLD', '4220', 'AU'], ['Sam Nguyen', '3/88 King St', 'Newtown', 'NSW', '2042', 'AU'],
+      ['Jordan Lee', '7 Rata St', 'Wellington', 'Wellington', '6011', 'NZ'], ['Priya Shah', '201 Flinders Ln', 'Melbourne', 'VIC', '3000', 'AU'],
+      ['Chris Walker', '55 Hay St', 'Perth', 'WA', '6000', 'AU'], ['Ella Martin', '9 Jacaranda Ave', 'Southport', 'QLD', '4215', 'AU'],
+      ['Liam O’Brien', '42 Rundle St', 'Kent Town', 'SA', '5067', 'AU'], ['Zoe Chen', '18 Hobart Rd', 'South Launceston', 'TAS', '7249', 'AU'],
+      ['Noah Williams', '6 Smith St', 'Darwin', 'NT', '0800', 'AU'], ['Ava Brown', '120 Queen St', 'Brisbane', 'QLD', '4000', 'AU'],
+      ['Lucas Garcia', '33 Bourke St', 'Surry Hills', 'NSW', '2010', 'AU'], ['Grace Kim', '2 Marine Pde', 'Coolangatta', 'QLD', '4225', 'AU'],
+      ['Ethan Davis', '77 Cuba St', 'Te Aro', 'Wellington', '6011', 'NZ'], ['Isla Wilson', '15 Lygon St', 'Carlton', 'VIC', '3053', 'AU'],
+    ]
+    const prints = [['The Rider · A2', 65], ['The Rider · A3', 40], ['Brand New Day', 34], ['Lethal Protector · A3', 40], ['Man of Steel', 50], ['Imposter', 40], ['The Devils Mark', 50], ['Born Again', 40], ['Ghost Face', 45], ['Space Kook', 40], ['Neon Rain', 40], ['What’s Up Danger', 40]]
+    const now = Math.floor(Date.now() / 1000)
+    const orders = []
+    for (let n = 1; n <= 34; n++) {
+      const [name, line1, city, st, pc, country] = n <= 4 ? people[n - 1] : pick(people)
+      const email = `${name.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '')}.${name.split(' ')[1].toLowerCase().replace(/[^a-z]/g, '')}@example.com`
+      const age = n <= 3 ? n * 0.4 : Math.floor(rnd() * 120) + 1
+      const created = now - Math.round(age * 86400)
+      const support = rnd() < 0.18
+      let items, amount, discount = 0
+      if (support) {
+        const give = pick([5, 5, 10, 15, 25])
+        items = [{ name: give === 5 ? 'Support: a coffee' : 'Support: your own amount', qty: 1, amount: give }]
+        amount = give
+      } else {
+        items = Array.from({ length: rnd() < 0.3 ? 2 : 1 }, () => { const [t, p] = pick(prints); const signed = rnd() < 0.5; const qty = rnd() < 0.15 ? 2 : 1; return { name: `${t} (${signed ? 'signed' : 'unsigned'})`, qty, amount: (p + (signed ? 10 : 0)) * qty } })
+        amount = items.reduce((t, i) => t + i.amount, 0)
+        if (rnd() < 0.2) { discount = Math.round(amount * 0.1); amount -= discount }
+      }
+      const refundedAll = !support && rnd() < 0.06
+      const status = support ? 'new' : age < 2 ? 'new' : age < 5 ? pick(['new', 'packed']) : age < 12 ? pick(['shipped', 'packed', 'shipped']) : pick(['delivered', 'delivered', 'shipped'])
+      const carrier = ['shipped', 'delivered'].includes(status) ? pick(['auspost', 'auspost', 'sendle', 'startrack']) : ''
+      orders.push({
+        id: `cs_test_sample${n}`, pi: `pi_sample${n}`, created, kind: support ? 'support' : 'shop', amount, discount, currency: 'AUD', paid: true,
+        refunded: refundedAll ? amount : 0, fullyRefunded: refundedAll, name, email, phone: rnd() < 0.3 ? `04${String(Math.floor(rnd() * 1e8)).padStart(8, '0')}` : '',
+        address: support ? null : { name, line1, line2: '', city, state: st, postal_code: pc, country },
+        items, receipt: '', stripe: '', test: true, sample: true, hidden: false,
+        track: { status, carrier, number: carrier ? `${carrier === 'sendle' ? 'SNDL' : '33AB'}${String(Math.floor(rnd() * 1e7)).padStart(7, '0')}` : '', note: '', at: carrier ? new Date((created + 2 * 86400) * 1000).toISOString() : '' },
+      })
+    }
+    const code = (id, c, percent, email, name, days, uses, used, active = true) => ({ id, code: c, active, percent, until: days === null ? null : now + days * 86400, uses, used, email, name, label: `${percent}% off`, batch: '', created: now - Math.abs(days || 30) * 3600, test: true })
+    const codes = [
+      code('promo_s1', 'WELCOME10', 10, '', '', null, null, 6),
+      code('promo_s2', 'SPOOKY20', 20, '', '', 24, 50, 3),
+      code('promo_s3', 'JB-MIA-7K3Q', 15, 'mia.thompson@example.com', 'Mia Thompson', 20, 1, 0),
+      code('promo_s4', 'JB-SAM-4D2P', 15, 'sam.nguyen@example.com', 'Sam Nguyen', 20, 1, 1),
+      code('promo_s5', 'JB-ELLA-9QWE', 25, 'ella.martin@example.com', 'Ella Martin', -3, 1, 0),
+      code('promo_s6', 'GOLDCOAST15', 15, '', '', 60, null, 2, false),
+    ]
+    return { orders, codes }
+  }
+  let samples = null
+  const fakeAsk = async (url, init = {}) => {
+    samples = samples || makeSamples()
+    await new Promise((r) => setTimeout(r, 250)) // a moment, as a real answer would take
+    const body = init.body ? JSON.parse(init.body) : {}
+    const done = (said) => ({ ok: true, status: 200, said })
+    const ts = Math.floor(Date.now() / 1000)
+    if (url.startsWith('/api/orders')) {
+      if (!init.method || init.method === 'GET') return done({ orders: samples.orders.filter((o) => !o.hidden).map((o) => ({ ...o, track: { ...o.track } })), more: false, next: null })
+      if (body.action === 'hide') { samples.orders.forEach((o) => { if (body.pis.includes(o.pi)) o.hidden = true }); return done({ hidden: body.pis }) }
+      const o = samples.orders.find((x) => x.id === body.id)
+      o.track = { status: body.status, carrier: body.carrier || '', number: body.number || '', note: body.note || '', at: new Date().toISOString() }
+      return done({ track: { ...o.track } })
+    }
+    if (url.startsWith('/api/discounts')) {
+      if (!init.method || init.method === 'GET') return done({ discounts: samples.codes.filter((d) => !d.hidden).map((d) => ({ ...d })) })
+      if (body.action === 'delete') { samples.codes.forEach((d) => { if (body.ids.includes(d.id)) { d.hidden = true; d.active = false } }); return done({ deleted: body.ids }) }
+      if (body.action === 'stop') { const d = samples.codes.find((x) => x.id === body.id); d.active = false; return done({ discount: { ...d } }) }
+      if (body.action === 'create') {
+        const tail = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('')
+        const made = (body.people || [{ email: '', name: '' }]).map((p, i) => ({ id: `promo_new${ts}${i}`, code: body.people ? `JB-${((p.name || p.email).split(/[\s@._-]+/)[0] || 'X').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)}-${tail()}` : body.code, active: true, percent: Number(body.percent), until: body.until || null, uses: body.uses ? Number(body.uses) : null, used: 0, email: p.email, name: p.name, label: body.label || `${body.percent}% off`, batch: '', created: ts, test: true }))
+        samples.codes.unshift(...made)
+        return done({ discounts: made.map((d) => ({ ...d })), failed: [] })
+      }
+    }
+    return { ok: false, status: 400, said: { message: 'Not part of the samples.' } }
+  }
+  // the switch is read from the site's settings (the repository on the live admin, the file here)
+  const readSamples = async () => {
+    let v = null
+    try {
+      const b = await (await fetch('backend.json', { cache: 'no-store' })).json()
+      if (b && b.repo) {
+        const r = await realAsk(`/api/gh/repos/${b.repo}/contents/content/site/visibility.json?ref=${encodeURIComponent(b.branch || 'main')}&t=${Date.now()}`)
+        if (r.ok && r.said.content) v = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(r.said.content.replace(/\s/g, '')), (c) => c.charCodeAt(0))))
+      }
+    } catch { /* not on Vercel */ }
+    if (!v) { try { v = await (await fetch('/content/site/visibility.json', { cache: 'no-store' })).json() } catch { /* no settings to read */ } }
+    return Boolean(v && v.admin && v.admin.samples)
+  }
+  let lastRead = 0
+  const checkSamples = async (force) => {
+    if (!force && Date.now() - lastRead < 8000) return
+    lastRead = Date.now()
+    const on = await readSamples()
+    if (on === sampleMode) return
+    sampleMode = on
+    samples = null
+    // start again from the right source
+    state.orders = []; state.loaded = false; state.problem = null; state.open.clear(); state.keep.clear(); state.drafts = {}
+    disc.list = []; disc.loaded = false; disc.problem = null; disc.result = null
+    sampleNotes.forEach((n) => { n.hidden = !sampleMode })
+    load(true)
+    if (location.hash === DROUTE) loadDiscounts()
+  }
+  const sampleNotes = []
+  const sampleNote = () => {
+    const n = el('div', { className: 'io-sample', hidden: true }, [
+      el('strong', { textContent: 'Sample data' }),
+      el('span', { textContent: 'Made-up orders, customers and codes, to try things out. Nothing here is real or reaches Stripe, and changes last until the page reloads. Switch it off under Site → Show / hide → Admin before going live.' }),
+    ])
+    sampleNotes.push(n)
+    return n
   }
 
   const money = (n, code) => {
@@ -89,6 +218,52 @@
     const q = state.q.trim().toLowerCase()
     if (!q) return true
     return [o.name, o.email, o.phone, o.id, o.track.number, ...o.items.map((i) => i.name), ...addressLines(o.address)].join(' ').toLowerCase().includes(q)
+  }
+
+  // a "Delete test data" button for each screen (shown only while there is test data)
+  const clearButtons = []
+  const clearBtn = () => {
+    const b = el('button', { type: 'button', className: 'ia-btn ghost io-clear', textContent: 'Delete test data', hidden: true })
+    b.addEventListener('click', () => clearTest())
+    clearButtons.push(b)
+    return b
+  }
+
+  // ---------- pages: a long list shows 10, 15, 20 or 50 at a time (the choice is remembered here)
+  const opager = el('nav', { className: 'io-pager', ariaLabel: 'Pages of orders' })
+  const cpager = el('nav', { className: 'io-pager', ariaLabel: 'Pages of customers' })
+  const dpager = el('nav', { className: 'io-pager', ariaLabel: 'Pages of discount codes' })
+  const pages = {}
+  let perPage = (() => { try { return PAGE_SIZES.includes(Number(localStorage.getItem('jb.admin.perPage'))) ? Number(localStorage.getItem('jb.admin.perPage')) : 15 } catch { return 15 } })()
+  // `sig` names the filters in force: when they change, the list starts again at page 1
+  const paged = (name, items, sig, bar, repaint) => {
+    const p = pages[name] || (pages[name] = { page: 1, sig })
+    if (p.sig !== sig) { p.sig = sig; p.page = 1 }
+    const count = Math.max(1, Math.ceil(items.length / perPage))
+    p.page = Math.min(Math.max(1, p.page), count)
+    const from = (p.page - 1) * perPage
+    if (items.length <= PAGE_SIZES[0]) { bar.replaceChildren(); return items }
+    const go = (n) => { p.page = n; repaint(); bar.previousElementSibling?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
+    const btn = (label, n, on, aria) => {
+      const b = el('button', { type: 'button', className: `io-page ${on ? 'on' : ''}`, textContent: label, disabled: n < 1 || n > count, ariaLabel: aria || `Page ${n}` })
+      if (on) b.setAttribute('aria-current', 'page')
+      b.addEventListener('click', () => go(n))
+      return b
+    }
+    // page numbers: the first, the last, and two either side of this one
+    const nums = []
+    for (let n = 1; n <= count; n++) {
+      if (n === 1 || n === count || Math.abs(n - p.page) <= 1 || (p.page <= 3 && n <= 4) || (p.page >= count - 2 && n >= count - 3)) nums.push(n)
+      else if (nums[nums.length - 1] !== '…') nums.push('…')
+    }
+    const size = el('select', { className: 'io-select io-per', ariaLabel: 'How many to a page' }, PAGE_SIZES.map((n) => el('option', { value: n, textContent: `${n} a page`, selected: n === perPage })))
+    size.addEventListener('change', () => { perPage = Number(size.value); try { localStorage.setItem('jb.admin.perPage', String(perPage)) } catch { /* only for this visit */ } Object.values(pages).forEach((x) => { x.page = 1 }); paint() })
+    bar.replaceChildren(
+      el('span', { className: 'io-page-count', textContent: `${from + 1}–${Math.min(from + perPage, items.length)} of ${items.length}` }),
+      el('div', { className: 'io-page-nums' }, [btn('‹', p.page - 1, false, 'Previous page'), ...nums.map((n) => (n === '…' ? el('span', { className: 'io-page-gap', textContent: '…' }) : btn(String(n), n, n === p.page))), btn('›', p.page + 1, false, 'Next page')]),
+      size,
+    )
+    return items.slice(from, from + perPage)
   }
 
   // ---------- the screen
@@ -119,12 +294,14 @@
           el('h1', { textContent: 'Orders' }),
           el('p', { className: 'ia-lead', textContent: 'Everything paid through Stripe: prints from the Shop and support. Mark each order as you pack and post it; the tracking number goes with it.' }),
         ]),
-        el('div', { className: 'io-actions' }, [download, refresh]),
+        el('div', { className: 'io-actions' }, [clearBtn(), download, refresh]),
       ]),
+      sampleNote(),
       stats,
       el('div', { className: 'io-bar' }, [chips, el('div', { className: 'io-tools' }, [search, period, sort])]),
       summary,
       list,
+      opager,
       foot,
     ]),
   ])
@@ -153,7 +330,9 @@
     }))
     badge()
 
-    if (!state.loaded) { list.replaceChildren(state.problem ? problemBox() : el('div', { className: 'io-empty', textContent: 'Fetching the orders from Stripe…' })); foot.replaceChildren(); return }
+    syncClear()
+    if (!state.loaded) { list.replaceChildren(state.problem ? problemBox() : el('div', { className: 'io-empty', textContent: 'Fetching the orders from Stripe…' })); foot.replaceChildren(); opager.replaceChildren(); return }
+    if (!visible().length) opager.replaceChildren()
     const shown = visible()
     const filtered = state.view !== 'all' || state.period !== 'all' || state.q.trim()
     const clear = el('button', { type: 'button', className: 'io-link', textContent: 'Clear filters' })
@@ -162,7 +341,7 @@
     download.disabled = !shown.length
     paintPeople()
     paintDiscounts()
-    list.replaceChildren(...(shown.length ? shown.map(row) : [el('div', { className: 'io-empty' }, [
+    list.replaceChildren(...(shown.length ? paged('orders', shown, [state.view, state.period, state.q, state.sort].join('|'), opager, paint).map(row) : [el('div', { className: 'io-empty' }, [
       el('strong', { textContent: all.length ? 'Nothing here' : 'No orders yet' }),
       el('span', { textContent: all.length ? (state.view === 'topost' ? 'Every paid order has been posted.' : 'Try another filter, or clear the search.') : 'Orders show here as soon as someone pays.' }),
     ])]))
@@ -198,7 +377,7 @@
       svg('M6 9l6 6 6-6'),
     ])
     head.addEventListener('click', () => { if (open) state.open.delete(o.id); else state.open.add(o.id); paint() })
-    return el('article', { className: `io-order ${open ? 'is-open' : ''}` }, [head, open ? body(o) : null])
+    return el('article', { className: `io-order ${open ? 'is-open' : ''}` }, [el('div', { className: 'io-line' }, [head, rowTools(() => personModal(who(o)), () => deleteOrder(o), 'order')]), open ? body(o) : null])
   }
 
   const copyBtn = (text, what) => {
@@ -278,13 +457,17 @@
     setTimeout(() => { if (state.saved[o.id] && state.saved[o.id].ok) { delete state.saved[o.id]; if (shown()) paint() } }, 2500)
   }
 
+  // a newer load (say, after sample data is switched on) makes an older one's answer stale
+  let loadGen = 0
   const load = async (fresh) => {
-    if (state.loading) return
+    if (state.loading && !fresh) return
+    const gen = ++loadGen
     state.loading = true
     if (fresh) { state.problem = null; state.keep.clear(); refresh.textContent = 'Refreshing…'; crefresh.textContent = 'Refreshing…' }
     paint()
     try {
       const { ok, status, said } = await ask(`/api/orders${!fresh && state.next ? `?after=${encodeURIComponent(state.next)}` : ''}`)
+      if (gen !== loadGen) return
       if (ok) {
         const got = Array.isArray(said.orders) ? said.orders : []
         state.orders = fresh ? got : [...state.orders, ...got.filter((o) => !state.orders.some((x) => x.id === o.id))]
@@ -371,12 +554,14 @@
           el('h1', { textContent: 'Customers' }),
           el('p', { className: 'ia-lead', textContent: 'Everyone who has bought a print or given support, gathered from the orders. Open someone to see what they bought and get in touch.' }),
         ]),
-        el('div', { className: 'io-actions' }, [cdownload, crefresh]),
+        el('div', { className: 'io-actions' }, [clearBtn(), cdownload, crefresh]),
       ]),
+      sampleNote(),
       cstats,
       el('div', { className: 'io-bar' }, [cchips, el('div', { className: 'io-tools' }, [csearch, csort])]),
       csummary,
       clist,
+      cpager,
     ]),
   ])
 
@@ -403,7 +588,8 @@
     clear.addEventListener('click', () => { people.view = 'all'; people.q = ''; csearch.value = ''; paintPeople() })
     csummary.replaceChildren(el('span', { textContent: `${shown.length === all.length ? 'All' : `${shown.length} of`} ${many(all.length, 'customer')}${state.more ? ' (from the orders loaded so far)' : ''}` }), ...(people.view !== 'all' || people.q.trim() ? [clear] : []))
     cdownload.disabled = !shown.length
-    clist.replaceChildren(...(shown.length ? shown.map(personRow) : [el('div', { className: 'io-empty' }, [
+    if (!shown.length) cpager.replaceChildren()
+    clist.replaceChildren(...(shown.length ? paged('people', shown, [people.view, people.q, people.sort].join('|'), cpager, paintPeople).map(personRow) : [el('div', { className: 'io-empty' }, [
       el('strong', { textContent: all.length ? 'Nobody here' : 'No customers yet' }),
       el('span', { textContent: all.length ? 'Try another filter, or clear the search.' : 'Customers show here after their first order.' }),
     ])]))
@@ -420,7 +606,7 @@
       svg('M6 9l6 6 6-6'),
     ])
     head.addEventListener('click', () => { if (open) people.open.delete(p.key); else people.open.add(p.key); paintPeople() })
-    return el('article', { className: `io-order ${open ? 'is-open' : ''}` }, [head, open ? personBody(p) : null])
+    return el('article', { className: `io-order ${open ? 'is-open' : ''}` }, [el('div', { className: 'io-line' }, [head, rowTools(() => personModal(p.key), () => deletePerson(p), 'customer')]), open ? personBody(p) : null])
   }
 
   const personBody = (p) => {
@@ -504,14 +690,16 @@
           el('h1', { textContent: 'Discounts' }),
           el('p', { className: 'ia-lead', textContent: 'Make a discount code for chosen customers (each gets a code of their own) or for anyone you give the code to. Buyers type it in the discount box when they pay.' }),
         ]),
-        el('div', { className: 'io-actions' }, [drefresh]),
+        el('div', { className: 'io-actions' }, [clearBtn(), drefresh]),
       ]),
+      sampleNote(),
       dform,
       dresult,
       el('h2', { className: 'io-h2', textContent: 'Your discount codes' }),
       el('div', { className: 'io-bar' }, [dchips, el('div', { className: 'io-tools' }, [dsearch, dsort])]),
       dsummary,
       dlist,
+      dpager,
     ]),
   ])
 
@@ -618,19 +806,24 @@
     const by = { new: (a, b) => b.created - a.created, ending: (a, b) => (a.until || 9e12) - (b.until || 9e12), big: (a, b) => b.percent - a.percent, used: (a, b) => b.used - a.used }
     const shown = all.filter((d) => discIn(d, disc.view) && (!q || [d.code, d.name, d.email, d.label].join(' ').toLowerCase().includes(q))).sort(by[disc.sort] || by.new)
     dsummary.replaceChildren(el('span', { textContent: `${shown.length === all.length ? 'All' : `${shown.length} of`} ${many(all.length, 'code')}` }))
-    dlist.replaceChildren(...(shown.length ? shown.map(discRow) : [el('div', { className: 'io-empty' }, [el('strong', { textContent: all.length ? 'Nothing here' : 'No discount codes yet' }), el('span', { textContent: all.length ? 'Try another filter.' : 'Make the first one above.' })])]))
+    if (!shown.length) dpager.replaceChildren()
+    syncClear()
+    dlist.replaceChildren(...(shown.length ? paged('codes', shown, [disc.view, disc.q, disc.sort].join('|'), dpager, paintDiscountList).map(discRow) : [el('div', { className: 'io-empty' }, [el('strong', { textContent: all.length ? 'Nothing here' : 'No discount codes yet' }), el('span', { textContent: all.length ? 'Try another filter.' : 'Make the first one above.' })])]))
   }
 
   const discRow = (d) => {
     const [kind, text] = statusOf(d)
     const stop = el('button', { type: 'button', className: 'io-link is-danger', textContent: 'Switch off' })
-    stop.addEventListener('click', async () => {
-      if (!confirm(`Switch off ${d.code}? It stops working at once and cannot be switched back on.`)) return
-      stop.textContent = 'Switching off…'
-      const { ok, said } = await ask('/api/discounts', { method: 'POST', body: JSON.stringify({ action: 'stop', id: d.id }) })
-      if (ok && said.discount) Object.assign(d, said.discount)
-      paintDiscountList()
-    })
+    stop.addEventListener('click', () => sure({
+      title: `Switch off ${d.code}?`,
+      lines: ['It stops working at once and cannot be switched back on. It stays in this list, marked Switched off.'],
+      ok: 'Switch off',
+      run: async () => {
+        const { ok, said } = await ask('/api/discounts', { method: 'POST', body: JSON.stringify({ action: 'stop', id: d.id }) })
+        if (!ok || !said.discount) throw new Error(said.message || 'Stripe did not switch it off. Try again.')
+        Object.assign(d, said.discount); paintDiscountList()
+      },
+    }))
     return el('article', { className: 'io-order io-disc' }, [
       el('div', { className: 'io-disc-row' }, [
         el('span', { className: 'io-pct', textContent: `${d.percent}%` }),
@@ -638,6 +831,7 @@
         el('span', { className: 'io-disc-meta' }, [el('span', { textContent: d.until ? `${d.until < now() ? 'Ended' : 'Until'} ${dayText(d.until)}` : 'No end date' }), el('small', { textContent: `used ${d.used}${d.uses ? ` of ${d.uses}` : ' times'}` })]),
         el('span', { className: `io-pill is-${kind === 'active' ? 'delivered' : kind === 'off' ? 'cancelled' : 'packed'}`, textContent: text }),
         el('span', { className: 'io-disc-actions' }, [copyBtn(d.code, 'code'), d.email && kind === 'active' ? el('a', { className: 'io-link', href: mailFor(d), textContent: 'Email it' }) : null, d.active ? stop : null]),
+        rowTools(d.email ? () => personModal(d.email.toLowerCase(), d) : null, () => deleteCode(d), 'code'),
       ]),
     ])
   }
@@ -665,15 +859,182 @@
     if (disc.result) setTimeout(() => dresult.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60)
   }
 
+  let discGen = 0
   const loadDiscounts = async () => {
-    if (disc.loading) return
+    const gen = ++discGen
     disc.loading = true; disc.problem = null; drefresh.textContent = 'Refreshing…'; paintDiscountList()
     try {
       const { ok, said } = await ask('/api/discounts')
+      if (gen !== discGen) return
       if (ok) { disc.list = Array.isArray(said.discounts) ? said.discounts : []; disc.loaded = true }
       else disc.problem = { setup: Boolean(said.setup), message: said.message || 'Try Refresh in a moment.' }
     } catch { disc.problem = { message: 'Could not reach the site. Check the connection and press Refresh.' } }
     disc.loading = false; drefresh.textContent = 'Refresh'; paintDiscountList()
+  }
+
+  // ---------- pop-ups: one at a time, over everything; Escape or a click outside closes them
+  const modal = ({ title, content, actions = () => [], wide = false }) => {
+    const back = el('div', { className: 'io-modal-back' })
+    const before = document.activeElement
+    const key = (e) => { if (e.key === 'Escape') close() }
+    const close = () => { back.remove(); removeEventListener('keydown', key, true); before?.focus?.() }
+    const x = el('button', { type: 'button', className: 'io-icon io-modal-x', ariaLabel: 'Close' }, [svg(CROSS)])
+    x.addEventListener('click', close)
+    const foot = actions(close)
+    const box = el('div', { className: `io-modal ${wide ? 'is-wide' : ''}`, role: 'dialog', ariaModal: 'true', ariaLabel: title }, [
+      el('header', { className: 'io-modal-head' }, [el('h2', { textContent: title }), x]),
+      el('div', { className: 'io-modal-body' }, content),
+      foot.length ? el('footer', { className: 'io-modal-foot' }, foot) : null,
+    ])
+    back.addEventListener('mousedown', (e) => { if (e.target === back) close() })
+    back.append(box)
+    document.body.append(back)
+    addEventListener('keydown', key, true)
+    setTimeout(() => (box.querySelector('.io-modal-foot button:last-child') || x).focus(), 30)
+    return close
+  }
+  // "are you sure?": the action runs inside the pop-up, which says so if it fails
+  const sure = ({ title, lines, ok = 'Delete', run }) => {
+    const said = el('p', { className: 'io-modal-error', hidden: true })
+    modal({
+      title,
+      content: [...lines.map((l) => el('p', { textContent: l })), said],
+      actions: (close) => {
+        const no = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Cancel' })
+        no.addEventListener('click', close)
+        const yes = el('button', { type: 'button', className: 'ia-btn io-danger', textContent: ok })
+        yes.addEventListener('click', async () => {
+          yes.disabled = true; no.disabled = true; yes.textContent = 'Working…'; said.hidden = true
+          try { await run(); close() } catch (e) { said.textContent = e.message; said.hidden = false; yes.disabled = false; no.disabled = false; yes.textContent = ok }
+        })
+        return [no, yes]
+      },
+    })
+  }
+
+  const iconBtn = (path, labelText, onClick, danger) => {
+    const b = el('button', { type: 'button', className: `io-icon ${danger ? 'is-danger' : ''}`, ariaLabel: labelText, title: labelText }, [svg(path)])
+    b.addEventListener('click', (e) => { e.stopPropagation(); onClick() })
+    return b
+  }
+  const rowTools = (info, remove, what) => el('span', { className: 'io-row-tools' }, [
+    info ? iconBtn(CARD, 'Customer details', info) : el('span', { className: 'io-icon-gap' }),
+    iconBtn(TRASH, `Delete this ${what}`, remove, true),
+  ])
+
+  // ---------- deleting. Stripe keeps every payment, so an order is marked and drops out of the
+  // admin; a discount code is switched off and drops out. Nothing is refunded.
+  const inChunks = (list, n = 100) => Array.from({ length: Math.ceil(list.length / n) }, (_, i) => list.slice(i * n, i * n + n))
+  const dropOrders = async (orders) => {
+    const pis = orders.map((o) => o.pi).filter(Boolean)
+    const gone = new Set()
+    for (const chunk of inChunks(pis)) {
+      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', pis: chunk }) })
+      ;(said.hidden || []).forEach((p) => gone.add(p))
+    }
+    state.orders = state.orders.filter((o) => !gone.has(o.pi))
+    if (gone.size < pis.length) throw new Error(`${pis.length - gone.size} could not be removed. Try again in a moment.`)
+  }
+  const dropCodes = async (codes) => {
+    const gone = new Set()
+    for (const chunk of inChunks(codes.map((d) => d.id))) {
+      const { said } = await ask('/api/discounts', { method: 'POST', body: JSON.stringify({ action: 'delete', ids: chunk }) })
+      ;(said.deleted || []).forEach((i) => gone.add(i))
+    }
+    disc.list = disc.list.filter((d) => !gone.has(d.id))
+    if (disc.result) disc.result = disc.result.filter((d) => !gone.has(d.id))
+    if (gone.size < codes.length) throw new Error(`${codes.length - gone.size} could not be deleted. Try again in a moment.`)
+  }
+  const after = () => { paint(); paintDiscounts() }
+  const LEFT_IN_STRIPE = 'The payment record itself stays in your Stripe account (Stripe never deletes payments) and nothing is refunded.'
+  const deleteOrder = (o) => sure({
+    title: 'Delete this order?',
+    lines: [`${o.name || o.email || 'No name'} · ${money(o.amount, o.currency)} · ${when(o.created)}`, `It leaves Orders and Customers here for good. ${LEFT_IN_STRIPE}`],
+    run: async () => { await dropOrders([o]); after() },
+  })
+  const codesOf = (email) => (email ? disc.list.filter((d) => d.email && d.email.toLowerCase() === email.toLowerCase()) : [])
+  const deletePerson = async (p) => {
+    if (!disc.loaded && !disc.loading) await loadDiscounts()
+    const codes = codesOf(p.email)
+    sure({
+      title: `Delete ${p.name || p.email || 'this customer'}?`,
+      lines: [`Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} leave the admin for good${codes.length ? '; the codes stop working' : ''}.`, LEFT_IN_STRIPE],
+      run: async () => { await dropOrders(p.orders); if (codes.length) await dropCodes(codes); people.open.delete(p.key); after() },
+    })
+  }
+  const deleteCode = (d) => sure({
+    title: `Delete ${d.code}?`,
+    lines: [`${d.percent}% off · ${d.email || 'anyone with the code'}`, 'It stops working at once and leaves this list for good.'],
+    run: async () => { await dropCodes([d]); paintDiscounts() },
+  })
+
+  // test data: payments and codes made with Stripe's test keys, cleared in one go
+  const syncClear = () => { const any = state.orders.some((o) => o.test) || disc.list.some((d) => d.test); clearButtons.forEach((b) => { b.hidden = !any }) }
+  const clearTest = async () => {
+    if (!disc.loaded && !disc.loading) await loadDiscounts()
+    const orders = state.orders.filter((o) => o.test)
+    const codes = disc.list.filter((d) => d.test)
+    const buyers = new Set(orders.map(who)).size
+    sure({
+      title: 'Delete all test data?',
+      lines: [`${many(orders.length, 'test order')} (from ${many(buyers, 'test customer')}) and ${many(codes.length, 'test discount code')} leave the admin for good. Test codes stop working.`, sampleMode ? 'This is the sample data: it comes back when the page reloads, until it is switched off under Site → Show / hide → Admin.' : 'Only things made with Stripe test keys are touched. Real orders and codes stay as they are.'],
+      ok: 'Delete test data',
+      run: async () => { if (orders.length) await dropOrders(orders); if (codes.length) await dropCodes(codes); people.open.clear(); state.open.clear(); after() },
+    })
+  }
+
+  // ---------- one customer, everything at once: contact, every address, what they bought, their codes
+  const personModal = async (key, fromCode) => {
+    if (!disc.loaded && !disc.loading) await loadDiscounts()
+    const p = everyone().find((x) => x.key === key) || (fromCode ? { key, name: fromCode.name, email: fromCode.email, phone: '', orders: [], spent: 0, given: 0, bought: 0, supported: 0, currency: 'AUD' } : null)
+    if (!p) return
+    const addresses = [...new Map(p.orders.filter((o) => o.address).map((o) => { const lines = addressLines(o.address); return [lines.join('|'), lines] })).values()]
+    const codes = codesOf(p.email)
+    const block = (h, kids) => el('section', { className: 'io-mblock' }, [el('h4', { textContent: h }), ...kids])
+    const text = [
+      p.name, p.email, p.phone,
+      ...addresses.map((a) => a.join(', ')),
+      p.orders.length ? `Orders: ${p.orders.map((o) => `${when(o.created)} ${money(o.amount, o.currency)} (${label(o)[1]})`).join('; ')}` : '',
+    ].filter(Boolean).join('\n')
+    let closeIt = () => {}
+    const orderRows = p.orders.map((o) => {
+      const [kind, t] = label(o)
+      const b = el('button', { type: 'button', className: 'io-mini-row', title: 'Open this order' }, [
+        el('span', { className: 'io-date', textContent: when(o.created) }),
+        el('span', { className: 'io-mini-what', textContent: o.items.map((i) => (i.qty > 1 ? `${i.qty} × ${i.name}` : i.name)).join(', ') || 'Payment' }),
+        el('b', { textContent: money(o.amount, o.currency) }),
+        el('span', { className: `io-pill is-${kind}`, textContent: t }),
+      ])
+      b.addEventListener('click', () => { closeIt(); showOrder(o) })
+      return b
+    })
+    closeIt = modal({
+      title: p.name || p.email || 'Customer',
+      wide: true,
+      content: [
+        el('div', { className: 'io-mgrid' }, [
+          block('Contact', [el('p', { className: 'io-lines' }, [p.name || '—', p.email ? el('br') : null, p.email ? el('a', { href: `mailto:${p.email}`, textContent: p.email }) : null, p.phone ? el('br') : null, p.phone || null])]),
+          block(addresses.length > 1 ? `Addresses (${addresses.length})` : 'Address', addresses.length ? addresses.map((a) => el('div', { className: 'io-maddress' }, [el('p', { className: 'io-lines' }, a.flatMap((l, i) => (i ? [el('br'), l] : [l]))), copyBtn(a.join('\n'), 'address')])) : [el('p', { className: 'io-lines io-dim', textContent: 'No postal address (support, or nothing posted yet).' })]),
+          block('In short', [el('ul', { className: 'io-items' }, [
+            el('li', {}, [el('span', { textContent: 'Orders' }), el('b', { textContent: String(p.bought) })]),
+            el('li', {}, [el('span', { textContent: 'Spent in the Shop' }), el('b', { textContent: money(p.spent, p.currency) })]),
+            p.given ? el('li', {}, [el('span', { textContent: 'Support given' }), el('b', { textContent: money(p.given, p.currency) })]) : null,
+            p.orders.length ? el('li', {}, [el('span', { textContent: 'Customer since' }), el('b', { textContent: dayText(p.first) })]) : null,
+            p.orders.length ? el('li', {}, [el('span', { textContent: 'Last order' }), el('b', { textContent: dayText(p.last) })]) : null,
+          ])]),
+          block('Discount codes', codes.length ? codes.map((d) => el('p', { className: 'io-lines' }, [el('code', { className: 'io-code-text', textContent: d.code }), ` · ${d.percent}% · ${statusOf(d)[1]}`])) : [el('p', { className: 'io-lines io-dim', textContent: disc.loaded ? 'None' : 'Could not load the codes just now.' })]),
+        ]),
+        p.orders.length ? block(`Their orders (${p.orders.length})`, [el('div', { className: 'io-mini' }, orderRows)]) : null,
+      ].filter(Boolean),
+      actions: (close) => {
+        const copyAll = copyBtn(text, 'all details')
+        copyAll.className = 'ia-btn ghost'
+        const write = p.email ? el('a', { className: 'ia-btn ghost', href: `mailto:${p.email}`, textContent: 'Write to them' }) : null
+        const done = el('button', { type: 'button', className: 'ia-btn', textContent: 'Close' })
+        done.addEventListener('click', close)
+        return [copyAll, write, done].filter(Boolean)
+      },
+    })
   }
 
   // ---------- its place in the navigation, with the number still to post
@@ -695,8 +1056,10 @@
     dlink.classList.toggle('on', at === 'discounts')
     if (at) {
       document.querySelectorAll('.ia-side nav a.on').forEach((a) => a !== link && a !== clink && a !== dlink && a.classList.remove('on'))
-      if (!state.loaded && !state.loading) load(true)
-      if (at === 'discounts' && !disc.loaded && !disc.loading) loadDiscounts()
+      checkSamples().then(() => {
+        if (!state.loaded && !state.loading) load(true)
+        if (at === 'discounts' && !disc.loaded && !disc.loading) loadDiscounts()
+      })
       ;(at === 'orders' ? screen : at === 'customers' ? cscreen : dscreen).scrollTop = 0
     }
   }
@@ -728,7 +1091,7 @@
     const ready = setInterval(() => {
       if (!document.querySelector('[class*="AppHeader"], [class*="ToolbarContainer"]')) return
       clearInterval(ready)
-      if (!state.loaded && !state.loading) load(true)
+      checkSamples(true).then(() => { if (!state.loaded && !state.loading) load(true) })
     }, 500)
   }, 200)
   setTimeout(() => clearInterval(place), 30000)

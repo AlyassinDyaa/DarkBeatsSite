@@ -18,5 +18,8 @@
   },
   "shop": {
     "redraws": false
+  },
+  "admin": {
+    "samples": true
   }
 }

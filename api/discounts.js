@@ -10,6 +10,8 @@ import { configured, goodPass } from './_session.js'
    GET  /api/discounts                       every discount made here, newest first
    POST /api/discounts { action: 'create', percent, until, label, uses, people: [{ email, name }] | code }
    POST /api/discounts { action: 'stop', id }   switches one code off
+   POST /api/discounts { action: 'delete', ids }  switches codes off and takes them out of the list
+        (Stripe keeps a code once made; it is marked jb_hidden and never listed again)
 
    Needs STRIPE_SECRET_KEY (Vercel project settings), and the admin's login pass like api/gh.js. */
 
@@ -76,11 +78,22 @@ export default async function handler(req, res) {
         if (!got.said.has_more || !data.length) break
         after = data[data.length - 1].id
       }
-      return res.status(200).json({ discounts: all.filter((p) => p.metadata && p.metadata.jb === '1').map(shape) })
+      return res.status(200).json({ discounts: all.filter((p) => p.metadata && p.metadata.jb === '1' && p.metadata.jb_hidden !== '1').map(shape) })
     }
 
     if (req.method !== 'POST') return res.status(405).json({ message: 'Read discounts with GET, change them with POST.' })
     const body = req.body && typeof req.body === 'object' ? req.body : {}
+
+    if (body.action === 'delete') {
+      const ids = (Array.isArray(body.ids) ? body.ids : []).map((i) => text(i, 80)).filter((i) => /^promo_[A-Za-z0-9]+$/.test(i))
+      if (!ids.length || ids.length > 100) return res.status(400).json({ message: 'Between 1 and 100 codes at a time.' })
+      const done = []
+      for (const id of ids) {
+        const got = await stripe(`promotion_codes/${id}`, { method: 'POST', body: form({ active: 'false', 'metadata[jb_hidden]': '1' }) })
+        if (got.ok) done.push(id)
+      }
+      return res.status(done.length ? 200 : 502).json({ deleted: done, ...(done.length < ids.length ? { message: 'Some could not be deleted. Try again in a moment.' } : {}) })
+    }
 
     if (body.action === 'stop') {
       const id = text(body.id, 80)

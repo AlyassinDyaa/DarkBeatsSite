@@ -8,6 +8,8 @@ import { configured, goodPass } from './_session.js'
 
    GET  /api/orders[?after=<id>]  the latest 100 completed checkouts, newest first
    POST /api/orders { id, status, carrier, number, note }  saves the posting details of one
+   POST /api/orders { action: 'hide', pis: [...] }  takes orders out of the admin. Stripe cannot
+        delete a payment, so the payment is marked (jb_hidden) and the admin no longer lists it.
 
    Needs STRIPE_SECRET_KEY (Vercel project settings), and the admin's login pass like api/gh.js. */
 const STATUSES = ['new', 'packed', 'shipped', 'delivered', 'cancelled']
@@ -54,6 +56,8 @@ const shape = (s) => {
     address: ship && ship.address ? { name: text(ship.name), ...Object.fromEntries(['line1', 'line2', 'city', 'state', 'postal_code', 'country'].map((k) => [k, text(ship.address[k])])) } : null,
     items,
     receipt: (charge && charge.receipt_url) || '',
+    pi: pi ? pi.id : '',
+    hidden: meta.jb_hidden === '1',
     stripe: pi ? `https://dashboard.stripe.com/${s.livemode ? '' : 'test/'}payments/${pi.id}` : '',
     test: !s.livemode,
     track: {
@@ -86,11 +90,21 @@ export default async function handler(req, res) {
         return res.status(502).json({ message: got.status === 401 ? 'Stripe did not accept the key in STRIPE_SECRET_KEY.' : 'Stripe did not answer. Try again in a moment.' })
       }
       const list = Array.isArray(got.said.data) ? got.said.data : []
-      return res.status(200).json({ orders: list.map(shape), more: Boolean(got.said.has_more), next: list.length ? list[list.length - 1].id : null })
+      return res.status(200).json({ orders: list.map(shape).filter((o) => !o.hidden), more: Boolean(got.said.has_more), next: list.length ? list[list.length - 1].id : null })
     }
 
     if (req.method === 'POST') {
       const body = req.body && typeof req.body === 'object' ? req.body : {}
+      if (body.action === 'hide') {
+        const pis = (Array.isArray(body.pis) ? body.pis : []).map((p) => text(p, 80)).filter((p) => /^pi_[A-Za-z0-9_]+$/.test(p))
+        if (!pis.length || pis.length > 100) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
+        const done = []
+        for (const pi of pis) {
+          const got = await stripe(`payment_intents/${pi}`, { method: 'POST', body: 'metadata[jb_hidden]=1' })
+          if (got.ok) done.push(pi)
+        }
+        return res.status(done.length ? 200 : 502).json({ hidden: done, ...(done.length < pis.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
+      }
       const id = text(body.id, 120)
       if (!/^cs_[A-Za-z0-9_]+$/.test(id)) return res.status(400).json({ message: 'That is not an order.' })
       const status = STATUSES.includes(body.status) ? body.status : 'new'

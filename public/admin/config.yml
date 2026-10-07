@@ -611,3 +611,9 @@ collections:
             collapsed: false
             fields:
               - { name: redraws, label: Then and now, widget: boolean, default: true, hint: 'The before-and-after drawings under the pieces.' }
+          - name: admin
+            label: Admin
+            widget: object
+            collapsed: false
+            fields:
+              - { name: samples, label: Sample orders, customers and discounts, widget: boolean, default: false, required: false, hint: 'Fills Orders, Customers and Discounts with made-up data, to try them out. Nothing in it is real, and nothing you do to it reaches Stripe. Switch it off before going live.' }
