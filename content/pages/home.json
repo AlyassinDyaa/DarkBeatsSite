@@ -87,7 +87,7 @@
   "galleryView": "wall",
   "commissionsButton": "How it works",
   "eventsLabel": "In person",
-  "wallSpeed": 270,
+  "wallSpeed": 100,
   "redrawLabel": "Keep drawing",
   "eventsTitle": "Find me at"
 }
