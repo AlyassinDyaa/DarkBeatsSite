@@ -1,6 +1,5 @@
 {
-  "kicker": "Jordan Beattie · Gold Coast, Australia",
-  "text": "Heroes, villains and horror icons, painted loud on a black page.",
+  "redrawTitle": "Then and now",
   "buttons": [
     {
       "label": "See the work",
@@ -11,8 +10,33 @@
       "label": "Commission a piece",
       "page": "commissions",
       "style": "outline"
+    },
+    {
+      "page": "shop",
+      "style": "filled",
+      "label": "Go to Shop"
     }
   ],
+  "marquee": [
+    "Heroes",
+    "Villains",
+    "Horror",
+    "Games",
+    "Originals",
+    "Keep drawing"
+  ],
+  "galleryLabel": "The work",
+  "figure": {
+    "src": "/uploads/hero-bust.webp",
+    "layer": "behind",
+    "ground": false,
+    "size": 118,
+    "x": -19,
+    "y": -44
+  },
+  "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
+  "galleryTitle": "Up on the wall",
+  "wallAddNew": true,
   "wall": [
     {
       "piece": "ghost-rider",
@@ -55,34 +79,15 @@
       "column": "any"
     }
   ],
-  "wallAddNew": true,
-  "wallSpeed": 100,
-  "figure": {
-    "src": "/uploads/hero-bust.webp",
-    "layer": "behind",
-    "ground": false,
-    "size": 118,
-    "x": -19,
-    "y": -44
-  },
-  "marquee": [
-    "Heroes",
-    "Villains",
-    "Horror",
-    "Games",
-    "Originals",
-    "Keep drawing"
-  ],
+  "text": "Heroes, villains and horror icons, painted loud on a black page.",
   "latestLabel": "Fresh ink",
-  "latestTitle": "Latest pieces",
-  "galleryLabel": "The work",
-  "galleryTitle": "Up on the wall",
-  "galleryView": "wall",
-  "redrawLabel": "Keep drawing",
-  "redrawTitle": "Then and now",
-  "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
   "commissionsTitle": "Get something drawn",
+  "latestTitle": "Latest pieces",
+  "kicker": "Jordan Beattie · Gold Coast, Australia",
+  "galleryView": "wall",
   "commissionsButton": "How it works",
   "eventsLabel": "In person",
+  "wallSpeed": 100,
+  "redrawLabel": "Keep drawing",
   "eventsTitle": "Find me at"
 }
