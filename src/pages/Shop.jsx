@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { buyable, categories, day, home, money, pages, redraws, shop, work } from '../data/site'
+import { badge, buyable, canBuy, categories, day, home, money, nowPrice, onSale, pages, redraws, shop, soldOut, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
@@ -58,8 +58,13 @@ export default function Shop() {
                   <button type="button" className="tile" onClick={() => setSel(i)}>
                     <span className="tile-art">
                       <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={i < 4} />
-                      {buyable(p) && <span className="tile-price">{money(p.price)}</span>}
-                      <span className="tile-cta">{buyable(p) ? 'View & buy' : 'View'} <span className="arrow">→</span></span>
+                      {badge(p) && <span className={`tile-badge is-${badge(p).kind}`}>{badge(p).text}</span>}
+                      {buyable(p) && (
+                        <span className={`tile-price ${soldOut(p) ? 'is-out' : ''}`}>
+                          {onSale(p) && <s>{money(p.price)}</s>}{money(nowPrice(p))}
+                        </span>
+                      )}
+                      <span className="tile-cta">{canBuy(p) ? 'View & buy' : 'View'} <span className="arrow">→</span></span>
                     </span>
                     <span className="tile-cap">
                       <strong>{p.title}</strong>

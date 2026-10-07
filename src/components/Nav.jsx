@@ -27,7 +27,7 @@ export default function Nav() {
       <header className={`nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="container nav-bar">
           <Link to="/" className="brand" aria-label={`${brand.name} home`} onClick={() => setOpen(false)}>
-            {brand.logo && <img className="brand-logo" src={asset(brand.logo)} alt="" width="40" height="40" />}
+            {brand.logo && <img className={`brand-logo is-${['circle', 'rounded', 'square', 'natural'].includes(brand.logoShape) ? brand.logoShape : 'circle'}`} src={asset(brand.logo)} alt="" style={{ '--logo-size-set': `${Math.min(64, Math.max(24, Number(brand.logoSize) || 42))}px` }} />}
             <Wordmark />
           </Link>
           <nav className="nav-links" aria-label="Main">

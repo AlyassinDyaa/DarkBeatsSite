@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { brand, buyable, money, shop } from '../data/site'
+import { badge, brand, buyable, money, nowPrice, onSale, shop, soldOut } from '../data/site'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -22,8 +22,10 @@ export default function Buy({ piece }) {
   const [note, setNote] = useState('')
   if (!buyable(piece)) return null
   const where = shop.shipping !== false ? shipsTo(shop.countries) : ''
+  const out = soldOut(piece)
+  const tag = badge(piece)
   const buy = async () => {
-    if (busy) return
+    if (busy || out) return
     setBusy(true); setNote('')
     try {
       const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: piece.slug }) })
@@ -37,18 +39,30 @@ export default function Buy({ piece }) {
   }
   return (
     <motion.div className="buy" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45, ease: EASE }}>
+      {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       <div className="buy-head">
-        <span className="buy-price">{money(piece.price)}</span>
+        {onSale(piece) && <s className="buy-was">{money(piece.price)}</s>}
+        <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece))}</span>
         {shop.note && <span className="buy-what">{shop.note}</span>}
       </div>
-      <button type="button" className={`buy-btn ${busy ? 'is-busy' : ''}`} onClick={buy} aria-busy={busy}>
-        <span className="buy-btn-label">{busy ? 'Opening secure checkout' : shop.buttonLabel}</span>
-        <span className="buy-btn-icon" aria-hidden="true">{busy ? <i className="buy-spin" /> : '→'}</span>
-      </button>
-      <p className="buy-secure">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10.5h12v9.5H6z M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
-        <span>Secure checkout by Stripe{where ? ` · Ships to ${where}` : ''}</span>
-      </p>
+      {onSale(piece) && !out && <p className="buy-save">You save {money(Number(piece.price) - nowPrice(piece))}</p>}
+      {out ? (
+        <>
+          <span className="buy-btn is-out" aria-disabled="true"><span className="buy-btn-label">Sold out</span></span>
+          <p className="buy-secure"><span>This one has gone. {brand.email && <a href={`mailto:${brand.email}?subject=${encodeURIComponent(`About "${piece.title}"`)}`}>Ask about a reprint or a commission</a>}</span></p>
+        </>
+      ) : (
+        <>
+          <button type="button" className={`buy-btn ${busy ? 'is-busy' : ''}`} onClick={buy} aria-busy={busy}>
+            <span className="buy-btn-label">{busy ? 'Opening secure checkout' : shop.buttonLabel}</span>
+            <span className="buy-btn-icon" aria-hidden="true">{busy ? <i className="buy-spin" /> : '→'}</span>
+          </button>
+          <p className="buy-secure">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10.5h12v9.5H6z M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
+            <span>Secure checkout by Stripe{where ? ` · Ships to ${where}` : ''}</span>
+          </p>
+        </>
+      )}
       <AnimatePresence>
         {note && (
           <motion.div className="buy-note" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3, ease: EASE }}>

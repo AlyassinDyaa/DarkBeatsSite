@@ -183,8 +183,24 @@ export function showLatest({ content = {}, media = {} }) {
 /* Uploaded images are stored as "/uploads/x.jpg". Prefix the deploy base path. */
 export const asset = (url) => newPictures[url] || (url && url.startsWith('/') ? import.meta.env.BASE_URL.replace(/\/$/, '') + url : url)
 
-/* A piece can be bought while online purchases are switched on and it has a price. */
+/* A piece shows its price while online purchases are switched on and it has a price. */
 export const buyable = (piece) => Boolean(shop.enabled && piece && piece.slug && Number(piece.price) > 0)
+/* Its status, set in the admin: "new", "sale" (with a sale price below the price) or "soldout". */
+export const soldOut = (piece) => piece?.status === 'soldout'
+export const onSale = (piece) => piece?.status === 'sale' && Number(piece.salePrice) > 0 && Number(piece.salePrice) < Number(piece.price)
+/* What it costs now: the sale price while it is on sale, otherwise the price. */
+export const nowPrice = (piece) => (onSale(piece) ? Number(piece.salePrice) : Number(piece.price))
+/* It can go into a checkout: it shows a price and is not sold out. */
+export const canBuy = (piece) => buyable(piece) && !soldOut(piece)
+/* The small tag on a piece. "New" shows whenever it is set; "Sale" and "Sold out" only while
+   prices are showing, since without a price neither means anything. */
+export const badge = (piece) => {
+  if (!piece) return null
+  if (buyable(piece) && soldOut(piece)) return { kind: 'soldout', text: 'Sold out' }
+  if (buyable(piece) && onSale(piece)) return { kind: 'sale', text: `Sale −${Math.round((1 - Number(piece.salePrice) / Number(piece.price)) * 100)}%` }
+  if (piece.status === 'new') return { kind: 'new', text: 'New' }
+  return null
+}
 /* 40 -> "A$40", 12.5 -> "A$12.50", in the shop's currency. */
 export const money = (amount) => {
   const n = Number(amount)

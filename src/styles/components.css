@@ -43,7 +43,12 @@
 .nav.scrolled { background: rgba(9, 7, 13, 0.82); backdrop-filter: blur(14px); border-bottom-color: var(--line); }
 .nav-bar { display: flex; align-items: center; gap: 32px; height: 100%; }
 .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; }
-.brand-logo { width: 42px; height: 42px; object-fit: cover; border-radius: 50%; }
+/* the logo beside the name: its size and shape are set in the admin (Brand & contact) */
+.brand-logo { --logo-size: var(--logo-size-set, 42px); flex: 0 0 auto; width: var(--logo-size, 42px); height: var(--logo-size, 42px); object-fit: cover; border-radius: 50%; }
+.brand-logo.is-rounded { border-radius: 24%; }
+.brand-logo.is-square { border-radius: 0; }
+.brand-logo.is-natural { width: auto; max-width: calc(var(--logo-size, 42px) * 3); object-fit: contain; border-radius: 0; }
+@media (max-width: 899px) { .brand-logo { --logo-size: min(var(--logo-size-set, 42px), 46px); } }
 .nav-links { display: flex; gap: clamp(18px, 1.9vw, 30px); }
 .nav-link.is-support { color: var(--accent); }
 .nav-link.is-support::before { content: '\2665'; margin-right: 6px; font-size: 0.9em; }
@@ -340,6 +345,13 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .tile .poster img { transition: opacity 0.4s, transform 0.8s var(--ease-out); }
 .tile:hover .poster img, .tile:focus-visible .poster img { transform: scale(1.045); }
 .tile-price { position: absolute; z-index: 2; top: 14px; right: -6px; padding: 7px 16px 6px; font-family: var(--display); font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
+/* the status tag: New, Sale, Sold out */
+.tile-badge { position: absolute; z-index: 2; top: 14px; left: -6px; padding: 7px 14px 6px; font-family: var(--mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; clip-path: var(--lean); background: var(--fg); color: var(--bg); }
+.tile-badge.is-sale { background: #ff5c8a; color: #1a0610; }
+.tile-badge.is-soldout { background: #2a2433; color: var(--fg-dim); }
+.tile-price s { margin-right: 8px; font-size: 0.8em; opacity: 0.6; text-decoration-thickness: 2px; }
+.tile-price.is-out { background: #2a2433; color: var(--fg-mute); text-decoration: line-through; }
+.tile:has(.tile-badge.is-soldout) .poster img { filter: grayscale(0.7) brightness(0.75); }
 .tile-cta { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 34px 16px 14px; font-family: var(--mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg); background: linear-gradient(transparent, rgba(6, 4, 9, 0.88)); opacity: 0; transform: translateY(12px); transition: opacity 0.35s, transform 0.45s var(--ease-out); }
 .tile:hover .tile-cta, .tile:focus-visible .tile-cta { opacity: 1; transform: none; }
 @media (hover: none) { .tile-cta { display: none; } }
@@ -354,6 +366,13 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .buy-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .buy-price { font-family: var(--display); font-size: clamp(2.4rem, 4vw, 3rem); line-height: 1; color: var(--fg); transform: skewX(var(--slant)); transform-origin: 0 100%; }
 .buy-what { font-size: 0.92rem; color: var(--fg-dim); }
+.buy-badge { position: static; display: inline-block; margin-bottom: 12px; }
+.buy-was { font-family: var(--display); font-size: 1.5rem; line-height: 1; color: var(--fg-mute); text-decoration-thickness: 2px; transform: skewX(var(--slant)); }
+.buy-price.is-out { color: var(--fg-mute); text-decoration: line-through; }
+.buy-save { margin: 8px 0 0; font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #ff5c8a; }
+.buy-btn.is-out { justify-content: center; background: #2a2433; color: var(--fg-mute); cursor: not-allowed; }
+.buy-btn.is-out::before { display: none; }
+.buy-secure a { color: var(--fg); border-bottom: 2px solid var(--accent); }
 .buy-btn {
   position: relative; isolation: isolate; overflow: hidden;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; height: 60px; margin-top: 18px; padding: 0 22px 0 28px;

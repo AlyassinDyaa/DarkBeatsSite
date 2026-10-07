@@ -57,6 +57,18 @@ collections:
       - { name: category, label: Category, widget: select, options: [Heroes, Villains, Horror, Games, Original, Commissions], default: Heroes, hint: 'The Shop page gets a filter button for every category in use.' }
       - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, hint: 'Newest pieces come first.' }
       - { name: link, label: Link to the post, widget: string, required: false, hint: 'The Instagram post, if there is one.' }
+      - name: status
+        label: Status
+        widget: select
+        default: none
+        required: false
+        options:
+          - { label: 'Normal', value: none }
+          - { label: 'New (shows a "New" tag)', value: new }
+          - { label: 'On sale (shows the old and the new price)', value: sale }
+          - { label: 'Sold out (no Buy button)', value: soldout }
+        hint: 'The Sale and Sold out tags show while online purchases are switched on; New always shows.'
+      - { name: salePrice, label: Sale price, widget: number, value_type: float, min: 0, required: false, hint: 'Only used while the status is "On sale", and only when it is lower than the price.' }
       - { name: price, label: Price, widget: number, value_type: float, min: 0, required: false, hint: 'A number, in the currency set under "Shop & payments". Only shown, with its Buy button, while online purchases are switched on there. Leave empty for a piece that is not for sale.' }
       - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7 (for example 1500×2100px).' }
       - { name: note, label: A few words about it, widget: text, required: false, hint: 'Shown beside the picture when it is opened.' }
@@ -404,6 +416,17 @@ collections:
           - { name: blurb, label: One or two sentences about the site, widget: text, hint: 'Shown in the footer, and by search engines and link previews.' }
           - { name: hue, label: Brand colour, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', hint: 'Tints the whole site. 312 is the purple. 25 red, 55 orange, 145 green, 200 teal, 250 blue, 340 pink.' }
           - { name: logo, label: Logo, widget: image, choose_url: false, required: false, hint: 'Optional. A small square picture shown beside the name in the top bar.' }
+          - { name: logoSize, label: Logo size, widget: slider, min: 24, max: 64, step: 1, default: 42, unit: 'px', required: false, hint: 'Its height in the top bar. On a phone it stops at 46.' }
+          - name: logoShape
+            label: Logo shape
+            widget: select
+            default: circle
+            required: false
+            options:
+              - { label: 'Circle', value: circle }
+              - { label: 'Rounded square', value: rounded }
+              - { label: 'Square', value: square }
+              - { label: 'As uploaded (no cropping)', value: natural }
           - { name: icon, label: Browser tab icon, widget: image, choose_url: false, required: false, hint: 'The small picture in the browser tab, in bookmarks, and on a phone''s home screen when the site is added there. A square picture, at least 180×180 pixels; a PNG with a see-through background around a round shape looks round. Leave empty for the JBeatsArt logo.' }
           - { name: email, label: Contact email, widget: string }
           - { name: location, label: Location, widget: string, required: false }

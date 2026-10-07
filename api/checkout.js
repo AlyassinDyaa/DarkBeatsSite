@@ -26,7 +26,11 @@ export default async function handler(req, res) {
   const slug = String((req.body && typeof req.body === 'object' ? req.body.slug : '') || '')
   if (!/^[a-z0-9-]{1,80}$/.test(slug)) return res.status(400).json({ message: 'That is not a piece on this site.' })
   const piece = read(`content/work/${slug}.json`)
-  const cents = Math.round(Number(piece && piece.price) * 100)
+  if (piece && piece.status === 'soldout') return res.status(409).json({ message: 'This piece has sold out.' })
+  // the sale price while the piece is on sale (and it is below the usual price), otherwise the price
+  const usual = Number(piece && piece.price), sale = Number(piece && piece.salePrice)
+  const amount = piece && piece.status === 'sale' && sale > 0 && sale < usual ? sale : usual
+  const cents = Math.round(amount * 100)
   if (!piece || piece.hidden || !(cents >= 50)) return res.status(404).json({ message: 'That piece is not for sale.' })
 
   const origin = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`
