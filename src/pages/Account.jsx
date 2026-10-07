@@ -657,9 +657,11 @@ function Home() {
   const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
   const counts = { orders: shopOrders.length, saved: (user.saved || []).length }
   const prints = shopOrders.reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
-  // the banner: art that is theirs (the print they picked as their picture, or one they own); else the brand's own colours
+  // the banner: a strip of panels. Their own art first (the print they picked as their picture,
+  // the prints they own, the ones they saved), then the newest work, so it is never empty
   const chosen = user.avatar && !user.avatar.startsWith('icon:') ? work.find((p) => p.slug === user.avatar) : null
-  const banner = (chosen && chosen.src) || (owned.find((p) => p.src) || {}).src || ''
+  const savedPieces = (user.saved || []).map((slug) => work.find((p) => p.slug === slug))
+  const strip = [...new Map([chosen, ...owned, ...savedPieces, ...work].filter((p) => p && p.src).map((p) => [p.slug, p])).values()].slice(0, 12)
   const LEADS = {
     orders: 'Every print you have ordered, and where it is now.',
     saved: 'The pieces you are keeping an eye on.',
@@ -674,8 +676,18 @@ function Home() {
         {/* the profile: a banner of their own art, their picture over its edge, their name */}
         <header className="acct2-hero">
           <div className="acct2-banner" aria-hidden="true">
-            {banner && <img src={asset(banner)} alt="" />}
-            <span className="acct2-lines" />
+            <div className="acct2-issue">
+              <small>Member no.</small>
+              <b>{memberNumber(user.memberNo)}</b>
+            </div>
+            {/* a carousel: the panels run past, twice over, so the loop has no seam */}
+            {strip.length > 0 && (
+              <div className="acct2-strip">
+                <div className="acct2-track" style={{ '--n': strip.length }}>
+                  {[...strip, ...strip].map((p, i) => <span key={`${p.slug}-${i}`} className="acct2-panel"><img src={asset(p.src)} alt="" loading={i < strip.length ? 'eager' : 'lazy'} /></span>)}
+                </div>
+              </div>
+            )}
           </div>
           <div className="acct2-id">
             <Avatar user={user} size="xl" />

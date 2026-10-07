@@ -1294,3 +1294,39 @@ a.buy-btn { text-decoration: none; }
 .acc-modal-yes { background: #ff6b7f; color: #1a0710; }
 .acc-modal-yes:hover, .acc-modal-yes:focus-visible { background: #ff8a9b; color: #1a0710; }
 @media (max-width: 479px) { .acc-modal { align-items: end; padding: 12px; } .acc-modal-actions { flex-direction: column-reverse; } .acc-modal-actions .btn { width: 100%; justify-content: center; } }
+
+/* ---------- the banner over the account: a carousel of panels ----------
+   On the dark purple, the member number set like the issue number on a cover; across the right,
+   slanted panels of art in ink frames (the customer's own pieces first, then the newest work)
+   running slowly past, fading into the purple toward the number. Pointing at the banner stops them. */
+.acct2-banner { border: 0; background: linear-gradient(135deg, oklch(0.34 0.17 var(--h)) 30%, oklch(0.18 0.09 var(--h))); }
+.acct2-banner::before { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: radial-gradient(circle, rgba(9, 7, 13, 0.4) 0 2.4px, transparent 3px) 0 0 / 11px 11px; -webkit-mask-image: linear-gradient(100deg, #000 0%, transparent 60%); mask-image: linear-gradient(100deg, #000 0%, transparent 60%); }
+.acct2-banner::after { z-index: 3; pointer-events: none; background: linear-gradient(180deg, transparent 55%, rgba(9, 7, 13, 0.35)); }
+.acct2-issue { position: absolute; z-index: 4; top: clamp(14px, 2vw, 24px); left: clamp(18px, 2.4vw, 34px); display: grid; justify-items: start; gap: 6px; }
+.acct2-issue small { padding: 4px 9px 3px; font-family: var(--mono); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; background: var(--bg); color: var(--fg); transform: skewX(-8deg); }
+.acct2-issue b { font-family: var(--display); font-weight: 400; font-size: clamp(3rem, 6.4vw, 5.8rem); line-height: 0.9; letter-spacing: 0.01em; color: #fff; text-shadow: 0.05em 0.05em 0 var(--bg); transform: skewX(-7deg); }
+.acct2-strip { --pw: clamp(104px, 10vw, 156px); --gap: clamp(10px, 1vw, 14px); position: absolute; z-index: 1; top: 0; right: 0; bottom: 0; width: min(68%, 1000px); overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%); mask-image: linear-gradient(90deg, transparent 0, #000 24%); }
+.acct2-track { display: flex; gap: var(--gap); width: max-content; height: 100%; padding: clamp(12px, 1.4vw, 18px) 0; animation: strip-run calc(var(--n) * 4.5s) linear infinite, strip-in 0.8s var(--ease-out) both; }
+.acct2-hero:hover .acct2-track { animation-play-state: paused; }
+/* one set of panels and its gaps: then the second set stands exactly where the first began */
+@keyframes strip-run { to { transform: translateX(calc(-1 * var(--n) * (var(--pw) + var(--gap)))); } }
+@keyframes strip-in { from { opacity: 0; } }
+.acct2-panel { position: relative; flex: 0 0 var(--pw); overflow: hidden; border: 3px solid var(--bg); background: var(--bg); transform: skewX(-9deg); box-shadow: 6px 6px 0 rgba(9, 7, 13, 0.55); }
+.acct2-banner .acct2-panel img { filter: none; opacity: 1; position: absolute; inset: 0 -22%; width: 144%; height: 100%; max-width: none; object-fit: cover; object-position: 50% 22%; transform: skewX(9deg) scale(1.02); transition: transform 1.2s var(--ease-out); }
+.acct2-banner .acct2-panel:hover img { transform: skewX(9deg) scale(1.1); }
+@media (max-width: 799px) {
+  .acct2-banner { height: 150px; }
+  .acct2-strip { --pw: 78px; --gap: 8px; width: 72%; }
+  .acct2-track { padding: 10px 0; }
+  .acct2-issue { top: 12px; left: 14px; }
+  .acct2-issue b { font-size: 2.2rem; }
+  .acct2-issue small { font-size: 0.58rem; }
+}
+/* without motion: the panels stand still */
+@media (prefers-reduced-motion: reduce) { .acct2-track { animation: none; } .acct2-panel img { transition: none; } }
+/* the profile row (picture, name, buttons) stands clear of the banner, with room above it */
+.acct2-id { align-items: center; margin-top: 0; padding-top: clamp(26px, 3.2vw, 40px); }
+.acct2-id > .acct-avatar { margin-top: 0; }
+.acct2-actions { padding-bottom: 0; }
+@media (max-width: 799px) { .acct2-id { padding-top: 24px; gap: 12px; } .acct2-id > .acct-avatar { margin-top: 0; width: 112px; height: 112px; } }
