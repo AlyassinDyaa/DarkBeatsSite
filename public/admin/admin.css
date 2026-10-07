@@ -506,6 +506,9 @@ html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::afte
    above use it to tell that somebody is logged in. */
 [class*='AppHeaderContent'] { min-height: 0 !important; height: 0 !important; padding-block: 0 !important; overflow: hidden !important; }
 
+/* fields that do not apply to the current choice (shell.js marks them) */
+#nc-root [data-ia-off], #nc-root [class*='ControlContainer'][data-ia-off] { display: none !important; }
+
 /* compact lists (shell.js marks them .ia-compact): one slim row per entry, its fields side by side
    with their names inside the boxes, the drag handle and remove button at the end of the row */
 .ia-compact [class*='-listControlItem'] { display: flex !important; align-items: center; gap: 6px; margin: 6px 0 0 !important; padding: 5px 5px 5px 6px !important; border-radius: 10px !important; }

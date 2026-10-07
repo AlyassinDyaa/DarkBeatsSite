@@ -36,5 +36,16 @@
       "name": "Shirts",
       "note": ""
     }
+  ],
+  "universes": [
+    {
+      "name": "DC"
+    },
+    {
+      "name": "Marvel"
+    },
+    {
+      "name": "Star Wars"
+    }
   ]
 }

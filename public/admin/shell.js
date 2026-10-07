@@ -46,13 +46,13 @@
      single pages is looked up as "collection/page". A heading never goes on an on/off switch:
      a switch is drawn as a box of its own and the heading would land inside it. */
   const LAYOUT = {
-    work: { groups: { title: 'The piece', src: 'Picture, and where it shows' }, half: ['category', 'type', 'date', 'link', 'status', 'salePrice', 'price', 'featured', 'hidden'] },
+    work: { groups: { title: 'The piece', src: 'Picture, and where it shows' }, half: ['category', 'type', 'universe', 'date', 'link', 'status', 'salePrice', 'price', 'featured', 'hidden'] },
     gallery_sections: { groups: { title: 'Section', from: 'Pictures' }, half: ['title', 'order'] },
     redraws: { groups: { title: 'The set', stages: 'The drawings, oldest first', order: 'Rarely needed' }, half: ['title', 'text'] },
     events: { groups: { name: 'The event', order: 'Rarely needed' }, half: ['name', 'when', 'role', 'place', 'order', 'hidden'] },
     'pages/home': {
-      groups: { kicker: 'Top of the page', wall: 'Wall of pictures', figure: 'Character beside the name', marquee: 'Moving band of words', latestLabel: 'Latest pieces', galleryLabel: 'Work', redrawLabel: 'Then and now', commissionsTitle: 'Commissions', eventsLabel: 'Conventions' },
-      half: ['latestLabel', 'latestTitle', 'galleryLabel', 'galleryTitle', 'redrawLabel', 'redrawTitle', 'commissionsTitle', 'commissionsButton', 'eventsLabel', 'eventsTitle'],
+      groups: { kicker: 'Top of the page', wallShow: 'Wall of pictures', figure: 'Character beside the name', marquee: 'Moving band of words', latestLabel: 'Latest pieces', galleryLabel: 'Work', redrawLabel: 'Then and now', commissionsTitle: 'Commissions', eventsLabel: 'Conventions' },
+      half: ['wallCategory', 'wallUniverse', 'latestLabel', 'latestTitle', 'galleryLabel', 'galleryTitle', 'redrawLabel', 'redrawTitle', 'commissionsTitle', 'commissionsButton', 'eventsLabel', 'eventsTitle'],
       inner: ['layer', 'ground', 'size', 'x', 'y', 'page', 'style'],
     },
     'pages/lists': { groups: { workLabel: 'Shop page', galleryLabel: 'Work page' }, half: ['workLabel', 'workTitle', 'galleryLabel', 'galleryTitle'] },
@@ -90,7 +90,7 @@
     'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
-    'site/categories': 'The Shop’s two lists: categories (Heroes, Villains...) and types (Posters, Stickers...).',
+    'site/categories': 'The Shop’s lists: categories (Heroes, Villains...), types (Posters, Stickers...) and universes (DC, Marvel...).',
     'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
   }
   Object.assign(ICONS, {
@@ -308,12 +308,13 @@
   })
 
   // ---------- form layout: tag fields so the stylesheet can group and pair them ----------
+  const fieldName = (field) => ((field.querySelector(':scope > [class*="ControlTopbar"] label[for], :scope > label[for]') || {}).htmlFor || '').replace(/-field-\d+$/, '')
   const tagFields = () => {
     const layout = layoutNow()
     const pane = document.querySelector('[class*="ControlPaneContainer"]:not([class*="PreviewPaneContainer"])')
     if (!pane) return
     for (const field of pane.children) {
-      const name = ((field.querySelector(':scope > [class*="ControlTopbar"] label[for], :scope > label[for]') || {}).htmlFor || '').replace(/-field-\d+$/, '')
+      const name = fieldName(field)
       const group = layout && layout.groups[name]
       const half = layout && layout.half.includes(name)
       // only touch the attribute when it is wrong, so this never loops with the observer below
@@ -339,8 +340,19 @@
     // the lists of Shop categories are drawn as compact rows
     for (const field of pane.querySelectorAll('[class*="ControlContainer"]')) {
       const name = (field.querySelector(':scope > [class*="ControlTopbar"] label[for]') || {}).htmlFor || ''
-      const compact = currentSection() === 'site' && /^(subjects|types)-field/.test(name)
+      const compact = currentSection() === 'site' && /^(subjects|types|universes)-field/.test(name)
       if (compact !== field.classList.contains('ia-compact')) field.classList.toggle('ia-compact', compact)
+    }
+    // the wall on the home page: only the fields that matter for what it shows
+    const fields = new Map([...pane.children].map((f) => [fieldName(f), f]))
+    if (fields.has('wallShow')) {
+      const said = (fields.get('wallShow').querySelector('[class*="singleValue"]') || {}).textContent || ''
+      const mode = /random/i.test(said) ? 'random' : /category|universe/i.test(said) ? 'pick' : 'list'
+      const off = { wallCategory: mode !== 'pick', wallUniverse: mode !== 'pick', wall: mode !== 'list', wallAddNew: mode !== 'list' }
+      for (const [name, hide] of Object.entries(off)) {
+        const field = fields.get(name)
+        if (field && hide !== ('iaOff' in field.dataset)) { if (hide) field.dataset.iaOff = ''; else delete field.dataset.iaOff }
+      }
     }
   }
 

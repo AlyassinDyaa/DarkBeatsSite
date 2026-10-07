@@ -58,6 +58,12 @@ export const shows = (group, key) => visibility[group]?.[key] !== false
 
 let newPictures = {} // pictures saved after this build: "/uploads/x.webp" -> the picture itself
 
+/* A new order on every visit that holds still for the visit: the content is put together twice
+   (as built, then with the admin's latest saves) and the wall must not jump in between. */
+const visit = Math.random().toString(36).slice(2)
+const hash = (text) => { let h = 2166136261; for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0 }
+const mixed = (list) => list.map((p) => [hash(visit + p.slug), p]).sort((a, b) => a[0] - b[0]).map(([, p]) => p)
+
 /* Leaves out anything not filled in, so the built-in wording below it shows through. */
 const given = (fields) => Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined && v !== null))
 
@@ -66,7 +72,7 @@ function assemble(content) {
   const page = (name) => content[`content/pages/${name}.json`] || {}
   const site = (name) => content[`content/site/${name}.json`] || {}
   const { social: links, footerLine, footerFine, ...name } = site('brand')
-  const { kicker, text, primaryLabel, secondaryLabel, buttons, figure, wall, wallSpeed, wallAddNew, marquee: words, ...sections } = page('home')
+  const { kicker, text, primaryLabel, secondaryLabel, buttons, figure, wall, wallShow, wallCategory, wallUniverse, wallSpeed, wallAddNew, marquee: words, ...sections } = page('home')
   const lists = page('lists')
   // every file of one folder, each with the name of its file
   const folder = (name) => Object.entries(content)
@@ -171,7 +177,13 @@ function assemble(content) {
   // Shop pieces that are not in the list join the end of it (unless that is switched off), so a
   // new piece shows on the wall without a second trip to the admin.
   const missing = wallAddNew === false && placed.length ? [] : work.filter((p) => !placed.some((w) => w.slug === p.slug)).map((p) => ({ ...p, column: 'auto' }))
-  heroWall = [...placed, ...missing]
+  // What the wall shows: that list (the first way it worked), the pieces of one category and/or
+  // universe (horror for October, DC villains...), or the whole Shop in a new order every visit.
+  // A choice nothing matches falls back to the list, so the wall is never empty.
+  const onWall = wallShow === 'random' ? mixed(work)
+    : wallShow === 'pick' ? work.filter((p) => (!wallCategory || p.category === wallCategory) && (!wallUniverse || p.universe === wallUniverse))
+    : []
+  heroWall = onWall.length ? onWall.map((p) => ({ ...p, column: 'auto' })) : [...placed, ...missing]
 
   // a section's "also show pieces from Work" choice: none, every piece, or one category
   const fromWork = (from) => (!from || from === 'none' ? [] : work)

@@ -37,6 +37,7 @@
   "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
   "galleryTitle": "Up on the wall",
   "wallAddNew": true,
+  "wallShow": "list",
   "wall": [
     {
       "piece": "ghost-rider",

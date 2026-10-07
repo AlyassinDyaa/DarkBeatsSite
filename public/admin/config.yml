@@ -56,6 +56,7 @@ collections:
       - { name: title, label: Title, widget: string }
       - { name: category, label: Category, widget: relation, collection: site, file: categories, value_field: 'subjects.*.name', search_fields: ['subjects.*.name'], display_fields: ['subjects.*.name'], hint: 'Heroes, Villains... Kept under Shop categories.' }
       - { name: type, label: Type, widget: relation, collection: site, file: categories, value_field: 'types.*.name', search_fields: ['types.*.name'], display_fields: ['types.*.name'], hint: 'Posters, Stickers... Kept under Shop categories.' }
+      - { name: universe, label: Universe, widget: relation, collection: site, file: categories, value_field: 'universes.*.name', search_fields: ['universes.*.name'], display_fields: ['universes.*.name'], required: false, hint: 'Optional: DC, Marvel, Star Wars... Kept under Shop categories.' }
       - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, hint: 'Newest pieces come first.' }
       - { name: link, label: Link to the post, widget: string, required: false, hint: 'The Instagram post, if there is one.' }
       - name: status
@@ -211,6 +212,18 @@ collections:
                   - { label: 'Filled (purple)', value: filled }
                   - { label: 'Outline', value: outline }
               - { name: url, label: Address, widget: string, required: false, hint: 'Only for "Another address": the full address, starting with https://' }
+          - name: wallShow
+            label: What the wall shows
+            widget: select
+            default: list
+            required: false
+            options:
+              - { label: 'My list below (as it was)', value: list }
+              - { label: 'A category and/or universe', value: pick }
+              - { label: 'Random: the whole Shop, mixed on every visit', value: random }
+            hint: 'Handy for a season: Horror in October, DC villains for a month... Switch back to your list any time; it is kept.'
+          - { name: wallCategory, label: Category, widget: relation, collection: site, file: categories, value_field: 'subjects.*.name', search_fields: ['subjects.*.name'], display_fields: ['subjects.*.name'], required: false, hint: 'Empty: any category.' }
+          - { name: wallUniverse, label: Universe, widget: relation, collection: site, file: categories, value_field: 'universes.*.name', search_fields: ['universes.*.name'], display_fields: ['universes.*.name'], required: false, hint: 'Empty: any universe. If nothing in the Shop matches both, the wall shows your list.' }
           - name: wall
             label: Pictures on the wall
             label_singular: picture
@@ -539,6 +552,16 @@ collections:
             fields:
               - { name: name, label: Name, widget: string }
               - { name: note, label: What the buyer gets, widget: string, required: false }
+          - name: universes
+            label: Universes
+            label_singular: universe
+            widget: list
+            collapsed: false
+            required: false
+            summary: '{{fields.name}}'
+            hint: 'DC, Marvel, Star Wars... Optional on each piece. Lets the wall on the home page show, say, only DC villains.'
+            fields:
+              - { name: name, label: Name, widget: string }
 
       - name: visibility
         label: Show or hide
