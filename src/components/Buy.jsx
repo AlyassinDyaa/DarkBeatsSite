@@ -41,7 +41,7 @@ export default function Buy({ piece }) {
     <motion.div className="buy" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45, ease: EASE }}>
       {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       <div className="buy-head">
-        {onSale(piece) && <s className="buy-was">{money(piece.price)}</s>}
+        {onSale(piece) && <s className="buy-was">{money(piece.price, true)}</s>}
         <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece))}</span>
         {shop.note && <span className="buy-what">{shop.note}</span>}
       </div>

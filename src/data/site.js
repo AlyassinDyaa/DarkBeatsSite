@@ -201,10 +201,14 @@ export const badge = (piece) => {
   if (piece.status === 'new') return { kind: 'new', text: 'New' }
   return null
 }
-/* 40 -> "A$40", 12.5 -> "A$12.50", in the shop's currency. */
-export const money = (amount) => {
+/* 40 -> "$40 AUD", 12.5 -> "$12.50 AUD", in the shop's currency, the way prices are written in
+   Australia. `short` leaves the code off ("$40"), for an old price shown beside the new one. */
+export const money = (amount, short = false) => {
   const n = Number(amount)
-  try { return new Intl.NumberFormat('en', { style: 'currency', currency: String(shop.currency || 'aud').toUpperCase(), minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n) } catch { return String(amount) }
+  const code = String(shop.currency || 'aud').toUpperCase()
+  let figure = String(amount)
+  try { figure = new Intl.NumberFormat('en-AU', { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n) } catch { /* an unknown code: the bare number */ }
+  return short ? figure : `${figure} ${code}`
 }
 
 /* An address typed into the admin is only ever used as a link when it is an ordinary web address. */

@@ -58,10 +58,15 @@ export default function Shop() {
                   <button type="button" className="tile" onClick={() => setSel(i)}>
                     <span className="tile-art">
                       <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={i < 4} />
-                      {badge(p) && <span className={`tile-badge is-${badge(p).kind}`}>{badge(p).text}</span>}
-                      {buyable(p) && (
-                        <span className={`tile-price ${soldOut(p) ? 'is-out' : ''}`}>
-                          {onSale(p) && <s>{money(p.price)}</s>}{money(nowPrice(p))}
+                      {/* New and Sold out sit on the left; a sale goes under the price on the right, so there is one place to look */}
+                      {badge(p) && badge(p).kind !== 'sale' && <span className={`tile-badge is-${badge(p).kind}`}>{badge(p).text}</span>}
+                      {/* a sold-out piece shows only its Sold out tag */}
+                      {buyable(p) && !soldOut(p) && (
+                        <span className="tile-tags">
+                          <span className={`tile-price ${soldOut(p) ? 'is-out' : ''}`}>
+                            {onSale(p) && <s>{money(p.price, true)}</s>}{money(nowPrice(p))}
+                          </span>
+                          {badge(p)?.kind === 'sale' && <span className="tile-badge is-sale is-under">{badge(p).text}</span>}
                         </span>
                       )}
                       <span className="tile-cta">{canBuy(p) ? 'View & buy' : 'View'} <span className="arrow">→</span></span>
