@@ -618,46 +618,58 @@ function Home() {
     const y = window.scrollY + top - 90
     if (window.__lenis) window.__lenis.scrollTo(y, { duration: 0.6 }); else window.scrollTo({ top: y, behavior: 'smooth' })
   }
-  const counts = { orders: orders ? orders.filter((o) => o.kind !== 'support').length : 0, saved: (user.saved || []).length }
-  // new here: an account made today, with no orders yet
-  const returning = new Date(user.createdAt).toDateString() !== new Date().toDateString() || counts.orders > 0
+  const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
+  const counts = { orders: shopOrders.length, saved: (user.saved || []).length }
+  const prints = shopOrders.reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
+  // the banner: art that is theirs (the print they picked as their picture, or one they own); else the brand's own colours
+  const chosen = user.avatar && !user.avatar.startsWith('icon:') ? work.find((p) => p.slug === user.avatar) : null
+  const banner = (chosen && chosen.src) || (owned.find((p) => p.src) || {}).src || ''
   const LEADS = {
-    overview: returning ? 'Good to see you again. Here is everything in one place.' : `Welcome to your corner of ${brand.name}. Your prints, your orders and the pieces you love live here.`,
     orders: 'Every print you have ordered, and where it is now.',
     saved: 'The pieces you are keeping an eye on.',
     details: 'Your name, how to reach you, and your picture.',
     security: 'Your password, your devices, your account.',
   }
-  const tabName = TABS.find(([k]) => k === tab)[1]
+  const logout = async () => { await call('logout').catch(() => {}); navigate('/', { replace: true }) }
   return (
     <Page title="Your account">
-      <header className="page-head container acct-head">
-        <div className="label accent">{tab === 'overview' ? greeting() : 'Your account'}</div>
-        <h1 className="display h-xl">{tab === 'overview' ? <>{first || 'Hello'}<span className="acct-dot">.</span></> : tabName}</h1>
-        <p className="lead">{LEADS[tab]}</p>
-      </header>
-      <div className="container acct" ref={grid}>
-        <aside className="acct-side">
-          <div className="acct-me">
-            <Avatar user={user} size="lg" />
-            <div>
-              <strong>{user.name || 'Your account'}</strong>
-              <small>Collector since {monthYear(user.createdAt)}</small>
+      <div className="container acct2">
+        {/* the profile: a banner of their own art, their picture over its edge, their name */}
+        <header className="acct2-hero">
+          <div className="acct2-banner" aria-hidden="true">
+            {banner && <img src={asset(banner)} alt="" />}
+            <span className="acct2-lines" />
+          </div>
+          <div className="acct2-id">
+            <Avatar user={user} size="xl" />
+            <div className="acct2-who">
+              <span className="label accent">{greeting()}</span>
+              <h1 className="display">{user.name || first || 'Your account'}</h1>
+              <p>
+                <span>Member {memberNumber(user.memberNo)}</span>
+                {orders && <span>{prints} {prints === 1 ? 'print' : 'prints'}</span>}
+                <span className="acct2-since">Collector since {monthYear(user.createdAt)}</span>
+              </p>
+            </div>
+            <div className="acct2-actions">
+              <button type="button" className="btn ghost sm" onClick={() => go('details')}>Edit profile</button>
+              <button type="button" className="acct2-out" onClick={logout}>Log out</button>
             </div>
           </div>
-          <nav className="acct-nav" aria-label="Your account">
-            {TABS.map(([k, label]) => (
-              <button key={k} type="button" className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => go(k)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[k]} /></svg>
-                <span>{label}</span>
-                {counts[k] > 0 && <small>{counts[k]}</small>}
-              </button>
-            ))}
-          </nav>
-          <button type="button" className="acct-out" onClick={async () => { await call('logout').catch(() => {}); navigate('/', { replace: true }) }}>Log out</button>
-        </aside>
+        </header>
 
-        <div className="acct-main">
+        {/* the sections, across the page; they stay under the menu while scrolling */}
+        <nav className="acct2-tabs" aria-label="Your account" ref={grid}>
+          {TABS.map(([k, label]) => (
+            <button key={k} type="button" className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => go(k)}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[k]} /></svg>
+              <span>{label}</span>
+              {counts[k] > 0 && <small>{counts[k]}</small>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="acct2-main">
           {note && <p className="acc-welcome" role="status">{note}</p>}
           {!user.verified && tab !== 'details' && (
             <div className="acc-verify" role="status">
@@ -666,6 +678,12 @@ function Home() {
             </div>
           )}
           <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: EASE }}>
+            {tab !== 'overview' && (
+              <div className="acct2-head">
+                <h2 className="display">{TABS.find(([k]) => k === tab)[1]}</h2>
+                <p>{LEADS[tab]}</p>
+              </div>
+            )}
             {tab === 'overview' && <Overview orders={orders} go={go} />}
             {tab === 'orders' && <Orders orders={orders} problem={problem} />}
             {tab === 'saved' && <Saved />}
