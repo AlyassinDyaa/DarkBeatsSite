@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
 
 /* Orders in the database. Each is kept under `ref`: the Stripe checkout's id (cs_...) or "pp_"
@@ -24,6 +26,32 @@ export const takeFromCart = async (userId, bought) => {
   const gone = (l) => bought.some(([slug, size, signed]) => l.slug === slug && (l.size || '') === String(size || '') && Boolean(l.signed) === Boolean(signed))
   const cart = u.cart.filter((l) => !gone(l))
   if (cart.length !== u.cart.length) await users.updateOne({ _id: userId }, { $set: { cart } })
+}
+
+/* What an order line is, read back from its name ("The Devils Mark · 8x8 (signed)"): the piece it
+   is (the longest title it starts with), its size, signed or not, and the piece's type, category,
+   universe and picture from the site's content. Works for every order, old ones too. */
+export const piecesNow = () => {
+  try {
+    const dir = join(process.cwd(), 'content/work')
+    return readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => {
+      try { return { slug: f.slice(0, -5), ...JSON.parse(readFileSync(join(dir, f), 'utf8')) } } catch { return null }
+    }).filter((p) => p && p.title).sort((a, b) => String(b.title).length - String(a.title).length)
+  } catch { return [] }
+}
+export const describeItem = (name, pieces) => {
+  const full = String(name || '')
+  const piece = pieces.find((p) => full.startsWith(p.title))
+  if (!piece) return {}
+  const signedMark = full.match(/\s\((signed|unsigned)\)$/)
+  const rest = full.slice(piece.title.length).replace(/\s\((signed|unsigned)\)$/, '')
+  const size = rest.startsWith(' · ') ? rest.slice(3).trim() : ''
+  return {
+    slug: piece.slug, title: piece.title, size,
+    signed: signedMark ? signedMark[1] === 'signed' : null,
+    type: text(piece.type, 80), category: text(piece.category, 80), universe: text(piece.universe, 80),
+    src: typeof piece.src === 'string' && piece.src.startsWith('/') ? piece.src : '',
+  }
 }
 
 // a new order, or more about one (fields already set by the admin, such as tracking, are kept)

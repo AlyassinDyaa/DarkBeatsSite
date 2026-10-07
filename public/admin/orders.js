@@ -51,6 +51,7 @@
   const TAG = 'M3 12V4h8l10 10-8 8z M7.500 8.500h.01'
   const CARD = 'M3 5h18v14H3z M8.500 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M5.500 16a3 3 0 0 1 6 0 M14 9h4 M14 12h4 M14 15h2'
   const TRASH = 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6'
+  const PICTURE = 'M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.500 9.500a1.500 1.500 0 1 0 0-.010'
   const CROSS = 'M6 6l12 12 M18 6L6 18'
   const PAGE_SIZES = [10, 15, 20, 50]
   const DVIEWS = [['active', 'Active'], ['usedup', 'Used up'], ['ended', 'Ended'], ['off', 'Switched off'], ['all', 'All']]
@@ -59,7 +60,7 @@
   const USES = [['1', 'Once'], ['3', '3 times'], ['10', '10 times'], ['', 'No limit']]
 
   const people = { q: '', view: 'all', sort: 'recent', open: new Set() }
-  const state = { orders: [], more: false, next: null, loaded: false, loading: false, problem: null, view: 'topost', q: '', period: 'all', sort: 'new', open: new Set(), keep: new Set(), drafts: {}, saving: {}, saved: {} }
+  const state = { orders: [], more: false, next: null, loaded: false, loading: false, problem: null, view: 'topost', q: '', period: 'all', sort: 'new', open: new Set(), keep: new Set(), drafts: {}, saving: {}, saved: {}, pieces: new Set() }
 
   const pass = () => { try { return JSON.parse(localStorage.getItem('decap-cms-user') || '{}').token || '' } catch { return '' } }
   const realAsk = async (url, init = {}) => {
@@ -367,8 +368,33 @@
       svg('M6 9l6 6 6-6'),
     ])
     head.addEventListener('click', () => { if (open) state.open.delete(o.id); else state.open.add(o.id); paint() })
-    return el('article', { className: `io-order ${open ? 'is-open' : ''}` }, [el('div', { className: 'io-line' }, [head, rowTools(() => personModal(who(o)), () => deleteOrder(o), 'order')]), open ? body(o) : null])
+    const showing = state.pieces.has(o.id)
+    const look = o.items.length ? iconBtn(PICTURE, showing ? 'Hide the pieces' : 'See the pieces bought', () => { if (showing) state.pieces.delete(o.id); else state.pieces.add(o.id); paint() }) : null
+    if (look) { look.ariaExpanded = String(showing); if (showing) look.classList.add('on') }
+    return el('article', { className: `io-order ${open ? 'is-open' : ''}` }, [el('div', { className: 'io-line' }, [head, rowTools(() => personModal(who(o)), () => deleteOrder(o), 'order', look)]), showing ? piecesPanel(o) : null, open ? body(o) : null])
   }
+
+  /* What was bought, piece by piece: its picture, size, type, signed or not, how many, and a way
+     into the piece itself. The details come from the site's content, matched by the line's name. */
+  const chip = (k, v) => (v === '' || v == null ? null : el('span', { className: 'io-chip' }, [el('small', { textContent: k }), String(v)]))
+  const piecesPanel = (o) => el('div', { className: 'io-pieces' }, o.items.map((i) => el('div', { className: 'io-piece' }, [
+    i.src ? el('img', { src: i.src, alt: '', loading: 'lazy' }) : el('span', { className: 'io-piece-ph' }, [svg(PICTURE)]),
+    el('div', { className: 'io-piece-info' }, [
+      el('strong', { textContent: i.title || i.name }),
+      el('div', { className: 'io-chips' }, [
+        chip('Size', i.size || (i.slug ? 'Standard' : '')),
+        chip('Type', i.type),
+        chip('Signed', i.signed == null ? '' : i.signed ? 'Yes' : 'No'),
+        chip('Qty', i.qty),
+        chip('Universe', i.universe),
+        chip('Category', i.category),
+      ]),
+      el('div', { className: 'io-piece-foot' }, [
+        i.amount != null ? el('b', { textContent: money(i.amount, o.currency) }) : null,
+        i.slug ? el('a', { className: 'io-link', href: `#/collections/work/entries/${i.slug}`, textContent: 'Open the piece' }) : el('span', { className: 'io-when', textContent: 'Not a piece on the site any more' }),
+      ]),
+    ]),
+  ])))
 
   const copyBtn = (text, what) => {
     const b = el('button', { type: 'button', className: 'io-link', textContent: `Copy ${what}` })
@@ -907,7 +933,8 @@
     b.addEventListener('click', (e) => { e.stopPropagation(); onClick() })
     return b
   }
-  const rowTools = (info, remove, what) => el('span', { className: 'io-row-tools' }, [
+  const rowTools = (info, remove, what, extra) => el('span', { className: 'io-row-tools' }, [
+    extra || null,
     info ? iconBtn(CARD, 'Customer details', info) : el('span', { className: 'io-icon-gap' }),
     iconBtn(TRASH, `Delete this ${what}`, remove, true),
   ])

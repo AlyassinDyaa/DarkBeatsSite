@@ -1,6 +1,6 @@
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
-import { setTrack } from './_orders.js'
+import { describeItem, piecesNow, setTrack } from './_orders.js'
 
 /* The admin's Orders screen. Everything paid through Stripe (prints from the Shop, and support
    through the payment links) is read here, straight from Stripe, for the logged-in admin only.
@@ -134,6 +134,9 @@ export default async function handler(req, res) {
           orders.sort((a, b) => b.created - a.created)
         } catch (e) { console.error('paypal orders not read:', e.message) }
       }
+      // each line with its piece: picture, size, signed or not, type, category, universe
+      const pieces = piecesNow()
+      for (const o of orders) o.items = o.items.map((i) => ({ ...i, ...describeItem(i.name, pieces) }))
       return res.status(200).json({ orders, more, next: list.length ? list[list.length - 1].id : null })
     }
 
@@ -148,6 +151,10 @@ export default async function handler(req, res) {
         for (const pi of hasStripe ? pis : []) {
           const got = await stripe(`payment_intents/${pi}`, { method: 'POST', body: 'metadata[jb_hidden]=1' })
           if (got.ok) done.push(pi)
+        }
+        // the buyer's account drops it too (their orders, their count, their pictures)
+        if (done.length && dbReady()) {
+          try { await (await db()).collection('orders').updateMany({ pi: { $in: done } }, { $set: { hidden: true } }) } catch (e) { console.error('not hidden in the database:', e.message) }
         }
         if (refs.length && dbReady()) {
           await (await db()).collection('orders').updateMany({ ref: { $in: refs } }, { $set: { hidden: true } })

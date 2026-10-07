@@ -29,6 +29,9 @@
     },
     "api/account.js": {
       "includeFiles": "content/**"
+    },
+    "api/orders.js": {
+      "includeFiles": "content/work/**"
     }
   }
 }

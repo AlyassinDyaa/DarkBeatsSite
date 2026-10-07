@@ -62,7 +62,7 @@ const pieces = () => {
 // the prints this customer has bought (an order line "The Rider · A2 (signed)" is The Rider)
 const ownedSlugs = async (d, user) => {
   const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-  const orders = await d.collection('orders').find({ ...match, status: 'paid' }).sort({ createdAt: -1 }).limit(200).toArray()
+  const orders = await d.collection('orders').find({ ...match, status: 'paid', hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(200).toArray()
   const all = pieces().sort((a, b) => b.title.length - a.title.length)
   const owned = new Set()
   for (const o of orders) for (const i of o.items || []) { const p = all.find((x) => String(i.name || '').startsWith(x.title)); if (p) owned.add(p.slug) }
@@ -235,7 +235,7 @@ export default async function handler(req, res) {
     if (action === 'orders') {
       // orders placed while logged in, and (once the address is confirmed) any placed with it as a guest
       const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true } }).sort({ createdAt: -1 }).limit(100).toArray()
+      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true }, hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(100).toArray()
       return say(res, 200, { orders: list.map(forCustomer) })
     }
 
@@ -246,7 +246,7 @@ export default async function handler(req, res) {
       if (!(await checkPassword(body.password, user.password))) { await noteTry(`login:${user.email}`); return say(res, 400, { message: 'The password is not right.', field: 'password' }) }
       const number = String(body.number || '').trim().toUpperCase().slice(0, 20)
       const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true } }).limit(200).toArray()
+      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true }, hidden: { $ne: true } }).limit(200).toArray()
       const order = number && list.find((o) => forCustomer(o).number === number)
       if (!order) return say(res, 404, { message: 'That order is not in your account any more.' })
       await d.collection('orders').updateOne({ ref: order.ref }, { $set: { customerRemoved: true, removedAt: new Date() } })
