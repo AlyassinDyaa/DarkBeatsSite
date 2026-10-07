@@ -1,13 +1,13 @@
 {
-  "title": "Night of the Living Dummy",
-  "category": "Horror",
-  "type": "Posters",
-  "date": "2026-04-19",
-  "hue": 135,
   "src": "/uploads/night-of-the-living-dummy.webp",
-  "link": "https://www.instagram.com/jbeatsart/p/DXU-Fa5E24Q/",
-  "note": "",
+  "price": 40,
+  "hidden": true,
   "featured": true,
-  "hidden": false,
-  "price": 40
+  "date": "2026-04-19",
+  "note": "",
+  "hue": 135,
+  "title": "Night of the Living Dummy",
+  "type": "Posters",
+  "link": "https://www.instagram.com/jbeatsart/p/DXU-Fa5E24Q/",
+  "category": "Horror"
 }
