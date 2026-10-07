@@ -793,4 +793,63 @@
       },
     }))
   }
+
+  /* ---------- a print as a profile picture: where the circle sits, and how far in ----------
+     The piece's picture in a circle: drag it to put the face in place, zoom with the slider (the
+     sliders under it move it too, for the keyboard). Kept as "left,top,zoom" (percent), which the
+     site uses wherever a buyer shows this print as their picture. */
+  if (window.CMS && window.createClass && window.h) {
+    const h = window.h
+    const clamp = (n, lo, hi) => Math.round(Math.min(hi, Math.max(lo, n)))
+    window.CMS.registerWidget('facecrop', window.createClass({
+      getInitialState() { return { src: '' } },
+      componentDidMount() { this.look(); this.timer = setInterval(() => this.look(), 400) },
+      componentWillUnmount() { clearInterval(this.timer) },
+      // the picture is whatever the form's Picture field holds right now
+      look() {
+        const entry = this.props.getEntry && this.props.getEntry()
+        const data = entry && entry.get('data')
+        const path = data && data.get('src')
+        const src = path ? String(this.props.getAsset(path) || '') : ''
+        if (src !== this.state.src) this.setState({ src })
+      },
+      parts() {
+        const [x, y, z] = String(this.props.value || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n)))
+        return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 22, z: Number.isFinite(z) && z >= 100 ? z : 100 }
+      },
+      put(p) { this.props.onChange(clamp(p.x, 0, 100) + ',' + clamp(p.y, 0, 100) + ',' + clamp(p.z, 100, 400)) },
+      drag(e) {
+        if (!this.state.src) return
+        e.preventDefault()
+        const box = e.currentTarget.getBoundingClientRect()
+        const from = { mx: e.clientX, my: e.clientY, ...this.parts() }
+        const per = 200 / (box.width * (from.z / 100)) // how far one pixel of dragging moves the picture
+        const move = (m) => this.put({ x: from.x - (m.clientX - from.mx) * per, y: from.y - (m.clientY - from.my) * per, z: from.z })
+        const stop = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', stop) }
+        addEventListener('pointermove', move)
+        addEventListener('pointerup', stop)
+      },
+      render() {
+        const { x, y, z } = this.parts()
+        const src = this.state.src
+        const look = { objectPosition: x + '% ' + y + '%', transform: 'scale(' + (z / 100) + ')', transformOrigin: x + '% ' + y + '%' }
+        const circle = (size) => h('span', { className: 'ia-face is-' + size }, src ? h('img', { src, alt: '', draggable: false, style: look }) : null)
+        const now = { x, y, z }
+        const slider = (label, key, min, max) => h('label', { className: 'ia-face-slider' },
+          h('span', {}, label),
+          h('input', { type: 'range', min, max, step: 1, value: now[key], disabled: !src, onChange: (e) => this.put({ ...now, [key]: Number(e.target.value) }) }),
+          h('b', {}, now[key] + '%'))
+        return h('div', { className: 'ia-facecrop' },
+          h('div', { className: 'ia-face-drag' + (src ? '' : ' is-empty'), onPointerDown: (e) => this.drag(e), title: src ? 'Drag to move the picture' : '' },
+            circle('big'),
+            src ? null : h('span', { className: 'ia-face-none' }, 'Add the picture first')),
+          h('div', { className: 'ia-face-side' },
+            h('div', { className: 'ia-face-row' }, circle('mid'), circle('small'), h('span', {}, 'As it shows on their profile')),
+            slider('Zoom', 'z', 100, 400),
+            slider('Left to right', 'x', 0, 100),
+            slider('Up and down', 'y', 0, 100),
+            h('button', { type: 'button', className: 'ia-face-reset', disabled: !this.props.value, onClick: () => this.props.onChange('') }, 'Start again')))
+      },
+    }))
+  }
 })()

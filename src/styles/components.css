@@ -1186,3 +1186,7 @@ a.buy-btn { text-decoration: none; }
 .acct-pick-one img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; }
 .acct-pick-label em { margin-left: 14px; padding: 3px 10px 2px; }
 .acct-pick { margin-bottom: 34px; }
+/* a print as a picture: its own round frame, so the zoom set in the admin stays inside the circle */
+.acct-pick-pic { position: absolute; inset: 0; overflow: hidden; border-radius: 50%; }
+.acct-pick-pic img { border-radius: 0; }
+.acct-avatar img { transform-origin: 50% 22%; }

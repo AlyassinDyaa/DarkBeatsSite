@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Page from '../components/Page'
-import { accountPage, asset, brand, canBuy, money, priceOf, priceVaries, soldOut, work } from '../data/site'
+import { accountPage, asset, brand, canBuy, faceLook, money, priceOf, priceVaries, soldOut, work } from '../data/site'
 import Poster from '../components/Poster'
 import Wordmark from '../components/Wordmark'
 import { useAccount } from '../hooks/useAccount'
@@ -275,7 +275,7 @@ function Avatar({ user, size = 'md' }) {
   const piece = user.avatar && !icon ? work.find((p) => p.slug === user.avatar && p.src) : null
   return (
     <span className={`acct-avatar is-${size}`} aria-hidden="true">
-      {icon ? <img src={asset(icon)} alt="" /> : piece ? <img src={asset(piece.src)} alt="" /> : <b>{initialsOf(user)}</b>}
+      {icon ? <img src={asset(icon)} alt="" /> : piece ? <img src={asset(piece.src)} alt="" style={faceLook(piece)} /> : <b>{initialsOf(user)}</b>}
     </span>
   )
 }
@@ -434,7 +434,7 @@ function Details({ owned = [] }) {
             <div className="acct-pick-grid">
               {mine.map((p) => (
                 <button key={p.slug} type="button" role="radio" aria-checked={f.values.avatar === p.slug} aria-label={p.title} title={p.title} className={`acct-pick-one is-mine ${f.values.avatar === p.slug ? 'on' : ''}`} onClick={() => f.set('avatar')(p.slug)}>
-                  <img src={asset(p.src)} alt="" loading="lazy" />
+                  <span className="acct-pick-pic"><img src={asset(p.src)} alt="" loading="lazy" style={faceLook(p)} /></span>
                 </button>
               ))}
             </div>

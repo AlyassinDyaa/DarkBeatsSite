@@ -66,6 +66,12 @@ const visit = Math.random().toString(36).slice(2)
 const hash = (text) => { let h = 2166136261; for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0 }
 const mixed = (list) => list.map((p) => [hash(visit + p.slug), p]).sort((a, b) => a[0] - b[0]).map(([, p]) => p)
 
+/* Where a piece's picture sits when a buyer uses it as their round profile picture (set in the
+   admin: "left,top,zoom" in percent). The face is usually near the top, hence 22% when not set. */
+const parseFace = (v) => { const [x, y, z] = String(v || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n))); return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 22, zoom: Number.isFinite(z) && z >= 100 ? z : 100 } }
+/* the style that puts it there, on an <img> filling a round frame */
+export const faceLook = (piece) => { const f = (piece && piece.face) || { x: 50, y: 22, zoom: 100 }; return { objectPosition: `${f.x}% ${f.y}%`, transform: `scale(${f.zoom / 100})`, transformOrigin: `${f.x}% ${f.y}%` } }
+
 /* The sizes typed into the admin, tidied: each with a name and a price above nothing. */
 const cleanSizes = (list) => (Array.isArray(list) ? list : [])
   .map((s) => ({ name: String((s && s.name) || '').trim(), price: Number(s && s.price), salePrice: Number(s && s.salePrice) || 0 }))
@@ -173,7 +179,7 @@ function assemble(content) {
   types = inUse(shopLists.types, 'type')
   // what the buyer gets: the line the admin wrote for the piece’s type, or the shop’s own line
   const typeNotes = Object.fromEntries((Array.isArray(shopLists.types) ? shopLists.types : []).filter((t) => t && t.name).map((t) => [String(t.name).trim(), String(t.note || '').trim()]))
-  work = work.map((p) => ({ ...p, sizes: cleanSizes(p.sizes), what: typeNotes[p.type] || shop.note || '' }))
+  work = work.map((p) => ({ ...p, face: parseFace(p.face), sizes: cleanSizes(p.sizes), what: typeNotes[p.type] || shop.note || '' }))
   const picked = work.filter((p) => p.featured)
   latest = (picked.length ? picked : work).slice(0, 6)
 
