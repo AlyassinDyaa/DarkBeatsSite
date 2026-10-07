@@ -1,12 +1,14 @@
 {
-  "title": "Daredevil",
-  "category": "Heroes",
-  "date": "2026-03-31",
-  "hue": 25,
+  "salePrice": 30,
   "src": "/uploads/daredevil.webp",
-  "link": "https://www.instagram.com/jbeatsart/p/DWlBlvWAfJF/",
-  "note": "",
-  "featured": false,
+  "price": 40,
   "hidden": false,
-  "price": 40
+  "featured": false,
+  "date": "2026-03-31",
+  "note": "",
+  "status": "sale",
+  "hue": 25,
+  "title": "Daredevil",
+  "link": "https://www.instagram.com/jbeatsart/p/DWlBlvWAfJF/",
+  "category": "Heroes"
 }
