@@ -143,6 +143,13 @@ const adminBundle = () => ({
         await handler(req, res)
       } catch (e) { res.status(500).json({ message: `The checkout function failed: ${e.message}` }) }
     })
+    // Orders come from Stripe through the admin's login, which only exists on Vercel: here the
+    // Orders screen says where to find them instead.
+    server.middlewares.use('/api/orders', (req, res) => {
+      res.statusCode = 503
+      res.setHeader('Content-Type', 'application/json')
+      res.end(JSON.stringify({ setup: true, message: 'Orders are read from Stripe on the live admin (jbeatsart.vercel.app/admin). This copy on your computer cannot see them.' }))
+    })
     server.middlewares.use('/admin', (req, res, next) => {
       const path = (req.originalUrl || '').split('?')[0]
       const name = (req.url || '').split('?')[0].replace(/^\//, '')
