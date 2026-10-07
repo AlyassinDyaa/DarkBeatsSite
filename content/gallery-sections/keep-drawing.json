@@ -3,7 +3,7 @@
   "description": "Old drawings next to their redraws.",
   "order": 2,
   "from": "none",
-  "hidden": false,
+  "hidden": true,
   "items": [
     {
       "src": "/uploads/keep-drawing-the-batman-who-laughs.webp",
