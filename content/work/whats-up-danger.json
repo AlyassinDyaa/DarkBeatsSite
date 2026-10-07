@@ -3,7 +3,7 @@
   "universe": "Marvel",
   "price": 40,
   "hidden": false,
-  "featured": false,
+  "featured": true,
   "date": "2026-10-07",
   "status": "none",
   "title": "What's Up Danger",
