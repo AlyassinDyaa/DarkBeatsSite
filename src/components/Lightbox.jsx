@@ -76,9 +76,10 @@ export default function Lightbox({ items, sel, setSel }) {
         <motion.div ref={box} className="lightbox" role="dialog" aria-modal="true" aria-label={piece.title || 'Picture'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} onClick={() => setSel(null)} data-lenis-prevent>
           <div className="lightbox-inner" onClick={(e) => e.stopPropagation()}>
             <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={piece.slug || sel} className={`lightbox-art ${piece.src ? '' : 'is-card'}`} style={{ x: dx }} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
-                {piece.src
-                  ? <img src={asset(piece.src)} alt={piece.title || ''} draggable="false" />
+              <motion.div key={piece.slug || sel} className={`lightbox-art ${piece.hover || piece.src ? '' : 'is-card'}`} style={{ x: dx }} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}>
+                {/* an opened piece shows its second picture (the framed print, set in the admin) when it has one */}
+                {piece.hover || piece.src
+                  ? <img src={asset(piece.hover || piece.src)} alt={piece.title || ''} draggable="false" />
                   : <Poster title={piece.title} hue={piece.hue} seed={sel} />}
               </motion.div>
             </AnimatePresence>
