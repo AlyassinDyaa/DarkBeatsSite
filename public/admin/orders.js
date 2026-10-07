@@ -362,7 +362,7 @@
     const what = o.items.length > 1 ? `${first} + ${o.items.length - 1} more` : first
     const head = el('button', { type: 'button', className: 'io-head', ariaExpanded: String(open) }, [
       el('span', { className: 'io-date', textContent: when(o.created) }),
-      el('span', { className: 'io-who' }, [el('strong', { textContent: o.name || o.email || 'No name given' }), el('small', {}, [what, waiting(o) >= 2 ? el('span', { className: 'io-age', textContent: `waiting ${waiting(o)} days` }) : null])]),
+      el('span', { className: 'io-who' }, [el('strong', { textContent: o.name || o.email || 'No name given' }), el('small', {}, [o.paidWith ? `${what} · ${o.paidWith}` : what, waiting(o) >= 2 ? el('span', { className: 'io-age', textContent: `waiting ${waiting(o)} days` }) : null])]),
       el('span', { className: 'io-amount', textContent: money(o.amount, o.currency) }),
       el('span', { className: `io-pill is-${kind}`, textContent: text }),
       svg('M6 9l6 6 6-6'),
@@ -408,6 +408,7 @@
       el('h4', { textContent: o.kind === 'support' ? 'Support' : 'Ordered' }),
       el('ul', { className: 'io-items' }, o.items.map((i) => el('li', {}, [el('span', { textContent: i.qty ? `${i.qty} × ${i.name}` : i.name }), i.amount != null ? el('b', { textContent: money(i.amount, o.currency) }) : null]))),
       el('div', { className: 'io-total' }, [el('span', { textContent: 'Paid' }), el('b', { textContent: money(o.amount, o.currency) })]),
+      o.paidWith ? el('div', { className: 'io-total is-method' }, [el('span', { textContent: 'Paid with' }), el('b', { textContent: o.paidWith })]) : null,
       o.discount > 0 ? el('div', { className: 'io-total is-discount' }, [el('span', { textContent: 'Discount code used' }), el('b', { textContent: `−${money(o.discount, o.currency)}` })]) : null,
       o.refunded > 0 ? el('div', { className: 'io-total is-refund' }, [el('span', { textContent: o.fullyRefunded ? 'Refunded in full' : 'Refunded' }), el('b', { textContent: `−${money(o.refunded, o.currency)}` })]) : null,
       el('p', { className: 'io-when', textContent: when(o.created, true) }),

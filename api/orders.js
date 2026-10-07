@@ -1,6 +1,6 @@
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
-import { describeItem, piecesNow, setTrack } from './_orders.js'
+import { describeItem, paidWithOf, piecesNow, setTrack } from './_orders.js'
 
 /* The admin's Orders screen. Everything paid through Stripe (prints from the Shop, and support
    through the payment links) is read here, straight from Stripe, for the logged-in admin only.
@@ -53,6 +53,7 @@ const shapeSaved = (o) => ({
   receipt: '',
   pi: '',
   provider: 'paypal',
+  paidWith: 'PayPal',
   stripe: o.captureId ? `https://www.${o.test ? 'sandbox.' : ''}paypal.com/activity/payment/${o.captureId}` : '',
   test: Boolean(o.test),
   track: { status: 'new', carrier: '', number: '', note: '', at: '', ...(o.track || {}) },
@@ -86,6 +87,7 @@ const shape = (s) => {
     address: ship && ship.address ? { name: text(ship.name), ...Object.fromEntries(['line1', 'line2', 'city', 'state', 'postal_code', 'country'].map((k) => [k, text(ship.address[k])])) } : null,
     items,
     receipt: (charge && charge.receipt_url) || '',
+    paidWith: (charge && paidWithOf(charge.payment_method_details)) || 'Card',
     pi: pi ? pi.id : '',
     hidden: meta.jb_hidden === '1',
     stripe: pi ? `https://dashboard.stripe.com/${s.livemode ? '' : 'test/'}payments/${pi.id}` : '',

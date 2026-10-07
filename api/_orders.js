@@ -54,6 +54,23 @@ export const describeItem = (name, pieces) => {
   }
 }
 
+/* How it was paid, in words: "Visa •••• 4242", "Apple Pay · Visa •••• 4242", "PayPal", "Afterpay".
+   From a Stripe charge's payment_method_details; PayPal orders simply say PayPal. */
+const BRANDS = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', discover: 'Discover', diners: 'Diners', jcb: 'JCB', unionpay: 'UnionPay', eftpos_au: 'eftpos' }
+const WALLETS = { apple_pay: 'Apple Pay', google_pay: 'Google Pay', samsung_pay: 'Samsung Pay', link: 'Link' }
+const words = (k) => String(k || '').split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+export const paidWithOf = (details) => {
+  if (!details || !details.type) return ''
+  if (details.type === 'card' && details.card) {
+    const c = details.card
+    const card = `${BRANDS[c.brand] || words(c.brand) || 'Card'}${c.last4 ? ` •••• ${c.last4}` : ''}`
+    const wallet = c.wallet && c.wallet.type ? WALLETS[c.wallet.type] || words(c.wallet.type) : ''
+    return text(wallet ? `${wallet} · ${card}` : card, 60)
+  }
+  return text({ afterpay_clearpay: 'Afterpay', au_becs_debit: 'Bank debit', paypal: 'PayPal', link: 'Link' }[details.type] || words(details.type), 60)
+}
+const paidWithLabel = (o) => o.paidWith || (o.provider === 'paypal' ? 'PayPal' : o.provider === 'stripe' ? 'Card' : '')
+
 // a new order, or more about one (fields already set by the admin, such as tracking, are kept)
 export const recordOrder = async (order) => {
   if (!dbReady()) return
@@ -90,6 +107,7 @@ export const forCustomer = (o) => {
     createdAt: o.createdAt,
     kind: o.kind || 'shop',
     provider: o.provider,
+    paidWith: paidWithLabel(o),
     status: o.status === 'refunded' ? 'refunded' : o.status === 'pending' ? 'pending' : t.status || 'new',
     items: Array.isArray(o.items) ? o.items.map((i) => ({ name: text(i.name, 200), qty: i.qty || 1, amount: i.amount })) : [],
     amount: o.amount,

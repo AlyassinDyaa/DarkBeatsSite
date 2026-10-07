@@ -352,7 +352,7 @@ function OrderCard({ o, onRemove }) {
       <header className="acc-order-head">
         <div>
           <strong>{support ? 'Support' : `Order ${o.number}`}</strong>
-          <small>{longDay(o.createdAt)}{o.provider === 'paypal' ? ' · PayPal' : ''}</small>
+          <small>{longDay(o.createdAt)}{o.paidWith ? ` · ${o.paidWith}` : ''}</small>
         </div>
         <span className="acc-order-right">
           <span className={`acc-pill is-${o.status}`}>{support ? 'Thank you' : STATUS_TEXT[o.status] || 'Paid'}</span>
@@ -491,7 +491,7 @@ function OrderRow({ o, open, onToggle }) {
       </span>
       <span className="acc-orow-what">
         <strong>{support ? 'Support' : `Order ${o.number}`}</strong>
-        <small>{longDay(o.createdAt)} · {count} {count === 1 ? 'item' : 'items'}</small>
+        <small>{longDay(o.createdAt)} · {count} {count === 1 ? 'item' : 'items'}{o.paidWith ? ` · ${o.paidWith}` : ''}</small>
       </span>
       <span className={`acc-pill is-${o.status}`}>{support ? 'Thank you' : STATUS_TEXT[o.status] || 'Paid'}</span>
       <b className="acc-orow-total">{priced(o.amount, o.currency)}</b>

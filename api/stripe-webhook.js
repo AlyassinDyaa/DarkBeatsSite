@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { paidWithOf, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -51,11 +51,16 @@ export default async function handler(req, res) {
       const ship = (o.collected_information && o.collected_information.shipping_details) || o.shipping_details || null
       const who = o.customer_details || {}
       const userId = /^u_[a-f0-9]{24}$/.test(String(o.client_reference_id || '')) ? o.client_reference_id : null
+      // how it was paid (card brand and last four, or the wallet)
+      const piId = typeof o.payment_intent === 'string' ? o.payment_intent : (o.payment_intent && o.payment_intent.id) || ''
+      const payment = piId ? await stripe(`payment_intents/${piId}?expand[]=latest_charge`) : null
+      const charge = payment && payment.latest_charge && typeof payment.latest_charge === 'object' ? payment.latest_charge : null
       await recordOrder({
         ref: o.id,
         provider: 'stripe',
         kind: o.metadata && o.metadata.order ? 'shop' : o.payment_link ? 'support' : 'other',
-        pi: typeof o.payment_intent === 'string' ? o.payment_intent : (o.payment_intent && o.payment_intent.id) || '',
+        pi: piId,
+        paidWith: (charge && paidWithOf(charge.payment_method_details)) || 'Card',
         userId,
         email: String(who.email || '').toLowerCase(),
         name: who.name || (ship && ship.name) || '',
