@@ -904,3 +904,41 @@ a.buy-btn { text-decoration: none; }
   .acc-tabs button { padding: 12px 10px; font-size: 0.72rem; }
   .acc-steps li span { font-size: 0.6rem; }
 }
+
+/* the browser's own autofill colour (pale blue) is painted over with the page's dark ground */
+.field input:-webkit-autofill, .field input:-webkit-autofill:hover, .field input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--fg);
+  caret-color: var(--fg);
+  box-shadow: 0 0 0 1000px var(--bg-2) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+.acc-card .field input:-webkit-autofill { box-shadow: 0 0 0 1000px #0e0b14 inset; }
+
+/* fields two to a row on wider screens */
+.acc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; }
+@media (max-width: 699px) { .acc-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* the email at the top of Details: the address, and whether it is confirmed */
+.acc-email { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; margin: 0 0 30px; padding: 16px 18px; border: 1px solid var(--line); background: rgba(9, 7, 13, 0.6); }
+.acc-email > div:first-child { display: grid; gap: 6px; min-width: 0; }
+.acc-email b { font-weight: 600; font-size: 1.05rem; overflow-wrap: anywhere; }
+.acc-email-side { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.acc-tag { padding: 6px 12px 5px; font-family: var(--mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; clip-path: var(--lean); white-space: nowrap; }
+.acc-tag.is-ok { background: oklch(0.82 0.2 150 / 0.16); color: var(--open); }
+.acc-tag.is-wait { background: rgba(255, 196, 87, 0.14); color: #ffc457; }
+
+/* a checkbox in the site's own style */
+.acc-check input { appearance: none; -webkit-appearance: none; display: grid; place-items: center; width: 20px; height: 20px; margin: 1px 0 0; border: 1.5px solid var(--line-strong); background: transparent; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.acc-check input::after { content: ''; width: 10px; height: 6px; border-left: 2px solid var(--on-accent); border-bottom: 2px solid var(--on-accent); transform: rotate(-45deg) translate(1px, -1px) scale(0); transition: transform 0.2s var(--ease-out); }
+.acc-check input:checked { border-color: var(--accent); background: var(--accent); }
+.acc-check input:checked::after { transform: rotate(-45deg) translate(1px, -1px) scale(1); }
+.acc-check input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-check:hover input:not(:checked) { border-color: var(--fg-mute); }
+.acc-check span { line-height: 1.45; }
+
+/* account pages line up with their title (left), at a comfortable width; forms here are not capped */
+.container.acc-narrow, .container.acc-wide { max-width: none; }
+.acc-narrow > * { max-width: 520px; }
+.acc-wide > * { max-width: 980px; }
+.acc-narrow form, .acc-wide form, form.acc-card { max-width: none; }
+.acc-narrow > form.acc-card, .acc-narrow > .acc-card { max-width: 520px; }

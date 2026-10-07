@@ -276,11 +276,29 @@ function Details() {
   const { user, call } = useAccount()
   const f = useForm({ name: user.name, phone: user.phone, marketing: user.marketing })
   const [saved, setSaved] = useState(false)
+  const [resent, setResent] = useState('')
   return (
     <form className="acc-card" onSubmit={(e) => f.run(e, async () => { await call('profile', f.values); setSaved(true); setTimeout(() => setSaved(false), 2500) })} noValidate>
-      <div className="acc-static"><span className="label">Email</span><b>{user.email}</b>{user.verified ? <small className="acc-ok">Confirmed</small> : <small>Not confirmed yet</small>}</div>
-      <Field label="Your name" autoComplete="name" value={f.values.name} onChange={f.set('name')} required={false} maxLength={80} />
-      <Field label="Phone (optional, for the courier)" type="tel" autoComplete="tel" value={f.values.phone} onChange={f.set('phone')} required={false} maxLength={30} />
+      <h3 className="acc-h3">Your details</h3>
+      {/* the email, with whether it is confirmed (and a way to send the link again) */}
+      <div className="acc-email">
+        <div>
+          <span className="label">Email</span>
+          <b>{user.email}</b>
+        </div>
+        {user.verified
+          ? <span className="acc-tag is-ok">Confirmed</span>
+          : (
+            <div className="acc-email-side">
+              <span className="acc-tag is-wait">Not confirmed yet</span>
+              <button type="button" className="acc-link" disabled={Boolean(resent)} onClick={async () => { try { await call('resend'); setResent('Link sent') } catch (err) { setResent(err.message) } }}>{resent || 'Send the link again'}</button>
+            </div>
+          )}
+      </div>
+      <div className="acc-grid">
+        <Field label="Your name" autoComplete="name" value={f.values.name} onChange={f.set('name')} required={false} maxLength={80} />
+        <Field label="Phone (optional, for the courier)" type="tel" autoComplete="tel" value={f.values.phone} onChange={f.set('phone')} required={false} maxLength={30} />
+      </div>
       <label className="acc-check">
         <input type="checkbox" checked={f.values.marketing} onChange={(e) => f.set('marketing')(e.target.checked)} />
         <span>Email me about new prints and conventions.</span>
@@ -303,8 +321,10 @@ function Security() {
     <div className="acc-stack">
       <form className="acc-card" onSubmit={(e) => pw.run(e, async () => { await call('password', pw.values); setChanged(true); pw.set('current')(''); pw.set('password')('') })} noValidate>
         <h3 className="acc-h3">Change the password</h3>
-        <Field label="Current password" type="password" autoComplete="current-password" value={pw.values.current} onChange={pw.set('current')} error={errorFor(pw.problem, 'current')} />
-        <Field label="New password" type="password" autoComplete="new-password" value={pw.values.password} onChange={pw.set('password')} error={errorFor(pw.problem, 'password')} hint="At least 8 characters." />
+        <div className="acc-grid">
+          <Field label="Current password" type="password" autoComplete="current-password" value={pw.values.current} onChange={pw.set('current')} error={errorFor(pw.problem, 'current')} />
+          <Field label="New password" type="password" autoComplete="new-password" value={pw.values.password} onChange={pw.set('password')} error={errorFor(pw.problem, 'password')} hint="At least 8 characters." />
+        </div>
         <Problem text={pw.problem.field ? '' : pw.problem.text} />
         <div className="acc-row"><Submit busy={pw.busy}>Change it</Submit>{changed && <span className="acc-saved" role="status">Changed. Any other device was logged out.</span>}</div>
       </form>
@@ -346,7 +366,7 @@ function Home() {
   return (
     <Shell title={first ? `Hi, ${first}` : 'Your account'} label="Your account" wide>
       {note && <p className="acc-welcome" role="status">{note}</p>}
-      {!user.verified && (
+      {!user.verified && tab !== 'details' && (
         <div className="acc-verify" role="status">
           <span>Confirm your email: there is a link in your inbox at <b>{user.email}</b>.</span>
           <button type="button" className="acc-link" disabled={Boolean(resent)} onClick={async () => { try { await call('resend'); setResent('Sent. Check your inbox (and spam).') } catch (e) { setResent(e.message) } }}>{resent || 'Send it again'}</button>
