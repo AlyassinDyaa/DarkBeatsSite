@@ -405,10 +405,13 @@ function useOrders(justPaid = false) {
     ask()
     // just back from paying: the payment service tells the site a moment later, so ask again a few times
     const later = justPaid ? [2500, 6000, 12000].map((ms) => setTimeout(ask, ms)) : []
-    // back on this tab: the admin may have posted something meanwhile (status, tracking)
+    // the admin may post something meanwhile (status, tracking): asked again on coming back to the
+    // page, and every half minute while it is in view
     const back = () => { if (document.visibilityState === 'visible') ask() }
     document.addEventListener('visibilitychange', back)
-    return () => { stale = true; later.forEach(clearTimeout); document.removeEventListener('visibilitychange', back) }
+    addEventListener('focus', back)
+    const every = setInterval(back, 30000)
+    return () => { stale = true; later.forEach(clearTimeout); clearInterval(every); document.removeEventListener('visibilitychange', back); removeEventListener('focus', back) }
   }, [call, verified, justPaid])
   const drop = useCallback((o) => setOrders((list) => (list || []).filter((x) => x !== o)), [])
   return { orders, problem, drop }
@@ -793,7 +796,12 @@ function Home() {
         </nav>
 
         <div className="acct2-main">
-          {note && <p className="acc-welcome" role="status">{note}</p>}
+          {note && (
+            <div className="acc-welcome is-closable" role="status">
+              <span>{note}</span>
+              <button type="button" className="acc-welcome-x" aria-label="Dismiss" onClick={() => setParams(tab === 'overview' ? {} : { tab }, { replace: true })}>×</button>
+            </div>
+          )}
           {!user.verified && tab !== 'details' && (
             <div className="acc-verify" role="status">
               <span>Confirm your email: there is a link in your inbox at <b>{user.email}</b>.</span>

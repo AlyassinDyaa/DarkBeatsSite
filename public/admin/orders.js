@@ -404,7 +404,8 @@
     const field = (labelText, control) => el('label', { className: 'io-field' }, [el('span', { textContent: labelText }), control])
     const status = el('div', { className: 'io-steps', role: 'radiogroup', ariaLabel: 'Status' }, ['new', 'packed', 'shipped', 'delivered'].map((s) => {
       const b = el('button', { type: 'button', role: 'radio', ariaChecked: String(d.status === s), className: `io-step ${d.status === s ? 'on' : ''}`, textContent: STATUS[s] })
-      b.addEventListener('click', () => { d.status = s; paint() })
+      // a new status is saved at once (with the carrier and number as they are), so the buyer sees it
+      b.addEventListener('click', () => { if (state.saving[o.id] || (d.status === s && o.track.status === s)) return; d.status = s; saveTrack(o) })
       return b
     }))
     const carrier = el('select', { className: 'io-select' }, [el('option', { value: '', textContent: 'Choose…' }), ...Object.entries(CARRIERS).map(([v, [t]]) => el('option', { value: v, textContent: t, selected: d.carrier === v }))])
