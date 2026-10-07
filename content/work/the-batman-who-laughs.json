@@ -1,13 +1,13 @@
 {
-  "title": "The Batman Who Laughs",
-  "category": "Villains",
-  "type": "Posters",
-  "date": "2026-04-16",
-  "hue": 150,
   "src": "/uploads/the-batman-who-laughs.webp",
-  "link": "https://www.instagram.com/jbeatsart/p/DXMgEE-AWKL/",
-  "note": "",
-  "featured": true,
+  "price": 40,
   "hidden": false,
-  "price": 40
+  "featured": true,
+  "date": "2026-04-16",
+  "note": "",
+  "hue": 150,
+  "title": "Imposter",
+  "type": "Posters",
+  "link": "https://www.instagram.com/jbeatsart/p/DXMgEE-AWKL/",
+  "category": "Villains"
 }
