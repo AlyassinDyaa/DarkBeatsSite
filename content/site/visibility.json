@@ -17,6 +17,6 @@
     "support": false
   },
   "shop": {
-    "redraws": true
+    "redraws": false
   }
 }
