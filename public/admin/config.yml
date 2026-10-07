@@ -73,6 +73,7 @@ collections:
       - { name: salePrice, label: Sale price, widget: number, value_type: float, min: 0, required: false, hint: 'Only used while the status is "On sale", and only when it is lower than the price.' }
       - { name: price, label: Price, widget: number, value_type: float, min: 0, required: false, hint: 'A number, in the currency set under "Shop & payments". Only shown, with its Buy button, while online purchases are switched on there. Leave empty for a piece that is not for sale. Sold in sizes? Add them under "Sizes and prices" at the bottom instead.' }
       - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7 (for example 1500×2100px).' }
+      - { name: hover, label: Second picture (on hover), widget: image, choose_url: false, required: false, hint: 'Optional: the print in a frame, on a wall, a close-up... On the Shop page it fades in when someone points at the piece. Same shape as the first.' }
       - { name: note, label: A few words about it, widget: text, required: false, hint: 'Shown beside the picture when it is opened.' }
       - { name: featured, label: Show on the home page, widget: boolean, default: false, required: false, hint: 'Up to six ticked pieces are listed on the home page. With none ticked, the six newest are.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false, hint: 'Takes it off the site but keeps it here.' }

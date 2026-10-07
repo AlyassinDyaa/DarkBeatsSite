@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, shop, shows, soldOut, types, work } from '../data/site'
+import { asset, badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, shop, shows, soldOut, types, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
@@ -30,6 +30,7 @@ function TileBody({ p, eager }) {
     <>
       <span className="tile-art">
         <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={eager} />
+        {p.hover && <span className="tile-alt" aria-hidden="true"><img src={asset(p.hover)} alt="" loading="lazy" draggable="false" /></span>}
         {tag && tagsUp && !saleWithPrice && tagEl()}
         {priceUp && <span className="tile-tags"><span className="tile-price">{amount}</span>{saleWithPrice && tagEl('is-under')}</span>}
         <span className="tile-cta">{canBuy(p) ? 'View & buy' : 'View'} <span className="arrow">→</span></span>

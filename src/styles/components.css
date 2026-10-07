@@ -364,6 +364,13 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .tile:hover .tile-art, .tile:focus-visible .tile-art { transform: translate(-5px, -5px); box-shadow: 9px 9px 0 var(--accent); }
 .tile .poster img { transition: opacity 0.4s, transform 0.8s var(--ease-out); }
 .tile:hover .poster img, .tile:focus-visible .poster img { transform: scale(1.045); }
+/* the second picture (set in the admin) waits on top of the first, and fades in on hover */
+.tile-alt { position: absolute; z-index: 1; inset: 0; overflow: hidden; opacity: 0; transition: opacity 0.5s var(--ease-out); pointer-events: none; }
+.tile-alt img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease-out); }
+.tile:hover .tile-alt, .tile:focus-visible .tile-alt { opacity: 1; }
+.tile:hover .tile-alt img, .tile:focus-visible .tile-alt img { transform: scale(1.045); }
+.tile:has(.tile-badge.is-soldout) .tile-alt img { filter: grayscale(0.7) brightness(0.75); }
+@media (hover: none) { .tile-alt { display: none; } }
 .tile-price { position: absolute; z-index: 2; top: 14px; right: -6px; padding: 7px 16px 6px; font-family: var(--display); font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
 /* the status tag: New, Sale, Sold out */
 /* the status tag: the same slanted poster lettering as the price, in the site's purples */
