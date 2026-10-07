@@ -79,7 +79,7 @@
   ]
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'site/brand': 'Brand & contact', 'site/shop': 'Shop & payments', 'site/categories': 'Shop categories', 'site/visibility': 'Show / hide' }
+  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/shop': 'Shop & payments', 'site/categories': 'Shop categories', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -88,6 +88,7 @@
     'pages/about': 'Who you are: the heading, the paragraphs and the quick facts.',
     'pages/contact': 'The heading, the introduction and what visitors can say their message is about.',
     'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
+    'pages/account': 'What customers read on their account page: your note to them, and its headings.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
     'site/categories': 'The Shop’s lists: categories (Heroes, Villains...), types (Posters, Stickers...) and universes (DC, Marvel...).',
@@ -99,6 +100,7 @@
     'pages/commissions': 'M5 4h14v16l-3.500-2-3.500 2-3.500-2L5 20z M9 9h6 M9 13h4',
     'pages/about': 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
     'pages/contact': 'M4 6h16v12H4z M4 7l8 6 8-6',
+    'pages/account': 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c.8-3.800 4-6 8-6s7.200 2.200 8 6 M17 3.500l.900 1.800 2 .300-1.450 1.400.350 2-1.800-.950-1.800.950.350-2L14.100 5.600l2-.300z',
     'pages/support': 'M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 10c0 5.500-7 10-7 10z',
     'site/brand': 'M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z',
     'site/shop': 'M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2',

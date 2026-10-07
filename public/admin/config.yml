@@ -384,6 +384,17 @@ collections:
           - { name: intro, label: Introduction, widget: text }
           - { name: topics, label: Choices in the "About" drop-down, widget: list, required: false, hint: 'What a visitor can say their message is about. Separate them with commas. With none, the drop-down is left out.' }
 
+      - name: account
+        label: Customer account page
+        file: content/pages/account.json
+        fields:
+          - { name: noteTitle, label: Heading of your note, widget: string, required: false, hint: 'Shown to every customer on their account page, signed by you.' }
+          - { name: note, label: Your note to customers, widget: text, required: false, hint: 'A few warm lines. Empty: no note.' }
+          - { name: signature, label: Signed, widget: string, required: false }
+          - { name: collectionTitle, label: Heading over the prints they own, widget: string, required: false }
+          - { name: savedTitle, label: Heading over the pieces they saved, widget: string, required: false }
+          - { name: freshTitle, label: Heading over your newest pieces, widget: string, required: false }
+
       - name: support
         label: Support page
         file: content/pages/support.json

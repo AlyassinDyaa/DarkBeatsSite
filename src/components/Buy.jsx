@@ -65,6 +65,10 @@ export default function Buy({ piece }) {
           <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(cost.now + extra)}</span>
         </div>
         {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
+        {/* keep it for later, in the customer's account (logged out: the heart leads to logging in) */}
+        {account.on && (account.user
+          ? <button type="button" className={`buy-heart ${account.isSaved(piece.slug) ? 'on' : ''}`} onClick={() => account.toggleSaved(piece.slug)} aria-pressed={account.isSaved(piece.slug)} title={account.isSaved(piece.slug) ? 'Saved in your account' : 'Save for later'} aria-label={account.isSaved(piece.slug) ? 'Remove from saved' : 'Save for later'}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.500s-7.500-4.600-7.500-10.300A4.300 4.300 0 0 1 12 7.400a4.300 4.300 0 0 1 7.500 2.800c0 5.700-7.500 10.300-7.500 10.300z" /></svg></button>
+          : <Link className="buy-heart" to="/account/login?next=/account?tab=saved" title="Log in to save it for later" aria-label="Log in to save it for later"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.500s-7.500-4.600-7.500-10.300A4.300 4.300 0 0 1 12 7.400a4.300 4.300 0 0 1 7.500 2.800c0 5.700-7.500 10.300-7.500 10.300z" /></svg></Link>)}
       </div>
       {piece.what && <p className="buy-what">{piece.what}</p>}
       {cost.sale && !out && <p className="buy-save">You save {money(cost.was - cost.now)}</p>}

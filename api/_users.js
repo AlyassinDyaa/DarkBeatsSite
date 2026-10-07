@@ -143,8 +143,14 @@ export const publicUser = (u) => (u ? {
   verified: Boolean(u.verified),
   marketing: Boolean(u.marketing),
   createdAt: u.createdAt,
+  lastVisit: u.prevLogin || u.createdAt, // for "new since your last visit"
+  avatar: typeof u.avatar === 'string' ? u.avatar : '',
+  saved: Array.isArray(u.saved) ? u.saved : [],
   cart: Array.isArray(u.cart) ? u.cart : [],
 } : null)
+
+// a list of pieces (by their slug), made safe to keep: no repeats, at most 100
+export const cleanSlugs = (list) => [...new Set((Array.isArray(list) ? list : []).map((s) => clean(s, 80)).filter((s) => /^[a-z0-9-]{1,80}$/.test(s)))].slice(0, 100)
 
 // a cart from the browser, made safe to keep: { slug, size, signed, qty } lines
 export const cleanCart = (lines) => (Array.isArray(lines) ? lines : []).slice(0, 30)

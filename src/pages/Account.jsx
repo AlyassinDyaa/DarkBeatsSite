@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Page from '../components/Page'
-import { brand, money } from '../data/site'
+import { accountPage, asset, brand, canBuy, money, priceOf, priceVaries, soldOut, work } from '../data/site'
+import Poster from '../components/Poster'
 import { useAccount } from '../hooks/useAccount'
 import { useCart } from '../hooks/useCart'
 
@@ -201,6 +202,43 @@ function Verify() {
 }
 
 /* ---------- the account ---------- */
+// the piece an order line is about ("The Rider · A2 (signed)" → The Rider); the longest title wins
+const pieceFor = (name) => work.filter((p) => p.title && String(name || '').startsWith(p.title)).sort((a, b) => b.title.length - a.title.length)[0] || null
+const greeting = () => { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Up late' }
+const monthYear = (d) => new Date(d).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })
+const initialsOf = (u) => ((u.name || u.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join(''))
+
+/* the customer's picture: one of the artist's pieces they chose, or their initials */
+function Avatar({ user, size = 'md' }) {
+  const piece = user.avatar ? work.find((p) => p.slug === user.avatar && p.src) : null
+  return (
+    <span className={`acct-avatar is-${size}`} aria-hidden="true">
+      {piece ? <img src={asset(piece.src)} alt="" /> : <b>{initialsOf(user)}</b>}
+    </span>
+  )
+}
+
+/* a small piece card: picture, title, price; a heart to keep it for later */
+function PieceCard({ p, isNew = false }) {
+  const { isSaved, toggleSaved } = useAccount()
+  const low = priceOf(p)
+  const saved = isSaved(p.slug)
+  return (
+    <div className="acct-piece">
+      <Link className="acct-piece-art" to="/shop" title={`Find ${p.title} in the Shop`}>
+        <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} />
+        {isNew && <span className="acct-new">New</span>}
+      </Link>
+      <button type="button" className={`acct-heart ${saved ? 'on' : ''}`} onClick={() => toggleSaved(p.slug)} aria-pressed={saved} aria-label={saved ? `Remove ${p.title} from saved` : `Save ${p.title} for later`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.500s-7.500-4.600-7.500-10.300A4.300 4.300 0 0 1 12 7.400a4.300 4.300 0 0 1 7.500 2.800c0 5.700-7.500 10.300-7.500 10.300z" /></svg>
+      </button>
+      <div className="acct-piece-cap">
+        <strong>{p.title}</strong>
+        <small>{soldOut(p) ? 'Sold out' : canBuy(p) ? <>{priceVaries(p) ? 'From ' : ''}{money(low.now, true)}</> : p.type || ''}</small>
+      </div>
+    </div>
+  )
+}
 const STEPS = [['new', 'Paid'], ['packed', 'Packed'], ['shipped', 'On its way'], ['delivered', 'Delivered']]
 const STATUS_TEXT = { new: 'Being prepared', packed: 'Packed', shipped: 'On its way', delivered: 'Delivered', refunded: 'Refunded', cancelled: 'Cancelled' }
 const longDay = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -219,7 +257,10 @@ function OrderCard({ o }) {
         <span className={`acc-pill is-${o.status}`}>{support ? 'Thank you' : STATUS_TEXT[o.status] || 'Paid'}</span>
       </header>
       <ul className="acc-items">
-        {o.items.map((i, n) => <li key={n}><span>{i.qty > 1 ? `${i.qty} × ` : ''}{i.name}</span>{i.amount != null && <b>{priced(i.amount, o.currency)}</b>}</li>)}
+        {o.items.map((i, n) => {
+          const p = pieceFor(i.name)
+          return <li key={n}><span className="acc-item">{p && p.src ? <img src={asset(p.src)} alt="" /> : <i aria-hidden="true" />}<span>{i.qty > 1 ? `${i.qty} × ` : ''}{i.name}</span></span>{i.amount != null && <b>{priced(i.amount, o.currency)}</b>}</li>
+        })}
       </ul>
       {o.discount > 0 && <div className="acc-total is-discount"><span>Discount</span><b>−{priced(o.discount, o.currency)}</b></div>}
       <div className="acc-total"><span>Total</span><b>{priced(o.amount, o.currency)}</b></div>
@@ -250,7 +291,8 @@ function OrderCard({ o }) {
   )
 }
 
-function Orders() {
+// the customer's orders, fetched once for the whole account page
+function useOrders() {
   const { call, user } = useAccount()
   const [orders, setOrders] = useState(null)
   const [problem, setProblem] = useState('')
@@ -260,6 +302,11 @@ function Orders() {
     call('orders').then((s) => { if (!stale) setOrders(s.orders || []) }).catch((e) => { if (!stale) setProblem(e.message) })
     return () => { stale = true }
   }, [call, verified])
+  return { orders, problem }
+}
+
+function Orders({ orders, problem }) {
+  const { user } = useAccount()
   if (problem) return <p className="acc-problem">{problem}</p>
   if (!orders) return <p className="acc-wait">Fetching your orders…</p>
   if (!orders.length) return (
@@ -274,12 +321,12 @@ function Orders() {
 
 function Details() {
   const { user, call } = useAccount()
-  const f = useForm({ name: user.name, phone: user.phone, marketing: user.marketing })
+  const f = useForm({ name: user.name, phone: user.phone, marketing: user.marketing, avatar: user.avatar || '' })
   const [saved, setSaved] = useState(false)
   const [resent, setResent] = useState('')
+  const choices = work.filter((p) => p.src).slice(0, 18)
   return (
     <form className="acc-card" onSubmit={(e) => f.run(e, async () => { await call('profile', f.values); setSaved(true); setTimeout(() => setSaved(false), 2500) })} noValidate>
-      <h3 className="acc-h3">Your details</h3>
       {/* the email, with whether it is confirmed (and a way to send the link again) */}
       <div className="acc-email">
         <div>
@@ -303,6 +350,18 @@ function Details() {
         <input type="checkbox" checked={f.values.marketing} onChange={(e) => f.set('marketing')(e.target.checked)} />
         <span>Email me about new prints and conventions.</span>
       </label>
+      <fieldset className="acct-pick">
+        <legend>Your picture</legend>
+        <p>Pick a favourite piece to be your picture, or keep your initials.</p>
+        <div className="acct-pick-grid" role="radiogroup" aria-label="Your picture">
+          <button type="button" role="radio" aria-checked={!f.values.avatar} className={`acct-pick-one is-initials ${!f.values.avatar ? 'on' : ''}`} onClick={() => f.set('avatar')('')}><b>{initialsOf(user)}</b></button>
+          {choices.map((p) => (
+            <button key={p.slug} type="button" role="radio" aria-checked={f.values.avatar === p.slug} aria-label={p.title} title={p.title} className={`acct-pick-one ${f.values.avatar === p.slug ? 'on' : ''}`} onClick={() => f.set('avatar')(p.slug)}>
+              <img src={asset(p.src)} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      </fieldset>
       <Problem text={f.problem.text} />
       <div className="acc-row"><Submit busy={f.busy}>Save</Submit>{saved && <span className="acc-saved" role="status">Saved</span>}</div>
     </form>
@@ -353,35 +412,166 @@ function Security() {
   )
 }
 
-const TABS = [['orders', 'Orders'], ['details', 'Details'], ['security', 'Security']]
+/* the first thing a customer sees: hello, how things stand, their prints, what is new */
+function Overview({ orders, go }) {
+  const { user } = useAccount()
+  const first = (user.name || '').split(' ')[0]
+  const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
+  const collected = shopOrders.reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
+  // the pieces they own, once each, newest first
+  const owned = [...new Map(shopOrders.flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
+  const saved = (user.saved || []).map((slug) => work.find((p) => p.slug === slug)).filter(Boolean)
+  const latest = shopOrders[0]
+  const since = new Date(user.lastVisit || user.createdAt)
+  const fresh = [...work].filter((p) => p.src).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 4)
+  const returning = Date.now() - new Date(user.createdAt).getTime() > 864e5 || shopOrders.length > 0
+  return (
+    <div className="acct-overview">
+      <header className="acct-hello">
+        <div className="label accent">{greeting()}</div>
+        <h1 className="display h-xl">{first || 'Hello'}<span className="acct-dot">.</span></h1>
+        <p className="lead">{returning ? 'Good to see you again. Here is everything in one place.' : `Welcome to your corner of ${brand.name}. Your prints, your orders and the pieces you love live here.`}</p>
+      </header>
+
+      <div className="acct-stats">
+        <button type="button" onClick={() => go('orders')}><strong>{orders ? shopOrders.length : '–'}</strong><span>{shopOrders.length === 1 ? 'Order' : 'Orders'}</span></button>
+        <button type="button" onClick={() => go('orders')}><strong>{orders ? collected : '–'}</strong><span>{collected === 1 ? 'Print collected' : 'Prints collected'}</span></button>
+        <button type="button" onClick={() => go('saved')}><strong>{saved.length}</strong><span>Saved for later</span></button>
+      </div>
+
+      {latest ? (
+        <section className="acct-block">
+          <div className="acct-block-head"><h2>Your latest order</h2><button type="button" className="acc-link" onClick={() => go('orders')}>All orders</button></div>
+          <OrderCard o={latest} />
+        </section>
+      ) : orders && (
+        <section className="acct-invite">
+          <div>
+            <h2>Your first print is waiting</h2>
+            <p>Find one you love: it will show up here, with its journey from the studio to your door.</p>
+          </div>
+          <Link className="btn" to="/shop">Browse the Shop <span className="arrow">→</span></Link>
+        </section>
+      )}
+
+      {owned.length > 0 && (
+        <section className="acct-block">
+          <div className="acct-block-head"><h2>{accountPage.collectionTitle}</h2><span className="acct-count">{owned.length} {owned.length === 1 ? 'piece' : 'pieces'}</span></div>
+          <div className="acct-wall">
+            {owned.slice(0, 8).map((p, i) => (
+              <figure key={p.slug} className="acct-frame" style={{ '--tilt': `${[-2, 1.5, -1, 2, -1.5, 1, -2.5, 1.5][i % 8]}deg` }}>
+                <Poster title={p.title} hue={p.hue} src={p.src} seed={i} />
+                <figcaption>{p.title}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="acct-block">
+        <div className="acct-block-head"><h2>{accountPage.savedTitle}</h2>{saved.length > 0 && <button type="button" className="acc-link" onClick={() => go('saved')}>See all</button>}</div>
+        {saved.length ? (
+          <div className="acct-pieces">{saved.slice(0, 4).map((p) => <PieceCard key={p.slug} p={p} />)}</div>
+        ) : (
+          <p className="acct-quiet">Tap the heart on any piece to keep it here for later.</p>
+        )}
+      </section>
+
+      <section className="acct-block">
+        <div className="acct-block-head"><h2>{accountPage.freshTitle}</h2><Link className="acc-link" to="/shop">The Shop</Link></div>
+        <div className="acct-pieces">{fresh.map((p) => <PieceCard key={p.slug} p={p} isNew={p.date && new Date(p.date) > since} />)}</div>
+      </section>
+
+      {accountPage.note && (
+        <section className="acct-note">
+          {brand.logo && <img className="acct-note-logo" src={asset(brand.logo)} alt="" />}
+          <div>
+            <h2>{accountPage.noteTitle}</h2>
+            <p>{accountPage.note}</p>
+            {accountPage.signature && <p className="acct-sign">{accountPage.signature}</p>}
+          </div>
+        </section>
+      )}
+    </div>
+  )
+}
+
+/* everything kept for later, ready to buy */
+function Saved() {
+  const { user } = useAccount()
+  const saved = (user.saved || []).map((slug) => work.find((p) => p.slug === slug)).filter(Boolean)
+  if (!saved.length) return (
+    <div className="acc-empty">
+      <strong>Nothing saved yet</strong>
+      <p>Tap the heart on any piece (in the Shop, or here in your account) to keep it for later.</p>
+      <Link className="btn sm" to="/shop">Go to the Shop <span className="arrow">→</span></Link>
+    </div>
+  )
+  return <div className="acct-pieces is-roomy">{saved.map((p) => <PieceCard key={p.slug} p={p} />)}</div>
+}
+
+const TABS = [['overview', 'Overview'], ['orders', 'Orders'], ['saved', 'Saved'], ['details', 'Details'], ['security', 'Security']]
+const TAB_ICONS = {
+  overview: 'M4 11l8-7 8 7v9H4z M10 20v-6h4v6',
+  orders: 'M3 8l9-5 9 5v8l-9 5-9-5z M3 8l9 5 9-5 M12 13v8',
+  saved: 'M12 20.500s-7.500-4.600-7.500-10.300A4.300 4.300 0 0 1 12 7.400a4.300 4.300 0 0 1 7.500 2.800c0 5.700-7.500 10.300-7.500 10.300z',
+  details: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c.8-3.800 4-6 8-6s7.200 2.200 8 6',
+  security: 'M12 3l7 3v5c0 4.500-3 8.300-7 10-4-1.700-7-5.500-7-10V6z M9.500 12l2 2 3.500-3.500',
+}
 function Home() {
   const { user, call } = useAccount()
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
-  const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'orders'
+  const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'overview'
   const [resent, setResent] = useState('')
+  const { orders, problem } = useOrders()
   if (!user) return <Navigate to="/account/login?next=/account" replace />
   const first = (user.name || '').split(' ')[0]
   const note = params.get('welcome') ? `Welcome${first ? `, ${first}` : ''}. Your account is ready.` : params.get('reset') ? 'Your new password is saved, and you are logged in.' : ''
+  const go = (k) => { setParams(k === 'overview' ? {} : { tab: k }, { replace: true }); window.__lenis ? window.__lenis.scrollTo(0) : window.scrollTo(0, 0) }
+  const counts = { orders: orders ? orders.filter((o) => o.kind !== 'support').length : 0, saved: (user.saved || []).length }
   return (
-    <Shell title={first ? `Hi, ${first}` : 'Your account'} label="Your account" wide>
-      {note && <p className="acc-welcome" role="status">{note}</p>}
-      {!user.verified && tab !== 'details' && (
-        <div className="acc-verify" role="status">
-          <span>Confirm your email: there is a link in your inbox at <b>{user.email}</b>.</span>
-          <button type="button" className="acc-link" disabled={Boolean(resent)} onClick={async () => { try { await call('resend'); setResent('Sent. Check your inbox (and spam).') } catch (e) { setResent(e.message) } }}>{resent || 'Send it again'}</button>
+    <Page title="Your account">
+      <div className="container acct">
+        <aside className="acct-side">
+          <div className="acct-me">
+            <Avatar user={user} size="lg" />
+            <div>
+              <strong>{user.name || 'Your account'}</strong>
+              <small>Collector since {monthYear(user.createdAt)}</small>
+            </div>
+          </div>
+          <nav className="acct-nav" aria-label="Your account">
+            {TABS.map(([k, label]) => (
+              <button key={k} type="button" className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => go(k)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[k]} /></svg>
+                <span>{label}</span>
+                {counts[k] > 0 && <small>{counts[k]}</small>}
+              </button>
+            ))}
+          </nav>
+          <button type="button" className="acct-out" onClick={async () => { await call('logout').catch(() => {}); navigate('/', { replace: true }) }}>Log out</button>
+        </aside>
+
+        <div className="acct-main">
+          {note && <p className="acc-welcome" role="status">{note}</p>}
+          {!user.verified && tab !== 'details' && (
+            <div className="acc-verify" role="status">
+              <span>Confirm your email: there is a link in your inbox at <b>{user.email}</b>.</span>
+              <button type="button" className="acc-link" disabled={Boolean(resent)} onClick={async () => { try { await call('resend'); setResent('Sent. Check your inbox (and spam).') } catch (e) { setResent(e.message) } }}>{resent || 'Send it again'}</button>
+            </div>
+          )}
+          <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: EASE }}>
+            {tab === 'overview' && <Overview orders={orders} go={go} />}
+            {tab !== 'overview' && <h1 className="display h-lg acct-title">{TABS.find(([k]) => k === tab)[1]}</h1>}
+            {tab === 'orders' && <Orders orders={orders} problem={problem} />}
+            {tab === 'saved' && <Saved />}
+            {tab === 'details' && <Details />}
+            {tab === 'security' && <Security />}
+          </motion.div>
         </div>
-      )}
-      <div className="acc-bar">
-        <div className="acc-tabs" role="tablist" aria-label="Your account">
-          {TABS.map(([k, label]) => <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setParams(k === 'orders' ? {} : { tab: k }, { replace: true })}>{label}</button>)}
-        </div>
-        <button type="button" className="acc-link" onClick={async () => { await call('logout').catch(() => {}); navigate('/', { replace: true }) }}>Log out</button>
       </div>
-      <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE }}>
-        {tab === 'orders' ? <Orders /> : tab === 'details' ? <Details /> : <Security />}
-      </motion.div>
-    </Shell>
+    </Page>
   )
 }
 

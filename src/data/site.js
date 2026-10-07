@@ -19,6 +19,8 @@ const byOrder = (a, b) => (a.order ?? 99) - (b.order ?? 99)
 const live = (list) => list.filter((x) => !x.hidden) // entries ticked "Hide from the site"
 
 export let brand, hero, marquee, home, commissions, about, contact, social, footer
+/* The words on a customer's account page (Page text → Customer account page). */
+export let accountPage
 /* Selling: whether online purchases are on, the currency, what a buyer gets. */
 export let shop
 /* The Support page: the artist's own project, and the ways to back it. */
@@ -123,6 +125,7 @@ function assemble(content) {
   }
   about = { paragraphs: [], facts: [], ...given(page('about')) }
   contact = { label: 'Say hello', title: 'Get in touch', topics: [], ...given(page('contact')) }
+  accountPage = { noteTitle: 'A note from the artist', note: '', signature: '', collectionTitle: 'Your collection', savedTitle: 'Saved for later', freshTitle: 'Fresh from the studio', ...given(page('account')) }
   pages = {
     work: { label: 'The work', title: 'Everything so far', ...given({ label: lists.workLabel, title: lists.workTitle, intro: lists.workIntro }) },
     gallery: { label: 'The gallery', title: 'Up on the wall', ...given({ label: lists.galleryLabel, title: lists.galleryTitle, intro: lists.galleryIntro }) },

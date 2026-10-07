@@ -1,7 +1,7 @@
 import { db, dbReady } from './_db.js'
 import { forCustomer } from './_orders.js'
 import {
-  EMAIL, checkPassword, clean, cleanCart, clientIp, currentUser, endSession, forgetCookie, forgetTries, fromThisSite, hashPassword,
+  EMAIL, checkPassword, clean, cleanCart, cleanSlugs, clientIp, currentUser, endSession, forgetCookie, forgetTries, fromThisSite, hashPassword,
   makeToken, mergeCarts, newId, noteTry, passwordProblem, publicUser, sendMail, siteUrl, startSession, tidyEmail, tooMany, spendToken,
 } from './_users.js'
 
@@ -16,7 +16,8 @@ import {
         { action: 'verify', token }                       confirms the email address
         { action: 'resend' }                              a new confirmation email
         { action: 'password', current, password }         change it (other devices are logged out)
-        { action: 'profile', name, phone, marketing }
+        { action: 'profile', name, phone, marketing, avatar }   (avatar: a piece's slug, or '')
+        { action: 'saved', saved }                         the pieces kept for later (slugs)
         { action: 'cart', cart }                          keeps the cart with the account
         { action: 'orders' }                              this customer's orders, newest first
         { action: 'everywhere' }                          logs out every device
@@ -83,9 +84,10 @@ export default async function handler(req, res) {
       }
       await forgetTries(`login:${email}`)
       const cart = mergeCarts(user.cart, body.cart)
-      await users.updateOne({ _id: user._id }, { $set: { cart, lastLogin: new Date() } })
+      // the visit before this one, so the account can show what is new since
+      await users.updateOne({ _id: user._id }, { $set: { cart, lastLogin: new Date(), prevLogin: user.lastLogin || user.createdAt } })
       await startSession(req, res, user._id)
-      return say(res, 200, { user: publicUser({ ...user, cart }) })
+      return say(res, 200, { user: publicUser({ ...user, cart, prevLogin: user.lastLogin || user.createdAt }) })
     }
 
     if (action === 'logout') {
@@ -159,6 +161,7 @@ export default async function handler(req, res) {
 
     if (action === 'profile') {
       const set = { name: clean(body.name, 80), phone: clean(body.phone, 30), marketing: Boolean(body.marketing) }
+      if (body.avatar !== undefined) set.avatar = /^[a-z0-9-]{1,80}$/.test(String(body.avatar)) ? String(body.avatar) : ''
       await users.updateOne({ _id: user._id }, { $set: set })
       return say(res, 200, { user: publicUser({ ...user, ...set }) })
     }
@@ -167,6 +170,12 @@ export default async function handler(req, res) {
       const cart = cleanCart(body.cart)
       await users.updateOne({ _id: user._id }, { $set: { cart } })
       return say(res, 200, { saved: true })
+    }
+
+    if (action === 'saved') {
+      const saved = cleanSlugs(body.saved)
+      await users.updateOne({ _id: user._id }, { $set: { saved } })
+      return say(res, 200, { user: publicUser({ ...user, saved }) })
     }
 
     if (action === 'orders') {

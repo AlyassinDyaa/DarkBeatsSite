@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { shop } from '../data/site'
 
 /* The customer's account, when the admin has accounts switched on (Shop & payments → Customer
@@ -6,7 +6,7 @@ import { shop } from '../data/site'
    HTTP-only cookie the page never sees. `call(action, data)` runs one account action and keeps
    `user` up to date with the answer. If the database is not set up, `on` stays false and the
    site carries on without accounts. */
-const Account = createContext({ ready: true, on: false, required: false, user: null, call: async () => ({}) })
+const Account = createContext({ ready: true, on: false, required: false, user: null, call: async () => ({}), isSaved: () => false, toggleSaved: async () => {} })
 export const accountsWanted = () => ['optional', 'required'].includes(shop.accounts)
 
 export function AccountProvider({ children }) {
@@ -31,13 +31,26 @@ export function AccountProvider({ children }) {
     }
     return said
   }, [])
+  // pieces kept for later: changed at once on the page, then saved to the account
+  const userRef = useRef(null)
+  useEffect(() => { userRef.current = state.user }, [state.user])
+  const toggleSaved = useCallback(async (slug) => {
+    const u = userRef.current
+    if (!u) return
+    const now = Array.isArray(u.saved) ? u.saved : []
+    const next = now.includes(slug) ? now.filter((x) => x !== slug) : [slug, ...now]
+    setState((s) => (s.user ? { ...s, user: { ...s.user, saved: next } } : s))
+    try { await call('saved', { saved: next }) } catch { setState((s) => (s.user ? { ...s, user: { ...s.user, saved: now } } : s)) }
+  }, [call])
   const value = useMemo(() => ({
     ready: state.ready,
     on: accountsWanted() && state.enabled,
     required: accountsWanted() && state.enabled && shop.accounts === 'required',
     user: state.user,
     call,
-  }), [state, call])
+    isSaved: (slug) => Boolean(state.user && Array.isArray(state.user.saved) && state.user.saved.includes(slug)),
+    toggleSaved,
+  }), [state, call, toggleSaved])
   return <Account.Provider value={value}>{children}</Account.Provider>
 }
 
