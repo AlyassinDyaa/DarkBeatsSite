@@ -1,10 +1,11 @@
 {
-  "status": "none",
-  "featured": true,
+  "src": "/uploads/file-1.webp",
+  "price": 40,
   "hidden": false,
-  "category": "Horror",
-  "type": "Foil posters",
+  "featured": true,
   "date": "2026-10-07",
+  "status": "none",
   "title": "Ghost Face",
-  "src": "/uploads/file-1.webp"
+  "type": "Foil posters",
+  "category": "Horror"
 }
