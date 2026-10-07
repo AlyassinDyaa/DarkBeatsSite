@@ -133,7 +133,7 @@ const adminBundle = () => ({
     // Keys for trying payments, accounts and email on this computer: put them in .env.local (never
     // committed: *.local is in .gitignore). On Vercel they come from the project settings instead.
     const keys = loadEnv('development', process.cwd(), '')
-    for (const [k, v] of Object.entries(keys)) if (/^(STRIPE_|PAYPAL_|MONGODB_|RESEND_|MAIL_|SITE_URL$)/.test(k) && v && !process.env[k]) process.env[k] = v
+    for (const [k, v] of Object.entries(keys)) if (/^(STRIPE_|PAYPAL_|MONGODB_|RESEND_|MAIL_|SMTP_|SITE_URL$)/.test(k) && v && !process.env[k]) process.env[k] = v
     // These functions run on Vercel. While developing, the same files answer here, so the Buy
     // button and the accounts behave as they will live (without their keys they say so). The
     // Stripe webhook reads its message as it arrived, so its body is left alone.

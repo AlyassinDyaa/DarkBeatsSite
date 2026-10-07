@@ -1,5 +1,6 @@
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
+import nodemailer from 'nodemailer'
 import { db, dbReady } from './_db.js'
 
 /* What the customer-account functions share (the leading underscore keeps Vercel from serving it).
@@ -110,9 +111,23 @@ export const tooMany = async (key, limit, minutes) => (await (await db()).collec
 export const noteTry = async (...keys) => { const d = await db(); for (const key of keys) await d.collection('attempts').insertOne({ key, at: new Date() }) }
 export const forgetTries = async (key) => (await db()).collection('attempts').deleteMany({ key })
 
-// ---------- email (Resend: RESEND_API_KEY, and MAIL_FROM such as "JBeatsArt <hello@your-domain>")
+/* ---------- email: two ways to send, whichever is set up
+   - an email account's own sending server (SMTP), for example Gmail with an app password:
+     SMTP_HOST (smtp.gmail.com), SMTP_PORT (465), SMTP_USER (the address), SMTP_PASS (the app password).
+     Emails then come from that address; handy for testing, and fine for small volumes.
+   - Resend (resend.com): RESEND_API_KEY, sending from an address on a domain verified there.
+   MAIL_FROM is the sender as people see it ("JBeatsArt <hello@...>"); MAIL_REPLY_TO, if set,
+   is where replies go. With neither set, on this computer the email is printed instead. */
 export const siteUrl = (req) => (process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL ? '' : `http://${req.headers.host}`)).replace(/\/$/, '')
-export const mailReady = () => Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM)
+const smtpReady = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
+export const mailReady = () => smtpReady() || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM)
+let transport = null
+const smtp = () => transport || (transport = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 465,
+  secure: (Number(process.env.SMTP_PORT) || 465) === 465,
+  auth: { user: process.env.SMTP_USER, pass: String(process.env.SMTP_PASS).replace(/\s+/g, '') },
+}))
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 export const sendMail = async ({ to, subject, lines, button }) => {
   const brand = process.env.MAIL_BRAND || 'JBeatsArt'
@@ -120,7 +135,7 @@ export const sendMail = async ({ to, subject, lines, button }) => {
   if (!mailReady()) {
     // on this computer the link is printed instead, so the whole journey can be tried without email
     if (!process.env.VERCEL) console.log(`\n[email to ${to}] ${subject}\n${text}\n`)
-    else console.warn('email not sent: RESEND_API_KEY / MAIL_FROM are not set')
+    else console.warn('email not sent: no SMTP_* or RESEND_API_KEY / MAIL_FROM set')
     return false
   }
   const html = `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1b1622">
@@ -128,8 +143,16 @@ export const sendMail = async ({ to, subject, lines, button }) => {
     ${lines.map((l) => `<p style="font-size:16px;line-height:1.55;margin:0 0 14px">${esc(l)}</p>`).join('')}
     ${button ? `<p style="margin:26px 0"><a href="${esc(button.url)}" style="background:#b55cf0;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">${esc(button.label)}</a></p><p style="font-size:13px;color:#6b6475">Or paste this into your browser: ${esc(button.url)}</p>` : ''}
   </div>`
+  const from = process.env.MAIL_FROM || `${brand} <${process.env.SMTP_USER}>`
+  const replyTo = process.env.MAIL_REPLY_TO || undefined
+  if (smtpReady()) {
+    try {
+      await smtp().sendMail({ from, to, subject, text, html, replyTo })
+      return true
+    } catch (e) { console.error('the email server refused the email:', e && (e.response || e.message)); return false }
+  }
   try {
-    const answer = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], subject, text, html }) })
+    const answer = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: [to], subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}) }) })
     if (!answer.ok) console.error('resend refused the email:', answer.status)
     return answer.ok
   } catch (e) { console.error('could not reach resend:', e.message); return false }
