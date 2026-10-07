@@ -6,6 +6,7 @@
   "thanksTitle": "Thank you.",
   "currency": "aud",
   "note": "A3 print, signed.",
+  "signedExtra": 0,
   "countries": [
     "AU",
     "NZ",
@@ -14,7 +15,6 @@
     "GB"
   ],
   "thanksText": "Your order is in. A receipt is on its way to your email.",
-  "pricePlace": "below",
-  "signedChoice": false,
-  "signedExtra": 0
+  "signedChoice": true,
+  "pricePlace": "below"
 }
