@@ -346,9 +346,13 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .tile:hover .poster img, .tile:focus-visible .poster img { transform: scale(1.045); }
 .tile-price { position: absolute; z-index: 2; top: 14px; right: -6px; padding: 7px 16px 6px; font-family: var(--display); font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
 /* the status tag: New, Sale, Sold out */
-.tile-badge { position: absolute; z-index: 2; top: 14px; left: -6px; padding: 7px 14px 6px; font-family: var(--mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; clip-path: var(--lean); background: var(--fg); color: var(--bg); }
-.tile-badge.is-sale { background: #ff5c8a; color: #1a0610; }
-.tile-badge.is-soldout { background: #2a2433; color: var(--fg-dim); }
+/* the status tag: the same slanted poster lettering as the price, in the site's purples */
+.tile-badge { position: absolute; z-index: 2; top: 14px; left: -6px; display: inline-flex; align-items: center; gap: 7px; padding: 8px 18px 7px 20px; font-family: var(--display); font-size: 1.15rem; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase; clip-path: var(--lean); background: oklch(0.3 0.13 var(--h)); color: var(--fg); box-shadow: inset 0 -3px 0 var(--accent); }
+.tile-badge::before { content: ''; width: 7px; height: 7px; background: var(--accent); transform: rotate(45deg); }
+.tile-badge.is-sale { background: oklch(0.74 0.23 calc(var(--h) + 28)); color: var(--on-accent); box-shadow: none; }
+.tile-badge.is-sale::before { background: var(--on-accent); }
+.tile-badge.is-soldout { background: repeating-linear-gradient(-58deg, #1c1627 0 8px, #241d32 8px 16px); color: var(--fg-dim); box-shadow: inset 0 -3px 0 var(--fg-mute); }
+.tile-badge.is-soldout::before { background: var(--fg-mute); }
 .tile-price s { margin-right: 8px; font-size: 0.8em; opacity: 0.6; text-decoration-thickness: 2px; }
 .tile-price.is-out { background: #2a2433; color: var(--fg-mute); text-decoration: line-through; }
 .tile:has(.tile-badge.is-soldout) .poster img { filter: grayscale(0.7) brightness(0.75); }
@@ -366,10 +370,10 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .buy-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .buy-price { font-family: var(--display); font-size: clamp(2.4rem, 4vw, 3rem); line-height: 1; color: var(--fg); transform: skewX(var(--slant)); transform-origin: 0 100%; }
 .buy-what { font-size: 0.92rem; color: var(--fg-dim); }
-.buy-badge { position: static; display: inline-block; margin-bottom: 12px; }
+.buy-badge { position: static; display: inline-flex; margin-bottom: 14px; }
 .buy-was { font-family: var(--display); font-size: 1.5rem; line-height: 1; color: var(--fg-mute); text-decoration-thickness: 2px; transform: skewX(var(--slant)); }
 .buy-price.is-out { color: var(--fg-mute); text-decoration: line-through; }
-.buy-save { margin: 8px 0 0; font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #ff5c8a; }
+.buy-save { margin: 8px 0 0; font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: oklch(0.8 0.2 calc(var(--h) + 28)); }
 .buy-btn.is-out { justify-content: center; background: #2a2433; color: var(--fg-mute); cursor: not-allowed; }
 .buy-btn.is-out::before { display: none; }
 .buy-secure a { color: var(--fg); border-bottom: 2px solid var(--accent); }
