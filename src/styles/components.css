@@ -1132,3 +1132,41 @@ a.buy-btn { text-decoration: none; }
 @media (max-width: 1023px) { .acc-card3d-wrap { width: min(100%, 420px); } .acc-card3d { --ry: 0deg; --rx: 0deg; } }
 @media (max-width: 479px) { .acc-card3d-foot span:last-child { display: none; } }
 @media (prefers-reduced-motion: reduce) { .acc-card3d-shine { animation: none; } .acc-card3d { transition: none; } }
+
+/* the overview opens with the customer's own collector card, the three numbers beside it */
+.acct-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(20px, 3vw, 36px); align-items: center; }
+.acct-top .acc-card3d-wrap { width: 100%; max-width: 520px; padding: 0 18px 18px 0; }
+.acct-top .acc-card3d { --rx: 2deg; --ry: -8deg; }
+.acct-stats.is-stacked { grid-template-columns: minmax(0, 1fr); margin-top: 0; }
+.acct-stats.is-stacked button { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 16px; padding: 14px 18px; }
+.acct-stats.is-stacked strong { font-size: clamp(1.8rem, 2.6vw, 2.4rem); min-width: 1.4ch; }
+@media (max-width: 1099px) {
+  .acct-top { grid-template-columns: minmax(0, 1fr); }
+  .acct-top .acc-card3d-wrap { justify-self: center; }
+  .acct-stats.is-stacked { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .acct-stats.is-stacked button { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+}
+@media (max-width: 599px) {
+  .acct-top .acc-card3d { --rx: 0deg; --ry: 0deg; }
+  .acct-stats.is-stacked button { padding: 12px 10px; }
+}
+
+/* log in / make an account on a phone: room to breathe, a card that fits, the reasons in a neat grid */
+@media (max-width: 599px) {
+  .acc-split { gap: 0; padding-bottom: 64px; }
+  .acc-split .acc-head { padding-top: calc(var(--nav) + 26px); margin-bottom: 22px; }
+  .acc-split .acc-card { padding: 22px 20px 24px; }
+  .acc-art { gap: 26px; margin-top: 52px; padding-top: 36px; border-top: 1px solid var(--line); }
+  .acc-art::before { display: none; }
+  .acc-art::after { content: 'Why make an account'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 0 12px; background: var(--bg); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-mute); white-space: nowrap; }
+  .acc-art .acc-card3d-wrap { width: calc(100% - 22px); justify-self: start; }
+  .acc-art .acc-card3d { box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 10px 10px 0 -2px var(--accent); padding: 16px 18px; }
+  .acc-art .acc-card3d-chip { width: 38px; height: 28px; margin-top: 10px; }
+  .acc-art .acc-card3d-name { font-size: 1.45rem; }
+  .acc-art .acc-card3d-foot { margin-top: 10px; }
+  .acc-perks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
+  .acc-perks li { gap: 10px; padding: 14px 12px; border: 1px solid var(--line); background: rgba(14, 11, 20, 0.6); }
+  .acc-perks i { width: 8px; height: 8px; margin-top: 5px; }
+  .acc-perks b { font-size: 0.95rem; line-height: 1.15; }
+  .acc-perks span { display: none; }
+}

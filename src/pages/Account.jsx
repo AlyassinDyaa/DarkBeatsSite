@@ -68,8 +68,8 @@ const PERKS = [
   ['Your cart, everywhere', 'Start on your phone, finish on your laptop.'],
   ['Your own corner', 'Your collection, hung on your own wall.'],
 ]
-function AuthArt({ cardName }) {
-  const [number] = useState(() => String(Math.floor(1000 + Math.random() * 9000)))
+/* the collector card: the name, the year they joined, a card number, and what they have collected */
+function CollectorCard({ name, since, number, prints }) {
   const card = useRef(null)
   // the card leans toward the pointer, a little
   const lean = (e) => {
@@ -81,26 +81,35 @@ function AuthArt({ cardName }) {
     el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`)
   }
   const rest = () => { const el = card.current; if (el) { el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); el.style.removeProperty('--mx') } }
-  const name = (cardName || '').trim()
+  const shown = (name || '').trim()
   return (
-    <aside className="acc-art">
-      <div className="acc-card3d-wrap" onPointerMove={lean} onPointerLeave={rest}>
-        <div ref={card} className="acc-card3d" aria-hidden="true">
-          <span className="acc-card3d-shine" />
-          <span className="acc-card3d-mark">J</span>
-          <div className="acc-card3d-top">
-            <span className="acc-card3d-brand">{brand.logo && <img src={asset(brand.logo)} alt="" />}<Wordmark /></span>
-            <span className="acc-card3d-kind">Collector</span>
-          </div>
-          <span className="acc-card3d-chip" />
-          <div className={`acc-card3d-name ${name ? '' : 'is-empty'}`}>{name || 'Your name here'}</div>
-          <div className="acc-card3d-foot">
-            <span><small>Member since</small>{new Date().getFullYear()}</span>
-            <span><small>Card no.</small>{number}</span>
-            <span><small>Prints</small>Your collection</span>
-          </div>
+    <div className="acc-card3d-wrap" onPointerMove={lean} onPointerLeave={rest}>
+      <div ref={card} className="acc-card3d" role="img" aria-label={`${brand.name} collector card${shown ? ` for ${shown}` : ''}`}>
+        <span className="acc-card3d-shine" />
+        <span className="acc-card3d-mark" aria-hidden="true">J</span>
+        <div className="acc-card3d-top" aria-hidden="true">
+          <span className="acc-card3d-brand">{brand.logo && <img src={asset(brand.logo)} alt="" />}<Wordmark /></span>
+          <span className="acc-card3d-kind">Collector</span>
+        </div>
+        <span className="acc-card3d-chip" aria-hidden="true" />
+        <div className={`acc-card3d-name ${shown ? '' : 'is-empty'}`} aria-hidden="true">{shown || 'Your name here'}</div>
+        <div className="acc-card3d-foot" aria-hidden="true">
+          <span><small>Member since</small>{since}</span>
+          <span><small>Card no.</small>{number}</span>
+          <span><small>Prints</small>{prints}</span>
         </div>
       </div>
+    </div>
+  )
+}
+// the same four digits for the same customer, every time
+const cardNumber = (seed) => { let h = 7; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return String(1000 + (h % 9000)) }
+
+function AuthArt({ cardName }) {
+  const [number] = useState(() => String(Math.floor(1000 + Math.random() * 9000)))
+  return (
+    <aside className="acc-art">
+      <CollectorCard name={cardName} since={new Date().getFullYear()} number={number} prints="Your collection" />
       <ul className="acc-perks">
         {PERKS.map(([t, d]) => <li key={t}><i aria-hidden="true" /><div><b>{t}</b><span>{d}</span></div></li>)}
       </ul>
@@ -474,10 +483,18 @@ function Overview({ orders, go }) {
   const latest = shopOrders[0]
   return (
     <div className="acct-overview">
-      <div className="acct-stats">
+      <div className="acct-top">
+        <CollectorCard
+          name={user.name || user.email.split('@')[0]}
+          since={new Date(user.createdAt).getFullYear()}
+          number={cardNumber(user.email)}
+          prints={orders ? `${collected} ${collected === 1 ? 'print' : 'prints'}` : '…'}
+        />
+      <div className="acct-stats is-stacked">
         <button type="button" onClick={() => go('orders')}><strong>{orders ? shopOrders.length : '–'}</strong><span>{shopOrders.length === 1 ? 'Order' : 'Orders'}</span></button>
         <button type="button" onClick={() => go('orders')}><strong>{orders ? collected : '–'}</strong><span>{collected === 1 ? 'Print collected' : 'Prints collected'}</span></button>
         <button type="button" onClick={() => go('saved')}><strong>{saved.length}</strong><span>Saved for later</span></button>
+      </div>
       </div>
 
       {latest ? (
@@ -562,10 +579,23 @@ function Home() {
   const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'overview'
   const [resent, setResent] = useState('')
   const { orders, problem } = useOrders()
+  const grid = useRef(null)
+  // the browser tab's title follows the section, without the page's own scroll-to-top on a new title
+  useEffect(() => { const name = TABS.find(([k]) => k === tab)[1]; document.title = `${tab === 'overview' ? 'Your account' : name} — ${brand.name}` }, [tab])
   if (!user) return <Navigate to="/account/login?next=/account" replace />
   const first = (user.name || '').split(' ')[0]
   const note = params.get('welcome') ? `Welcome${first ? `, ${first}` : ''}. Your account is ready.` : params.get('reset') ? 'Your new password is saved, and you are logged in.' : ''
-  const go = (k) => { setParams(k === 'overview' ? {} : { tab: k }, { replace: true }); if (window.__lenis) window.__lenis.scrollTo(0); else window.scrollTo(0, 0) }
+  // another section: the page stays where it is; only if the panel and the section start above the
+  // screen does it glide up to them (never back to the very top)
+  const go = (k) => {
+    setParams(k === 'overview' ? {} : { tab: k }, { replace: true })
+    const el = grid.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top
+    if (top >= 0) return
+    const y = window.scrollY + top - 90
+    if (window.__lenis) window.__lenis.scrollTo(y, { duration: 0.6 }); else window.scrollTo({ top: y, behavior: 'smooth' })
+  }
   const counts = { orders: orders ? orders.filter((o) => o.kind !== 'support').length : 0, saved: (user.saved || []).length }
   // new here: an account made today, with no orders yet
   const returning = new Date(user.createdAt).toDateString() !== new Date().toDateString() || counts.orders > 0
@@ -578,13 +608,13 @@ function Home() {
   }
   const tabName = TABS.find(([k]) => k === tab)[1]
   return (
-    <Page title={tab === 'overview' ? 'Your account' : tabName}>
+    <Page title="Your account">
       <header className="page-head container acct-head">
         <div className="label accent">{tab === 'overview' ? greeting() : 'Your account'}</div>
         <h1 className="display h-xl">{tab === 'overview' ? <>{first || 'Hello'}<span className="acct-dot">.</span></> : tabName}</h1>
         <p className="lead">{LEADS[tab]}</p>
       </header>
-      <div className="container acct">
+      <div className="container acct" ref={grid}>
         <aside className="acct-side">
           <div className="acct-me">
             <Avatar user={user} size="lg" />
