@@ -2,10 +2,10 @@
   "pages": {
     "work": true,
     "gallery": true,
-    "commissions": true,
+    "commissions": false,
     "about": true,
     "contact": true,
-    "support": true
+    "support": false
   },
   "home": {
     "ticker": true,
