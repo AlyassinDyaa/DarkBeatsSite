@@ -125,7 +125,8 @@ export default async function handler(req, res) {
         list = Array.isArray(got.said.data) ? got.said.data : []
         more = Boolean(got.said.has_more)
       }
-      const orders = list.map(shape).filter((o) => !o.hidden)
+      // a checkout another site made in a shared Stripe account says so (metadata site) and is left out
+      const orders = list.filter((s) => !(s.metadata && s.metadata.site)).map(shape).filter((o) => !o.hidden)
       // PayPal orders from the database, with the first page
       if (!after && dbReady()) {
         try {
