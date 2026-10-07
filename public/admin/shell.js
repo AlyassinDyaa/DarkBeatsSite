@@ -810,10 +810,19 @@
       componentWillUnmount() { clearInterval(this.timer) },
       // the picture is whatever the form's Picture field holds right now
       look() {
-        const entry = this.props.getEntry && this.props.getEntry()
-        const data = entry && entry.get('data')
-        const path = data && data.get('src')
-        const src = path ? String(this.props.getAsset(path) || '') : ''
+        let src = ''
+        // inside a list (the free profile pictures): the picture chosen in the same tile
+        const tile = this.root && this.root.closest('[class*="-listControlItem"]')
+        if (tile) {
+          const img = tile.querySelector('[class*="ImageWrapper"] img')
+          src = img ? img.getAttribute('src') || '' : ''
+        } else {
+          // a piece: the form's Picture field
+          const entry = this.props.getEntry && this.props.getEntry()
+          const data = entry && entry.get('data')
+          const path = data && data.get('src')
+          src = path ? String(this.props.getAsset(path) || '') : ''
+        }
         if (src !== this.state.src) this.setState({ src })
       },
       parts() {
@@ -842,7 +851,7 @@
           h('span', {}, label),
           h('input', { type: 'range', min, max, step: 1, value: now[key], disabled: !src, onChange: (e) => this.put({ ...now, [key]: Number(e.target.value) }) }),
           h('b', {}, now[key] + '%'))
-        return h('div', { className: 'ia-facecrop' },
+        return h('div', { className: 'ia-facecrop', ref: (el) => { this.root = el } },
           h('div', { className: 'ia-face-drag' + (src ? '' : ' is-empty'), onPointerDown: (e) => this.drag(e), title: src ? 'Drag to move the picture' : '' },
             circle('big'),
             src ? null : h('span', { className: 'ia-face-none' }, 'Add the picture first')),

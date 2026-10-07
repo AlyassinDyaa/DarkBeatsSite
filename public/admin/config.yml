@@ -401,9 +401,10 @@ collections:
             collapsed: false
             required: false
             summary: '{{fields.name}}'
-            hint: 'Pictures any customer can choose for their profile (square works best). Prints a customer buys also become pictures that only they can use.'
+            hint: 'Pictures any customer can choose for their profile. Drag a picture inside its circle to place it, and zoom with the slider under it. Prints a customer buys also become pictures that only they can use.'
             fields:
               - { name: picture, label: Picture, widget: image, choose_url: false }
+              - { name: face, label: Crop, widget: facecrop, required: false }
               - { name: name, label: Name, widget: string, required: false }
 
       - name: support

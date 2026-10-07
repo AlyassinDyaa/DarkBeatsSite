@@ -275,7 +275,7 @@ function Avatar({ user, size = 'md' }) {
   const piece = user.avatar && !icon ? work.find((p) => p.slug === user.avatar && p.src) : null
   return (
     <span className={`acct-avatar is-${size}`} aria-hidden="true">
-      {icon ? <img src={asset(icon)} alt="" /> : piece ? <img src={asset(piece.src)} alt="" style={faceLook(piece)} /> : <b>{initialsOf(user)}</b>}
+      {icon ? <img src={asset(icon)} alt="" style={faceLook(accountPage.icons.find((i) => i.picture === icon))} /> : piece ? <img src={asset(piece.src)} alt="" style={faceLook(piece)} /> : <b>{initialsOf(user)}</b>}
     </span>
   )
 }
@@ -422,7 +422,7 @@ function Details({ owned = [] }) {
               const v = `icon:${i.picture}`
               return (
                 <button key={i.picture} type="button" role="radio" aria-checked={f.values.avatar === v} aria-label={i.name || 'Picture'} title={i.name || ''} className={`acct-pick-one ${f.values.avatar === v ? 'on' : ''}`} onClick={() => f.set('avatar')(v)}>
-                  <img src={asset(i.picture)} alt="" loading="lazy" />
+                  <span className="acct-pick-pic"><img src={asset(i.picture)} alt="" loading="lazy" style={faceLook(i)} /></span>
                 </button>
               )
             })}

@@ -133,7 +133,7 @@ function assemble(content) {
   contact = { label: 'Say hello', title: 'Get in touch', topics: [], ...given(page('contact')) }
   accountPage = { noteTitle: 'A note from the artist', note: '', signature: '', collectionTitle: 'Your collection', savedTitle: 'Saved for later', ...given(page('account')) }
   // the free profile pictures: each with its picture (an uploaded file, or one of the starter set)
-  accountPage.icons = (Array.isArray(accountPage.icons) ? accountPage.icons : []).filter((i) => i && typeof i.picture === 'string' && i.picture).map((i) => ({ picture: i.picture, name: i.name || '' }))
+  accountPage.icons = (Array.isArray(accountPage.icons) ? accountPage.icons : []).filter((i) => i && typeof i.picture === 'string' && i.picture).map((i) => ({ picture: i.picture, name: i.name || '', face: parseFace(i.face) }))
   pages = {
     work: { label: 'The work', title: 'Everything so far', ...given({ label: lists.workLabel, title: lists.workTitle, intro: lists.workIntro }) },
     gallery: { label: 'The gallery', title: 'Up on the wall', ...given({ label: lists.galleryLabel, title: lists.galleryTitle, intro: lists.galleryIntro }) },

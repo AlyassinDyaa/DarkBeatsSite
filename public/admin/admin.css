@@ -1093,3 +1093,18 @@ html[data-ia-orders='discounts'] body:has([class*='AppHeader'], [class*='Toolbar
 #nc-root .ia-pics [class*='-listControlItem'] [class*='ControlContainer']:has([class*='ImageWrapper'], [class*='FileWidgetButton']) > div:not([class*='ControlTopbar']) { border: 0 !important; background: transparent !important; padding: 0 !important; min-height: 0 !important; }
 #nc-root .ia-pics [class*='ControlContainer']:not(:has([class*='ImageWrapper'])) span:has(> [class*='FileWidgetButton']) { padding: 26px 0 14px; }
 #nc-root .ia-pics [class*='ControlContainer']:not(:has([class*='ImageWrapper'])) span:has(> [class*='FileWidgetButton']) > [class*='FileWidgetButton'] { max-width: 100%; white-space: normal; text-align: center; line-height: 1.2; }
+
+/* the free pictures, cropped in their tile: the round picture is the crop itself (drag it), zoom under it */
+.ia-pics [class*='-listControlItem'] > div:last-child > div { display: flex; flex-direction: column; }
+.ia-pics [class*='-listControlItem'] [class*='ControlContainer']:has(.ia-facecrop) { order: -1; }
+#nc-root .ia-pics [class*='ControlContainer'] div:has(> [class*='ImageWrapper']) > [class*='ImageWrapper'] { display: none !important; }
+#nc-root .ia-pics [class*='ControlContainer'] div:has(> [class*='ImageWrapper']) { margin-top: 2px; }
+.ia-pics .ia-facecrop { flex-direction: column; flex-wrap: nowrap; gap: 8px; padding: 6px 0 0; border: 0; background: none; }
+.ia-pics .ia-face.is-big { width: 84px; height: 84px; box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px var(--panel); }
+.ia-pics .ia-face-none { font-size: 0.68rem; padding: 6px; }
+.ia-pics .ia-face-side { flex: 0 0 auto; width: 100%; gap: 4px; }
+.ia-pics .ia-face-row, .ia-pics .ia-face-slider:nth-of-type(n+2), .ia-pics .ia-face-reset { display: none; }
+.ia-pics .ia-face-slider { grid-template-columns: minmax(0, 1fr) 36px; gap: 6px; font-size: 0.7rem; }
+.ia-pics .ia-face-slider > span { display: none; }
+.ia-pics .ia-face-side label:nth-child(2) ~ label { display: none; }
+#nc-root .ia-pics [class*='ControlContainer']:has(.ia-facecrop) > div:not([class*='ControlTopbar']), #nc-root .ia-pics [class*='ControlContainer']:has(.ia-facecrop) { border: 0 !important; background: transparent !important; padding: 0 !important; box-shadow: none !important; }
