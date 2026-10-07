@@ -2,8 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Page from '../components/Page'
-import { accountPage, asset, brand, canBuy, money, priceOf, priceVaries, soldOut, work } from '../data/site'
+import { accountPage, asset, brand, canBuy, marquee, money, priceOf, priceVaries, shows, soldOut, work } from '../data/site'
 import Poster from '../components/Poster'
+import Marquee from '../components/Marquee'
 import { useAccount } from '../hooks/useAccount'
 import { useCart } from '../hooks/useCart'
 
@@ -41,18 +42,45 @@ function Submit({ busy, children }) {
 }
 
 /* the frame of the smaller pages: a label, a title, a line, and a card with the form */
-function Shell({ title, label, lead, children, wide = false }) {
+function Shell({ title, label, lead, children }) {
   return (
     <Page title={title}>
-      <header className="page-head container acc-head">
-        <div className="label accent">{label}</div>
-        <h1 className="display h-xl">{title}</h1>
-        {lead && <p className="lead">{lead}</p>}
-      </header>
-      <section className="section tight">
-        <div className={`container ${wide ? 'acc-wide' : 'acc-narrow'}`}>{children}</div>
-      </section>
+      <div className="container acc-split">
+        <div className="acc-split-main">
+          <header className="page-head acc-head">
+            <div className="label accent">{label}</div>
+            <h1 className="display h-xl">{title}</h1>
+            {lead && <p className="lead">{lead}</p>}
+          </header>
+          <div className="acc-narrow">{children}</div>
+        </div>
+        <AuthArt />
+      </div>
     </Page>
+  )
+}
+
+/* beside the forms: three of the artist's prints, fanned out, and what an account is good for */
+const PERKS = [
+  ['Track every order', 'From the studio to your door, step by step.'],
+  ['Save pieces for later', 'A heart on every print, kept in one place.'],
+  ['Your cart, everywhere', 'Start on your phone, finish on your laptop.'],
+  ['Your own corner', 'Your collection, hung on your own wall.'],
+]
+function AuthArt() {
+  const [picks] = useState(() => {
+    const pool = work.filter((p) => p.src && !soldOut(p))
+    return [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
+  })
+  return (
+    <aside className="acc-art">
+      <div className="acc-art-stack" aria-hidden="true">
+        {picks.map((p, i) => <figure key={p.slug} style={{ '--i': i }}><Poster title={p.title} hue={p.hue} src={p.src} seed={i} eager /></figure>)}
+      </div>
+      <ul className="acc-perks">
+        {PERKS.map(([t, d]) => <li key={t}><i aria-hidden="true" /><div><b>{t}</b><span>{d}</span></div></li>)}
+      </ul>
+    </aside>
   )
 }
 
@@ -415,24 +443,14 @@ function Security() {
 /* the first thing a customer sees: hello, how things stand, their prints, what is new */
 function Overview({ orders, go }) {
   const { user } = useAccount()
-  const first = (user.name || '').split(' ')[0]
   const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
   const collected = shopOrders.reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
   // the pieces they own, once each, newest first
   const owned = [...new Map(shopOrders.flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
   const saved = (user.saved || []).map((slug) => work.find((p) => p.slug === slug)).filter(Boolean)
   const latest = shopOrders[0]
-  const since = new Date(user.lastVisit || user.createdAt)
-  const fresh = [...work].filter((p) => p.src).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 4)
-  const returning = Date.now() - new Date(user.createdAt).getTime() > 864e5 || shopOrders.length > 0
   return (
     <div className="acct-overview">
-      <header className="acct-hello">
-        <div className="label accent">{greeting()}</div>
-        <h1 className="display h-xl">{first || 'Hello'}<span className="acct-dot">.</span></h1>
-        <p className="lead">{returning ? 'Good to see you again. Here is everything in one place.' : `Welcome to your corner of ${brand.name}. Your prints, your orders and the pieces you love live here.`}</p>
-      </header>
-
       <div className="acct-stats">
         <button type="button" onClick={() => go('orders')}><strong>{orders ? shopOrders.length : '–'}</strong><span>{shopOrders.length === 1 ? 'Order' : 'Orders'}</span></button>
         <button type="button" onClick={() => go('orders')}><strong>{orders ? collected : '–'}</strong><span>{collected === 1 ? 'Print collected' : 'Prints collected'}</span></button>
@@ -477,10 +495,7 @@ function Overview({ orders, go }) {
         )}
       </section>
 
-      <section className="acct-block">
-        <div className="acct-block-head"><h2>{accountPage.freshTitle}</h2><Link className="acc-link" to="/shop">The Shop</Link></div>
-        <div className="acct-pieces">{fresh.map((p) => <PieceCard key={p.slug} p={p} isNew={p.date && new Date(p.date) > since} />)}</div>
-      </section>
+      <Fresh />
 
       {accountPage.note && (
         <section className="acct-note">
@@ -493,6 +508,19 @@ function Overview({ orders, go }) {
         </section>
       )}
     </div>
+  )
+}
+
+/* the newest pieces, marked New when they arrived since the last visit */
+function Fresh() {
+  const { user } = useAccount()
+  const since = new Date(user.lastVisit || user.createdAt)
+  const fresh = [...work].filter((p) => p.src).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 4)
+  return (
+    <section className="acct-block">
+      <div className="acct-block-head"><h2>{accountPage.freshTitle}</h2><Link className="acc-link" to="/shop">The Shop</Link></div>
+      <div className="acct-pieces">{fresh.map((p) => <PieceCard key={p.slug} p={p} isNew={Boolean(p.date) && new Date(p.date) > since} />)}</div>
+    </section>
   )
 }
 
@@ -528,10 +556,26 @@ function Home() {
   if (!user) return <Navigate to="/account/login?next=/account" replace />
   const first = (user.name || '').split(' ')[0]
   const note = params.get('welcome') ? `Welcome${first ? `, ${first}` : ''}. Your account is ready.` : params.get('reset') ? 'Your new password is saved, and you are logged in.' : ''
-  const go = (k) => { setParams(k === 'overview' ? {} : { tab: k }, { replace: true }); window.__lenis ? window.__lenis.scrollTo(0) : window.scrollTo(0, 0) }
+  const go = (k) => { setParams(k === 'overview' ? {} : { tab: k }, { replace: true }); if (window.__lenis) window.__lenis.scrollTo(0); else window.scrollTo(0, 0) }
   const counts = { orders: orders ? orders.filter((o) => o.kind !== 'support').length : 0, saved: (user.saved || []).length }
+  // new here: an account made today, with no orders yet
+  const returning = new Date(user.createdAt).toDateString() !== new Date().toDateString() || counts.orders > 0
+  const LEADS = {
+    overview: returning ? 'Good to see you again. Here is everything in one place.' : `Welcome to your corner of ${brand.name}. Your prints, your orders and the pieces you love live here.`,
+    orders: 'Every print you have ordered, and where it is now.',
+    saved: 'The pieces you are keeping an eye on.',
+    details: 'Your name, how to reach you, and your picture.',
+    security: 'Your password, your devices, your account.',
+  }
+  const tabName = TABS.find(([k]) => k === tab)[1]
   return (
-    <Page title="Your account">
+    <Page title={tab === 'overview' ? 'Your account' : tabName}>
+      <header className="page-head container acct-head">
+        <div className="label accent">{tab === 'overview' ? greeting() : 'Your account'}</div>
+        <h1 className="display h-xl">{tab === 'overview' ? <>{first || 'Hello'}<span className="acct-dot">.</span></> : tabName}</h1>
+        <p className="lead">{LEADS[tab]}</p>
+      </header>
+      {shows('home', 'ticker') && marquee.length > 0 && <div className="acct-band"><Marquee items={marquee} speed={40} /></div>}
       <div className="container acct">
         <aside className="acct-side">
           <div className="acct-me">
@@ -563,11 +607,11 @@ function Home() {
           )}
           <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: EASE }}>
             {tab === 'overview' && <Overview orders={orders} go={go} />}
-            {tab !== 'overview' && <h1 className="display h-lg acct-title">{TABS.find(([k]) => k === tab)[1]}</h1>}
             {tab === 'orders' && <Orders orders={orders} problem={problem} />}
             {tab === 'saved' && <Saved />}
             {tab === 'details' && <Details />}
             {tab === 'security' && <Security />}
+            {tab !== 'overview' && <Fresh />}
           </motion.div>
         </div>
       </div>

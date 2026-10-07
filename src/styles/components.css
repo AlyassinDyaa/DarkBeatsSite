@@ -1069,3 +1069,35 @@ a.buy-btn { text-decoration: none; }
   .acct-wall { gap: 20px 16px; justify-content: center; }
   .acct-note { flex-direction: column; gap: 14px; }
 }
+
+/* log in, make an account...: the form on the left, a fan of prints and what an account gives on the right */
+.acc-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); gap: clamp(30px, 5vw, 90px); align-items: center; min-height: calc(100svh - 60px); padding-bottom: clamp(50px, 7vw, 100px); }
+.acc-split-main { min-width: 0; }
+.acc-split .acc-head { padding-top: calc(var(--nav) + clamp(30px, 5vw, 70px)); margin-bottom: clamp(26px, 3.5vw, 44px); }
+.acc-art { position: relative; display: grid; justify-items: center; gap: clamp(28px, 4vw, 46px); padding-top: calc(var(--nav) + 20px); }
+.acc-art::before { content: ''; position: absolute; z-index: -1; left: 50%; top: 38%; width: 120%; aspect-ratio: 1; transform: translate(-50%, -50%); background: radial-gradient(closest-side, oklch(0.5 0.2 var(--h) / 0.35), transparent 70%); pointer-events: none; }
+.acc-art-stack { position: relative; width: min(100%, 420px); aspect-ratio: 1.12; }
+.acc-art-stack figure { position: absolute; top: 50%; left: 50%; width: 46%; margin: 0; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.65); transition: transform 0.6s var(--ease-out); }
+.acc-art-stack figure:nth-child(1) { transform: translate(-108%, -46%) rotate(-11deg); }
+.acc-art-stack figure:nth-child(2) { z-index: 2; transform: translate(-50%, -54%) rotate(1deg); box-shadow: 14px 14px 0 var(--accent), 0 34px 70px rgba(0, 0, 0, 0.7); }
+.acc-art-stack figure:nth-child(3) { transform: translate(8%, -44%) rotate(10deg); }
+.acc-art:hover .acc-art-stack figure:nth-child(1) { transform: translate(-118%, -48%) rotate(-14deg); }
+.acc-art:hover .acc-art-stack figure:nth-child(3) { transform: translate(18%, -46%) rotate(13deg); }
+.acc-perks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 26px; width: min(100%, 520px); margin: 0; padding: 0; list-style: none; }
+.acc-perks li { display: flex; gap: 12px; }
+.acc-perks i { flex: 0 0 auto; width: 10px; height: 10px; margin-top: 6px; background: var(--accent); transform: rotate(45deg); }
+.acc-perks b { display: block; font-family: var(--display); font-weight: 400; font-size: 1.1rem; letter-spacing: 0.03em; text-transform: uppercase; }
+.acc-perks span { display: block; margin-top: 3px; font-size: 0.9rem; color: var(--fg-dim); }
+@media (max-width: 1023px) {
+  .acc-split { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .acc-art { padding-top: 0; }
+  .acc-art-stack { width: min(100%, 360px); }
+}
+@media (max-width: 599px) { .acc-perks { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .acc-art-stack figure { transition: none; } }
+
+/* the account: a page header like every other page, the band of words, then the panel and the tab */
+.acct-head { padding-bottom: clamp(26px, 3.5vw, 44px); }
+.acct-band { margin: 0 0 clamp(10px, 2vw, 24px); }
+.acct { padding-top: clamp(26px, 3vw, 44px); }
+.acct-overview > .acct-stats { margin-top: 0; }
