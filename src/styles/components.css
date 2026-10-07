@@ -180,17 +180,30 @@ a.nav-status:hover { border-color: var(--fg); }
 .wall-item:hover, .wall-item:focus-visible { transform: translate(-5px, -5px); box-shadow: 9px 9px 0 var(--accent); outline: 0; }
 @media (max-width: 899px) {
   .hero-inner { min-height: 0; padding-bottom: 0; }
-  .hero-inner { --name: calc(31vw * var(--fit)); }
-  .hero-inner:has(.has-figure) { --name: calc(21vw * var(--fit)); }
-  .hero-copy { max-width: none; }
-  /* on a phone only the name steps aside; the text below it runs the full width, so the character fades out at the knee before it */
-  .hero-copy.has-figure { margin-left: 0; padding-left: 0; }
-  .has-figure .hero-name { margin-left: 1.3em; }
-  .hero-figure { left: calc(-1.5em + var(--fig-x, 0) * 0.01em); }
+  .hero-inner { --name: min(calc(31vw * var(--fit)), 9rem); }
+  .hero-inner:has(.has-figure) { --name: min(calc(21vw * var(--fit)), 6.4rem); }
+  /* Phones and small tablets: one centred column. The character stands behind the middle of the
+     name, head above it, and fades out just under it, so it never runs into the words below. Its
+     size comes from the admin; its sideways and up-down sliders are for wide screens. */
+  .hero-inner { padding-top: calc(var(--nav) + 18px); }
+  .hero-copy, .hero-copy.has-figure { max-width: none; margin-left: 0; padding-left: 0; perspective: none; text-align: center; }
+  .hero-copy .label { justify-content: center; margin-bottom: 16px; font-size: 0.64rem; letter-spacing: 0.12em; white-space: nowrap; }
+  .hero-name { position: relative; margin-inline: auto; transform-style: flat; }
+  .hero-line, .is-behind .hero-line { position: relative; z-index: 1; transform: translateX(0.113em) skewX(var(--slant)); }
+  .hero-line.is-front, .is-behind .hero-line.is-front, .hero-line:only-of-type { position: relative; z-index: 1; transform: skewX(var(--slant)); }
+  /* the character takes the space above the name, and its lower half fades out behind the words */
+  .has-figure .hero-name { margin-top: calc(var(--name) * 2.15); margin-bottom: calc(var(--name) * 0.3); }
+  .hero-figure, .is-behind .hero-figure { z-index: 0; left: 50%; top: -2.15em; height: calc(3.6em * var(--fig-size, 1)); transform: translateX(-50%); }
+  .hero-aura, .is-behind .hero-aura { z-index: 0; left: 50%; top: -2em; width: 3.4em; height: 3.2em; transform: translateX(-50%); }
+  .hero-figure img, .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 60%, transparent 90%); mask-image: linear-gradient(#000 60%, transparent 90%); }
   .has-ground .hero-figure > span { -webkit-mask-image: none; mask-image: none; }
-  .has-ground .hero-figure img { -webkit-mask-image: linear-gradient(#000 58%, transparent 74%); mask-image: linear-gradient(#000 58%, transparent 74%); }
-  .hero-copy.has-figure:not(.has-ground) .hero-tag { margin-top: calc(var(--name) * 0.55); }
-  .hero-wall { position: relative; left: auto; right: auto; width: 100vw; height: 64svh; margin: 36px calc(var(--gutter) * -1) 0; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
+  .hero-tag { margin-top: 18px; }
+  .hero .lead { margin-inline: auto; }
+  /* the buttons share the width evenly, one beside the other when they fit */
+  .hero-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; max-width: 520px; margin: 24px auto 0; }
+  .hero-actions .magnetic { display: block !important; transform: none !important; }
+  .hero-actions .btn { width: 100%; min-height: 52px; padding: 0 14px; font-size: 1rem; }
+  .hero-wall { position: relative; left: auto; right: auto; width: 100vw; height: 64svh; margin: 28px calc(var(--gutter) * -1) 0; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); }
   .wall-tilt { gap: 12px; transform: rotate(-9deg) scale(1.3); }
   .wall-track { gap: 12px; }
 }
