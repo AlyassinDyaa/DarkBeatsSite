@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { asset, brand, money, payLine, payWays, shop } from '../data/site'
 import { useCart } from '../hooks/useCart'
+import { useAccount } from '../hooks/useAccount'
+import { Link } from 'react-router-dom'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -22,6 +24,8 @@ async function checkout(items, provider) {
    what it comes to; the total; one button to pay for all of it. */
 export default function CartDrawer() {
   const cart = useCart()
+  const account = useAccount()
+  const mustLogIn = account.required && !account.user
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
   const { open, lines } = cart
@@ -91,7 +95,12 @@ export default function CartDrawer() {
                 <footer className="cart-foot">
                   <div className="cart-total"><span>Total</span><strong>{money(cart.total)}</strong></div>
                   {shop.shipping !== false && <p className="cart-small">You enter your delivery address on the next page.</p>}
-                  {payWays().map((way) => (
+                  {mustLogIn ? (
+                    <Link className="buy-btn" to="/account/login?next=/shop" onClick={() => setOpen(false)}>
+                      <span className="buy-btn-label">Log in to buy</span>
+                      <span className="buy-btn-icon" aria-hidden="true">→</span>
+                    </Link>
+                  ) : payWays().map((way) => (
                     <button key={way} type="button" className={`buy-btn ${way === 'paypal' ? 'is-paypal' : ''} ${busy === way ? 'is-busy' : ''}`} onClick={() => pay(way)} aria-busy={busy === way} disabled={Boolean(busy)}>
                       <span className="buy-btn-label">{busy === way ? (way === 'paypal' ? 'Opening PayPal' : 'Opening secure checkout') : way === 'paypal' ? 'Pay with PayPal' : payWays().length > 1 ? 'Pay by card' : 'Checkout'}</span>
                       <span className="buy-btn-icon" aria-hidden="true">{busy === way ? <i className="buy-spin" /> : '→'}</span>
@@ -101,6 +110,9 @@ export default function CartDrawer() {
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10.5h12v9.5H6z M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
                     <span>{payLine()}</span>
                   </p>
+                  {account.on && !account.user && (
+                    <p className="cart-account">{mustLogIn ? 'New here? ' : 'Log in to keep this cart and see your orders later. '}<Link to={mustLogIn ? '/account/signup?next=/shop' : '/account/login?next=/shop'} onClick={() => setOpen(false)}>{mustLogIn ? 'Make an account' : 'Log in'}</Link></p>
+                  )}
                   <AnimatePresence>
                     {note && (
                       <motion.div className="buy-note" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>

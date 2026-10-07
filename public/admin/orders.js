@@ -137,7 +137,7 @@
     const ts = Math.floor(Date.now() / 1000)
     if (url.startsWith('/api/orders')) {
       if (!init.method || init.method === 'GET') return done({ orders: samples.orders.filter((o) => !o.hidden).map((o) => ({ ...o, track: { ...o.track } })), more: false, next: null })
-      if (body.action === 'hide') { samples.orders.forEach((o) => { if (body.pis.includes(o.pi)) o.hidden = true }); return done({ hidden: body.pis }) }
+      if (body.action === 'hide') { samples.orders.forEach((o) => { if ((body.pis || []).includes(o.pi)) o.hidden = true }); return done({ hidden: body.pis || [] }) }
       const o = samples.orders.find((x) => x.id === body.id)
       o.track = { status: body.status, carrier: body.carrier || '', number: body.number || '', note: body.note || '', at: new Date().toISOString() }
       return done({ track: { ...o.track } })
@@ -393,7 +393,7 @@
       lines.length ? copyBtn(lines.join('\n'), 'address') : null,
       el('div', { className: 'io-links' }, [
         o.receipt ? el('a', { className: 'io-link', href: o.receipt, target: '_blank', rel: 'noopener', textContent: 'Receipt' }) : null,
-        o.stripe ? el('a', { className: 'io-link', href: o.stripe, target: '_blank', rel: 'noopener', textContent: 'Open in Stripe' }) : null,
+        o.stripe ? el('a', { className: 'io-link', href: o.stripe, target: '_blank', rel: 'noopener', textContent: o.provider === 'paypal' ? 'Open in PayPal' : 'Open in Stripe' }) : null,
       ]),
     ])
     return el('div', { className: 'io-body' }, [left, shippable(o) ? tracking(o) : el('div', { className: 'io-col io-quiet' }, [el('p', { textContent: o.kind === 'support' ? 'Support from a fan: nothing to post. A thank-you email goes a long way.' : o.fullyRefunded ? 'Refunded: nothing to post.' : 'Nothing to post for this one.' }), o.email ? el('a', { className: 'ia-btn ghost', href: `mailto:${o.email}?subject=${encodeURIComponent('Thank you!')}`, textContent: 'Email a thank-you' }) : null])])
@@ -915,14 +915,15 @@
   // admin; a discount code is switched off and drops out. Nothing is refunded.
   const inChunks = (list, n = 100) => Array.from({ length: Math.ceil(list.length / n) }, (_, i) => list.slice(i * n, i * n + n))
   const dropOrders = async (orders) => {
-    const pis = orders.map((o) => o.pi).filter(Boolean)
+    // a Stripe order goes by its payment; a PayPal one (kept in the database) by its own id
+    const keys = orders.map((o) => o.pi || (o.provider === 'paypal' ? o.id : '')).filter(Boolean)
     const gone = new Set()
-    for (const chunk of inChunks(pis)) {
-      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', pis: chunk }) })
+    for (const chunk of inChunks(keys)) {
+      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', pis: chunk.filter((k) => k.startsWith('pi_')), refs: chunk.filter((k) => k.startsWith('pp_')) }) })
       ;(said.hidden || []).forEach((p) => gone.add(p))
     }
-    state.orders = state.orders.filter((o) => !gone.has(o.pi))
-    if (gone.size < pis.length) throw new Error(`${pis.length - gone.size} could not be removed. Try again in a moment.`)
+    state.orders = state.orders.filter((o) => !gone.has(o.pi || o.id))
+    if (gone.size < keys.length) throw new Error(`${keys.length - gone.size} could not be removed. Try again in a moment.`)
   }
   const dropCodes = async (codes) => {
     const gone = new Set()

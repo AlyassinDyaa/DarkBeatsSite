@@ -1,10 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { canBuy, nowPrice, shop, sizesOf, work } from '../data/site'
+import { useAccount } from './useAccount'
 
 /* The cart. What a visitor has added is kept in their browser (so it survives a reload), as
    { slug, size, signed, qty } lines. Every time it is read it is checked against the site's content:
    a piece that has sold out, been hidden or lost its price drops out, and prices always come
-   from the content, never from what was stored. The checkout reads the prices again itself. */
+   from the content, never from what was stored. The checkout reads the prices again itself.
+   With a customer logged in, the cart is the account's: it arrives with the login (joined with
+   whatever was added before logging in), every change is saved to the account, and logging out
+   empties it on this device. */
 const KEY = 'jb.cart'
 const MAX_QTY = 10
 const Cart = createContext(null)
@@ -17,6 +21,22 @@ export function CartProvider({ children }) {
   const [raw, setRaw] = useState(load)
   const [open, setOpen] = useState(false)
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(raw)) } catch { /* not kept: the cart still works for this visit */ } }, [raw])
+
+  const account = useAccount()
+  const who = account.user ? account.user.email : ''
+  const owner = useRef(null) // whose cart this is now
+  const fromAccount = account.user ? account.user.cart : null
+  useEffect(() => {
+    if (!account.ready) return
+    if (who && owner.current !== who) { owner.current = who; setRaw(Array.isArray(fromAccount) ? fromAccount : []) }
+    else if (!who && owner.current) { owner.current = null; setRaw([]) }
+  }, [who, account.ready]) // eslint-disable-line react-hooks/exhaustive-deps
+  const save = account.call
+  useEffect(() => {
+    if (!who || owner.current !== who) return
+    const t = setTimeout(() => { save('cart', { cart: raw }).catch(() => { /* kept on this device; saved with the next change */ }) }, 700)
+    return () => clearTimeout(t)
+  }, [raw, who, save])
 
   const lines = useMemo(() => raw.map((l) => {
     const piece = work.find((p) => p.slug === l.slug)
@@ -42,7 +62,7 @@ export function CartProvider({ children }) {
 
   const count = lines.reduce((n, l) => n + l.qty, 0)
   const total = lines.reduce((n, l) => n + l.qty * l.each, 0)
-  const value = { lines, count, total, add, setQty, remove, clear, open, setOpen, max: MAX_QTY }
+  const value = { lines, count, total, add, setQty, remove, clear, open, setOpen, max: MAX_QTY, stored: raw }
   return <Cart.Provider value={value}>{children}</Cart.Provider>
 }
 

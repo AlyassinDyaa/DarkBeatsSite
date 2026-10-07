@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../hooks/useCart'
+import { useAccount } from '../hooks/useAccount'
+import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { badge, brand, buyable, money, payLine, payWays, priceOf, shop, sizesOf, soldOut } from '../data/site'
 
@@ -29,6 +31,8 @@ export default function Buy({ piece }) {
   const chosen = sizes.find((s) => s.name === size) ? size : sizes[0]?.name
   const cost = priceOf(piece, chosen)
   const cart = useCart()
+  const account = useAccount()
+  const mustLogIn = account.required && !account.user
   const [added, setAdded] = useState(false)
   useEffect(() => { if (!added) return; const t = setTimeout(() => setAdded(false), 1800); return () => clearTimeout(t) }, [added])
   const addToCart = () => { cart.add(piece.slug, choice && signed, chosen); setAdded(true); setTimeout(() => cart.setOpen(true), 350) }
@@ -103,7 +107,7 @@ export default function Buy({ piece }) {
             <span className="buy-btn-icon" aria-hidden="true">{added ? '✓' : <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14 M5 12h14" /></svg>}</span>
           </button>
           <div className="buy-also">
-            {payWays().map((way, i) => (
+            {mustLogIn ? <Link className="buy-now" to="/account/login?next=/shop">Log in to buy <span aria-hidden="true">→</span></Link> : payWays().map((way, i) => (
               <button key={way} type="button" className={`buy-now ${way === 'paypal' ? 'is-paypal' : ''} ${busy === way ? 'is-busy' : ''}`} onClick={() => buy(way)} aria-busy={busy === way} disabled={Boolean(busy)}>
                 {busy === way ? (way === 'paypal' ? 'Opening PayPal…' : 'Opening secure checkout…') : way === 'paypal' ? (i ? 'or PayPal' : `${shop.buttonLabel} with PayPal`) : `${shop.buttonLabel} now`} <span aria-hidden="true">→</span>
               </button>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '../hooks/useCart'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAccount } from '../hooks/useAccount'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { asset, badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, shop, shows, soldOut, types, work } from '../data/site'
 import Page from '../components/Page'
@@ -51,6 +52,7 @@ export default function Shop() {
   const [params] = useSearchParams()
   const thanks = params.get('thanks') === '1'
   const cart = useCart()
+  const account = useAccount()
   const clearCart = cart.clear
   useEffect(() => { if (thanks) clearCart() }, [thanks, clearCart])
   // PayPal sends the buyer back here with ?paypal=back&token=<order>; the payment is only taken now
@@ -94,7 +96,7 @@ export default function Shop() {
         {thanks && (
           <motion.div className="thanks" role="status" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
             <i aria-hidden="true">✓</i>
-            <div><strong>{shop.thanksTitle}</strong><span>{shop.thanksText}</span></div>
+            <div><strong>{shop.thanksTitle}</strong><span>{shop.thanksText}</span>{account.user && <Link className="thanks-link" to="/account">See it in your account →</Link>}</div>
           </motion.div>
         )}
         {paypalOrder && (

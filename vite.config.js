@@ -130,23 +130,28 @@ const adminBundle = () => ({
   name: 'admin-bundle',
   configureServer(server) {
     startAdminBackend(server)
-    // Payment keys for trying the checkout on this computer: put them in .env.local (never
+    // Keys for trying payments, accounts and email on this computer: put them in .env.local (never
     // committed: *.local is in .gitignore). On Vercel they come from the project settings instead.
     const keys = loadEnv('development', process.cwd(), '')
-    for (const k of ['STRIPE_SECRET_KEY', 'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_MODE']) if (keys[k] && !process.env[k]) process.env[k] = keys[k]
-    // The checkout function runs on Vercel. While developing, the same file answers here, so the
-    // Buy button behaves as it will live (with no STRIPE_SECRET_KEY set it says so).
-    server.middlewares.use('/api/checkout', async (req, res) => {
-      const chunks = []
-      for await (const chunk of req) chunks.push(chunk)
-      try { req.body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch { req.body = {} }
-      res.status = (code) => { res.statusCode = code; return res }
-      res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }
-      try {
-        const { default: handler } = await import(`${pathToFileURL(resolve('api/checkout.js')).href}?t=${Date.now()}`)
-        await handler(req, res)
-      } catch (e) { res.status(500).json({ message: `The checkout function failed: ${e.message}` }) }
-    })
+    for (const [k, v] of Object.entries(keys)) if (/^(STRIPE_|PAYPAL_|MONGODB_|RESEND_|MAIL_|SITE_URL$)/.test(k) && v && !process.env[k]) process.env[k] = v
+    // These functions run on Vercel. While developing, the same files answer here, so the Buy
+    // button and the accounts behave as they will live (without their keys they say so). The
+    // Stripe webhook reads its message as it arrived, so its body is left alone.
+    for (const name of ['checkout', 'account', 'stripe-webhook']) {
+      server.middlewares.use(`/api/${name}`, async (req, res) => {
+        if (name !== 'stripe-webhook') {
+          const chunks = []
+          for await (const chunk of req) chunks.push(chunk)
+          try { req.body = JSON.parse(Buffer.concat(chunks).toString() || '{}') } catch { req.body = {} }
+        }
+        res.status = (code) => { res.statusCode = code; return res }
+        res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }
+        try {
+          const { default: handler } = await import(`${pathToFileURL(resolve(`api/${name}.js`)).href}?t=${Date.now()}`)
+          await handler(req, res)
+        } catch (e) { res.status(500).json({ message: `The ${name} function failed: ${e.message}` }) }
+      })
+    }
     // Orders and discounts live in Stripe and go through the admin's login, which only exists on
     // Vercel: here those screens say where to find them instead.
     for (const path of ['/api/orders', '/api/discounts']) {

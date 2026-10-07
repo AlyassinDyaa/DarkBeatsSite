@@ -10,6 +10,8 @@ import Nav from './components/Nav'
 import Footer from './components/Footer'
 import CartDrawer from './components/CartDrawer'
 import { CartProvider } from './hooks/useCart'
+import { AccountProvider, accountsWanted } from './hooks/useAccount'
+import Account from './pages/Account'
 import Home from './pages/Home'
 import Shop from './pages/Shop'
 import Work from './pages/Work'
@@ -40,6 +42,7 @@ export default function App() {
     for (const link of document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')) { link.href = asset(brand.icon); link.removeAttribute('type') }
   }, [])
   return (
+    <AccountProvider>
     <CartProvider>
       {new URLSearchParams(loc.search).get('preview') === 'hero' ? <PreviewReady onReady={() => setReady(true)} /> : <Preloader onDone={() => setReady(true)} />}
       <Nav />
@@ -51,7 +54,7 @@ export default function App() {
         )}
       </AnimatePresence>
       <AnimatePresence mode="wait">
-        <Routes location={loc} key={loc.pathname}>
+        <Routes location={loc} key={loc.pathname.startsWith('/account') ? '/account' : loc.pathname}>
           <Route path="/" element={<Home />} />
           {/* a page the admin has hidden has no route, so its address shows "not found" */}
           {shows('pages', 'work') && <Route path="/shop" element={<Shop />} />}
@@ -62,6 +65,8 @@ export default function App() {
           {shows('pages', 'about') && <Route path="/about" element={<About />} />}
           {shows('pages', 'contact') && <Route path="/contact" element={<Contact />} />}
           {shows('pages', 'support') && <Route path="/support" element={<Support />} />}
+          {/* customer accounts, when the admin has them on (Shop & payments → Customer accounts) */}
+          {accountsWanted() && <Route path="/account/*" element={<Account />} />}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
@@ -69,5 +74,6 @@ export default function App() {
       {previewing && <div className="fresh-note" role="status">Admin view: showing your latest saved changes. Visitors see them in about a minute.</div>}
       <CartDrawer />
     </CartProvider>
+    </AccountProvider>
   )
 }

@@ -1,5 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { currentUser } from './_users.js'
+import { dbReady, recordOrder, shapeAddress } from './_orders.js'
+import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
    piece as { slug, size, signed }), with the way the buyer chose to pay: Stripe or PayPal. This
@@ -17,6 +20,10 @@ import { join } from 'node:path'
 
    PayPal works in two steps: the buyer approves the payment on PayPal and comes back to the Shop,
    which then asks this function to collect it ({ capture: <PayPal order id> }).
+
+   With customer accounts on (Shop & payments → Customer accounts), a logged-in buyer's order is
+   tied to their account, so it shows in their order history; with accounts required, nobody
+   buys without one.
 
    Nothing is sold unless "Online purchases" is switched on in the admin (content/site/shop.json),
    the chosen way to pay is one the admin offers (Payment methods), and its keys are set.
@@ -44,6 +51,24 @@ const paypalToken = async () => {
 }
 const twoPlaces = (cents) => (cents / 100).toFixed(2)
 
+/* a PayPal payment taken: the order waiting in the database gets the buyer and the address */
+const savePaypal = async (id, said) => {
+  if (!dbReady()) return
+  const unit = (said.purchase_units || [])[0] || {}
+  const ship = unit.shipping || {}
+  const a = ship.address || null
+  const payer = said.payer || {}
+  const capture = ((unit.payments || {}).captures || [])[0] || {}
+  const before = await (await db()).collection('orders').findOne({ ref: `pp_${id}` })
+  await recordOrder({
+    ref: `pp_${id}`, provider: 'paypal', paypalId: id, captureId: capture.id || '', status: 'paid',
+    email: (before && before.email) || String(payer.email_address || '').toLowerCase(),
+    name: (before && before.name) || [payer.name && payer.name.given_name, payer.name && payer.name.surname].filter(Boolean).join(' '),
+    address: a ? shapeAddress({ line1: a.address_line_1, line2: a.address_line_2, city: a.admin_area_2, state: a.admin_area_1, postal_code: a.postal_code, country: a.country_code }, ship.name && ship.name.full_name) : null,
+    ...(before ? {} : { kind: 'shop', amount: Number(capture.amount && capture.amount.value) || 0, currency: (capture.amount && capture.amount.currency_code) || '', items: [], test: process.env.PAYPAL_MODE !== 'live' }),
+  })
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   if (req.method !== 'POST') return res.status(405).json({ message: 'Send the cart with POST.' })
@@ -51,6 +76,10 @@ export default async function handler(req, res) {
   if (!shop.enabled) return res.status(403).json({ message: 'Online purchases are switched off at the moment.' })
   const body = req.body && typeof req.body === 'object' ? req.body : {}
   const ways = methods(shop)
+  const accounts = ['optional', 'required'].includes(shop.accounts) ? shop.accounts : 'off'
+  // the logged-in customer, so the order lands in their account (never stops a sale if it fails)
+  let user = null
+  if (accounts !== 'off') { try { user = await currentUser(req) } catch (e) { console.error('account lookup:', e.message) } }
 
   // ---- PayPal, step two: the buyer approved on PayPal and is back; collect the payment
   if (body.capture) {
@@ -60,10 +89,14 @@ export default async function handler(req, res) {
     if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) return res.status(503).json({ message: 'PayPal is not set up yet.' })
     try {
       const token = await paypalToken()
-      const answer = await fetch(`${paypalBase()}/v2/checkout/orders/${id}/capture`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: '{}' })
+      const answer = await fetch(`${paypalBase()}/v2/checkout/orders/${id}/capture`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: '{}' })
       const said = await answer.json().catch(() => ({}))
       const already = Array.isArray(said.details) && said.details.some((d) => d.issue === 'ORDER_ALREADY_CAPTURED')
-      if ((answer.ok && said.status === 'COMPLETED') || already) return res.status(200).json({ paid: true })
+      if (answer.ok && said.status === 'COMPLETED') {
+        try { await savePaypal(id, said) } catch (e) { console.error('paypal order not saved:', e.message) }
+        return res.status(200).json({ paid: true })
+      }
+      if (already) return res.status(200).json({ paid: true })
       console.error('paypal refused the capture:', answer.status, said && (said.name || said.message))
       return res.status(402).json({ message: 'PayPal did not take the payment, so nothing was charged. Try again, or pay another way.' })
     } catch (e) {
@@ -76,6 +109,7 @@ export default async function handler(req, res) {
   if (!ways.includes(way)) return res.status(403).json({ message: `${way === 'paypal' ? 'PayPal' : 'Card payment'} is not offered at the moment.` })
   if (way === 'stripe' && !process.env.STRIPE_SECRET_KEY) return res.status(503).json({ message: 'Online purchase is not set up yet. Get in touch to buy a print.' })
   if (way === 'paypal' && (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET)) return res.status(503).json({ message: 'PayPal is not set up yet. Get in touch to buy a print.' })
+  if (accounts === 'required' && !user) return res.status(401).json({ login: true, message: 'Log in, or make an account, to buy.' })
 
   const asked = Array.isArray(body.items) ? body.items : [{ slug: body.slug, size: body.size, signed: body.signed, qty: 1 }]
   if (!asked.length) return res.status(400).json({ message: 'The cart is empty.' })
@@ -148,6 +182,10 @@ export default async function handler(req, res) {
         console.error('paypal refused the order:', answer.status, said && (said.name || said.message), JSON.stringify(said.details || []).slice(0, 300))
         return res.status(502).json({ message: 'PayPal could not be opened. Try again in a moment.' })
       }
+      // kept as waiting until the buyer comes back and the payment is taken
+      try {
+        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100 })), amount: total / 100, discount: 0, currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
+      } catch (e) { console.error('paypal order not saved:', e.message) }
       return res.status(200).json({ url: link.href })
     } catch (e) {
       console.error(e.message)
@@ -172,6 +210,8 @@ export default async function handler(req, res) {
     if (typeof l.piece.src === 'string' && l.piece.src.startsWith('/')) ask.set(`${at}[price_data][product_data][images][0]`, origin + l.piece.src)
   })
   ask.set('metadata[order]', summary.slice(0, 500))
+  // a logged-in buyer: the order is tied to their account (api/stripe-webhook.js reads this back)
+  if (user) { ask.set('client_reference_id', user._id); ask.set('customer_email', user.email) }
   if (shop.shipping !== false) {
     const countries = (Array.isArray(shop.countries) ? shop.countries : []).map((c) => String(c).trim().toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c))
     ;(countries.length ? countries : ['AU']).forEach((c, i) => ask.set(`shipping_address_collection[allowed_countries][${i}]`, c))

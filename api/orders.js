@@ -1,4 +1,6 @@
 import { configured, goodPass } from './_session.js'
+import { db, dbReady } from './_db.js'
+import { setTrack } from './_orders.js'
 
 /* The admin's Orders screen. Everything paid through Stripe (prints from the Shop, and support
    through the payment links) is read here, straight from Stripe, for the logged-in admin only.
@@ -11,7 +13,12 @@ import { configured, goodPass } from './_session.js'
    POST /api/orders { action: 'hide', pis: [...] }  takes orders out of the admin. Stripe cannot
         delete a payment, so the payment is marked (jb_hidden) and the admin no longer lists it.
 
-   Needs STRIPE_SECRET_KEY (Vercel project settings), and the admin's login pass like api/gh.js. */
+   With the database set up (MONGODB_URI), PayPal orders are listed here too (they are kept in the
+   database: ids start "pp_"), and every posting update is copied to the database, which is what
+   the buyer sees in their account.
+
+   Needs STRIPE_SECRET_KEY and/or MONGODB_URI (Vercel project settings), and the admin's login
+   pass like api/gh.js. */
 const STATUSES = ['new', 'packed', 'shipped', 'delivered', 'cancelled']
 const CARRIERS = ['auspost', 'startrack', 'sendle', 'aramex', 'couriersplease', 'dhl', 'other']
 const PAGE = 100
@@ -27,6 +34,28 @@ const stripe = async (path, init = {}) => {
 
 const cents = (n) => (Number(n) || 0) / 100
 const text = (v, max = 200) => String(v ?? '').trim().slice(0, max)
+
+/* A PayPal order from the database, in the same shape as a Stripe one. */
+const shapeSaved = (o) => ({
+  id: o.ref,
+  created: Math.floor(new Date(o.createdAt).getTime() / 1000),
+  kind: o.kind || 'shop',
+  amount: Number(o.amount) || 0,
+  discount: Number(o.discount) || 0,
+  currency: String(o.currency || '').toUpperCase(),
+  paid: true,
+  refunded: o.status === 'refunded' ? Number(o.amount) || 0 : 0,
+  fullyRefunded: o.status === 'refunded',
+  name: text(o.name), email: text(o.email), phone: text(o.phone),
+  address: o.address || null,
+  items: Array.isArray(o.items) ? o.items.map((i) => ({ name: text(i.name, 300), qty: i.qty || 1, amount: i.amount })) : [],
+  receipt: '',
+  pi: '',
+  provider: 'paypal',
+  stripe: o.captureId ? `https://www.${o.test ? 'sandbox.' : ''}paypal.com/activity/payment/${o.captureId}` : '',
+  test: Boolean(o.test),
+  track: { status: 'new', carrier: '', number: '', note: '', at: '', ...(o.track || {}) },
+})
 
 /* One checkout, as the Orders screen shows it. */
 const shape = (s) => {
@@ -75,40 +104,69 @@ export default async function handler(req, res) {
   if (!configured()) return res.status(500).json({ message: 'ADMIN_PASSCODE and GITHUB_TOKEN are not set in the Vercel project settings.' })
   const pass = String(req.headers.authorization || '').replace(/^(token|bearer)\s+/i, '')
   if (!goodPass(pass)) return res.status(401).json({ message: 'Your login has run out. Sign out of the admin and log in again.' })
-  if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ setup: true, message: 'Stripe is not connected yet. Add STRIPE_SECRET_KEY in the Vercel project settings and orders will show here.' })
+  const hasStripe = Boolean(process.env.STRIPE_SECRET_KEY)
+  if (!hasStripe && !dbReady()) return res.status(503).json({ setup: true, message: 'Stripe is not connected yet. Add STRIPE_SECRET_KEY in the Vercel project settings and orders will show here.' })
 
   try {
     if (req.method === 'GET') {
       const after = text(new URL(req.url, 'http://x').searchParams.get('after'), 120)
       if (after && !/^cs_[A-Za-z0-9_]+$/.test(after)) return res.status(400).json({ message: 'That is not an order.' })
-      const base = `checkout/sessions?limit=${PAGE}&status=complete${after ? `&starting_after=${after}` : ''}&expand[]=data.payment_intent.latest_charge`
-      // the lines of each order come along too; should Stripe refuse that, the order's own summary will do
-      let got = await stripe(`${base}&expand[]=data.line_items`)
-      if (!got.ok && got.status === 400) got = await stripe(base)
-      if (!got.ok) {
-        console.error('stripe refused the order list:', got.status, got.said && got.said.error && got.said.error.message)
-        return res.status(502).json({ message: got.status === 401 ? 'Stripe did not accept the key in STRIPE_SECRET_KEY.' : 'Stripe did not answer. Try again in a moment.' })
+      let list = []
+      let more = false
+      if (hasStripe) {
+        const base = `checkout/sessions?limit=${PAGE}&status=complete${after ? `&starting_after=${after}` : ''}&expand[]=data.payment_intent.latest_charge`
+        // the lines of each order come along too; should Stripe refuse that, the order's own summary will do
+        let got = await stripe(`${base}&expand[]=data.line_items`)
+        if (!got.ok && got.status === 400) got = await stripe(base)
+        if (!got.ok) {
+          console.error('stripe refused the order list:', got.status, got.said && got.said.error && got.said.error.message)
+          return res.status(502).json({ message: got.status === 401 ? 'Stripe did not accept the key in STRIPE_SECRET_KEY.' : 'Stripe did not answer. Try again in a moment.' })
+        }
+        list = Array.isArray(got.said.data) ? got.said.data : []
+        more = Boolean(got.said.has_more)
       }
-      const list = Array.isArray(got.said.data) ? got.said.data : []
-      return res.status(200).json({ orders: list.map(shape).filter((o) => !o.hidden), more: Boolean(got.said.has_more), next: list.length ? list[list.length - 1].id : null })
+      const orders = list.map(shape).filter((o) => !o.hidden)
+      // PayPal orders from the database, with the first page
+      if (!after && dbReady()) {
+        try {
+          const saved = await (await db()).collection('orders').find({ provider: 'paypal', status: { $in: ['paid', 'refunded'] }, hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(300).toArray()
+          orders.push(...saved.map(shapeSaved))
+          orders.sort((a, b) => b.created - a.created)
+        } catch (e) { console.error('paypal orders not read:', e.message) }
+      }
+      return res.status(200).json({ orders, more, next: list.length ? list[list.length - 1].id : null })
     }
 
     if (req.method === 'POST') {
       const body = req.body && typeof req.body === 'object' ? req.body : {}
       if (body.action === 'hide') {
         const pis = (Array.isArray(body.pis) ? body.pis : []).map((p) => text(p, 80)).filter((p) => /^pi_[A-Za-z0-9_]+$/.test(p))
-        if (!pis.length || pis.length > 100) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
+        const refs = (Array.isArray(body.refs) ? body.refs : []).map((r) => text(r, 80)).filter((r) => /^pp_[A-Z0-9]+$/.test(r))
+        if (!pis.length && !refs.length) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
+        if (pis.length + refs.length > 100) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
         const done = []
-        for (const pi of pis) {
+        for (const pi of hasStripe ? pis : []) {
           const got = await stripe(`payment_intents/${pi}`, { method: 'POST', body: 'metadata[jb_hidden]=1' })
           if (got.ok) done.push(pi)
         }
-        return res.status(done.length ? 200 : 502).json({ hidden: done, ...(done.length < pis.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
+        if (refs.length && dbReady()) {
+          await (await db()).collection('orders').updateMany({ ref: { $in: refs } }, { $set: { hidden: true } })
+          done.push(...refs)
+        }
+        return res.status(done.length ? 200 : 502).json({ hidden: done, ...(done.length < pis.length + refs.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
       }
       const id = text(body.id, 120)
-      if (!/^cs_[A-Za-z0-9_]+$/.test(id)) return res.status(400).json({ message: 'That is not an order.' })
       const status = STATUSES.includes(body.status) ? body.status : 'new'
       const carrier = CARRIERS.includes(body.carrier) ? body.carrier : ''
+      // a PayPal order: its posting details live in the database only
+      if (/^pp_[A-Z0-9]+$/.test(id)) {
+        if (!dbReady()) return res.status(503).json({ message: 'The database is not set up.' })
+        const track = { status, carrier, number: text(body.number, 80), note: text(body.note, 400), at: new Date().toISOString() }
+        await setTrack({ ref: id }, track)
+        return res.status(200).json({ track })
+      }
+      if (!/^cs_[A-Za-z0-9_]+$/.test(id)) return res.status(400).json({ message: 'That is not an order.' })
+      if (!hasStripe) return res.status(503).json({ message: 'Stripe is not connected.' })
       const found = await stripe(`checkout/sessions/${id}`)
       if (!found.ok) return res.status(404).json({ message: 'Stripe does not know that order.' })
       const pi = typeof found.said.payment_intent === 'string' ? found.said.payment_intent : found.said.payment_intent && found.said.payment_intent.id
@@ -126,7 +184,10 @@ export default async function handler(req, res) {
         return res.status(502).json({ message: 'Stripe did not save it. Try again in a moment.' })
       }
       const meta = saved.said.metadata || {}
-      return res.status(200).json({ track: { status: meta.ship_status || 'new', carrier: meta.ship_carrier || '', number: meta.ship_number || '', note: meta.ship_note || '', at: meta.ship_updated || '' } })
+      const track = { status: meta.ship_status || 'new', carrier: meta.ship_carrier || '', number: meta.ship_number || '', note: meta.ship_note || '', at: meta.ship_updated || '' }
+      // the buyer's account shows it too
+      try { await setTrack({ ref: id }, track) } catch (e) { console.error('tracking not copied to the database:', e.message) }
+      return res.status(200).json({ track })
     }
 
     return res.status(405).json({ message: 'Read orders with GET, save one with POST.' })
