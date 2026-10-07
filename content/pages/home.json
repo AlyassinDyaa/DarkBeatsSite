@@ -3,6 +3,49 @@
   "text": "Heroes, villains and horror icons, painted loud on a black page.",
   "primaryLabel": "See the work",
   "secondaryLabel": "Commission a piece",
+  "wall": [
+    {
+      "piece": "ghost-rider",
+      "column": "any"
+    },
+    {
+      "piece": "venom",
+      "column": "any"
+    },
+    {
+      "piece": "neon-rain",
+      "column": "any"
+    },
+    {
+      "piece": "night-of-the-living-dummy",
+      "column": "any"
+    },
+    {
+      "piece": "superman",
+      "column": "any"
+    },
+    {
+      "piece": "the-batman-who-laughs",
+      "column": "any"
+    },
+    {
+      "piece": "leon-s-kennedy",
+      "column": "any"
+    },
+    {
+      "piece": "daredevil",
+      "column": "any"
+    },
+    {
+      "piece": "daredevil-the-mark",
+      "column": "any"
+    },
+    {
+      "piece": "spider-man",
+      "column": "any"
+    }
+  ],
+  "wallSpeed": 100,
   "figure": {
     "src": "/uploads/hero-bust.webp",
     "layer": "behind",

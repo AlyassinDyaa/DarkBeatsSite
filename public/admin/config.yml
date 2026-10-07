@@ -169,6 +169,30 @@ collections:
           - { name: text, label: Sentence under the tagline, widget: text, required: false }
           - { name: primaryLabel, label: First button, widget: string, hint: 'Goes to the Work page.' }
           - { name: secondaryLabel, label: Second button, widget: string, hint: 'Goes to the Commissions page.' }
+          - name: wall
+            label: Pictures on the wall
+            label_singular: picture
+            widget: list
+            collapsed: true
+            minimize_collapsed: true
+            required: false
+            summary: '{{fields.piece}}{{fields.title}} ({{fields.column}} column)'
+            hint: 'The drifting columns of pictures beside the name. Drag to reorder: they fill the columns in this order. Pick a piece from the Shop (clicking it then shows its price and Buy button), or upload a picture of its own. Leave the list empty to show every Shop piece.'
+            fields:
+              - { name: piece, label: Shop piece, widget: relation, collection: work, value_field: '{{slug}}', search_fields: [title], display_fields: [title], required: false, hint: 'Pick one, or leave empty and upload a picture below.' }
+              - name: column
+                label: Column
+                widget: select
+                default: any
+                required: false
+                options:
+                  - { label: 'Any (the shortest)', value: any }
+                  - { label: 'Left', value: left }
+                  - { label: 'Middle', value: middle }
+                  - { label: 'Right', value: right }
+              - { name: picture, label: Or a picture of its own, widget: image, choose_url: false, required: false }
+              - { name: title, label: Its title, widget: string, required: false }
+          - { name: wallSpeed, label: How fast the wall drifts, widget: slider, min: 25, max: 300, step: 5, default: 100, unit: '%', required: false, hint: '100 is the usual pace; 200 twice as fast, 50 half.' }
           - name: figure
             label: Character
             widget: object
@@ -379,6 +403,7 @@ collections:
           - { name: blurb, label: One or two sentences about the site, widget: text, hint: 'Shown in the footer, and by search engines and link previews.' }
           - { name: hue, label: Brand colour, widget: slider, min: 0, max: 360, step: 1, default: 312, unit: '°', hint: 'Tints the whole site. 312 is the purple. 25 red, 55 orange, 145 green, 200 teal, 250 blue, 340 pink.' }
           - { name: logo, label: Logo, widget: image, choose_url: false, required: false, hint: 'Optional. A small square picture shown beside the name in the top bar.' }
+          - { name: icon, label: Browser tab icon, widget: image, choose_url: false, required: false, hint: 'The small picture in the browser tab, in bookmarks, and on a phone''s home screen when the site is added there. A square picture, at least 180×180 pixels; a PNG with a see-through background around a round shape looks round. Leave empty for the JBeatsArt logo.' }
           - { name: email, label: Contact email, widget: string }
           - { name: location, label: Location, widget: string, required: false }
           - { name: contactAction, label: Form service address, widget: string, required: false, hint: 'Optional. With an address from a form service (Formspree and the like) the forms send there. Empty, they open the visitor''s mail app.' }

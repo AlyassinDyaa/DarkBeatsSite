@@ -71,6 +71,26 @@ const thumbs = () => {
   return index
 }
 
+/* The browser tab icon chosen in the admin (Brand & contact → Browser tab icon) goes straight into
+   the page, so it shows before any script runs and in link previews. Without one, the logo files
+   in public/ stay. */
+const brandIcon = () => {
+  let base = '/'
+  return {
+    name: 'brand-icon',
+    configResolved(config) { base = config.base },
+    transformIndexHtml(html) {
+      let icon = ''
+      try { icon = JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')).icon || '' } catch { /* no brand file: keep the logo */ }
+      if (typeof icon !== 'string' || !icon.startsWith('/uploads/')) return html
+      const href = base.replace(/\/$/, '') + icon
+      return html
+        .replace('<link rel="icon" type="image/png" href="/favicon.png" />', `<link rel="icon" href="${href}" />`)
+        .replace('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />', `<link rel="apple-touch-icon" href="${href}" />`)
+    },
+  }
+}
+
 const adminBundle = () => ({
   name: 'admin-bundle',
   configureServer(server) {
@@ -121,7 +141,7 @@ const adminBundle = () => ({
 export default defineConfig({
   // Set VITE_BASE=/repo-name/ when deploying under a sub-path (GitHub project pages).
   base: process.env.VITE_BASE || '/',
-  plugins: [react(), spaFallback(), adminBundle()],
+  plugins: [react(), spaFallback(), brandIcon(), adminBundle()],
   // PORT lets a preview tool pick a free port; 5174 keeps clear of other sites' dev servers.
   server: { port: Number(process.env.PORT) || 5174 },
 })

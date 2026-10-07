@@ -38,7 +38,7 @@ The site rebuilds itself about a minute later. No code involved.
 | Work | Sections of the Work page and the pictures in each. A section can also fill itself from the Shop, so a finished piece is only uploaded once. Tick "Show on the home page" on up to 6 pictures |
 | Then and now | Sets of the same subject drawn years apart: a year and a picture for each drawing |
 | Conventions | Events, with dates and where to find the table |
-| Home page, Shop and Work pages, Commissions page, About page, Contact page | The words on each page, one short form per page: headings, introductions, buttons. The Home page form also holds the character beside the name and which layout the gallery opens in; the Commissions form holds open or closed, the offers and prices |
+| Home page, Shop and Work pages, Commissions page, About page, Contact page | The words on each page, one short form per page: headings, introductions, buttons. The Home page form also holds the wall of pictures beside the name (which pictures, in what order and column, and how fast it drifts), the character beside the name and which layout the gallery opens in; the Commissions form holds open or closed, the offers and prices |
 | Support page | The project's name, logo, character picture, text and art; the amounts fans can give and the **payment link** behind each; an optional goal bar; the short invitation on the home page |
 | Name, colour and contact | Site name, tagline, brand colour, logo, email, social links, footer text |
 | Shop and payments | Online purchases on or off, currency, what the buyer gets, delivery countries |

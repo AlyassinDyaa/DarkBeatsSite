@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useLenis } from './hooks/useLenis'
 import { applyBrandHue } from './hooks/useHue'
-import { brand, previewing, shows } from './data/site'
+import { asset, brand, previewing, shows } from './data/site'
 import { useReducedMotion } from './hooks/useMedia'
 import Preloader from './components/Preloader'
 import Nav from './components/Nav'
@@ -25,6 +25,12 @@ export default function App() {
   useEffect(applyBrandHue, [])
   // what search engines and link previews say about the site: the blurb from "Name, colour and contact" in the admin
   useEffect(() => { if (brand.blurb) document.querySelector('meta[name="description"]')?.setAttribute('content', brand.blurb) }, [])
+  // the browser tab icon chosen in the admin (the build already writes it into the page; this also
+  // covers an admin looking at a change saved since the last build)
+  useEffect(() => {
+    if (!brand.icon) return
+    for (const link of document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')) { link.href = asset(brand.icon); link.removeAttribute('type') }
+  }, [])
   return (
     <>
       <Preloader onDone={() => setReady(true)} />

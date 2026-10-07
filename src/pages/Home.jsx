@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { asset, brand, commissions, day, events, galleryHome, hero, home, latest, marquee, nameParts, redraws, shows, support, work } from '../data/site'
+import { asset, brand, commissions, day, events, galleryHome, hero, heroWall, home, latest, marquee, nameParts, redraws, shows, support, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Magnetic from '../components/Magnetic'
@@ -71,7 +71,7 @@ function Hero({ onOpen }) {
           </motion.div>
         </div>
         <motion.div className="hero-wall" style={{ x: wallX, y: wallY }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1, duration: 1.2 }}>
-          <PosterWall pieces={work} onOpen={onOpen} />
+          <PosterWall pieces={heroWall} onOpen={onOpen} speed={hero.wallSpeed} />
         </motion.div>
       </div>
     </section>
@@ -118,10 +118,11 @@ function Latest({ onOpen }) {
 
 export default function Home() {
   const [sel, setSel] = useState(null)
+  const [wallSel, setWallSel] = useState(null) // a picture opened from the wall in the top
   const [view, setView] = useGalleryView()
   return (
     <Page>
-      <Hero onOpen={setSel} />
+      <Hero onOpen={setWallSel} />
       {shows('home', 'ticker') && <Marquee items={marquee} />}
 
       {shows('home', 'latest') && latest.length > 0 && <Latest onOpen={setSel} />}
@@ -225,6 +226,7 @@ export default function Home() {
       )}
 
       <Lightbox items={work} sel={sel} setSel={setSel} />
+      <Lightbox items={heroWall} sel={wallSel} setSel={setWallSel} />
     </Page>
   )
 }

@@ -32,6 +32,9 @@ export let nav
 export let work
 /* The categories that have at least one piece, in the order they first appear. */
 export let categories
+/* The drifting wall of pictures in the home page's top: the pictures chosen for it in the admin, in
+   their order, each either a Shop piece or a picture of its own; with none chosen, every Shop piece. */
+export let heroWall
 /* Home shows up to six: the pieces ticked "Show on the home page", or simply the newest six. */
 export let latest
 /* The gallery: the artist makes sections and adds pictures to each. A section can also pull in
@@ -61,7 +64,7 @@ function assemble(content) {
   const page = (name) => content[`content/pages/${name}.json`] || {}
   const site = (name) => content[`content/site/${name}.json`] || {}
   const { social: links, footerLine, footerFine, ...name } = site('brand')
-  const { kicker, text, primaryLabel, secondaryLabel, figure, marquee: words, ...sections } = page('home')
+  const { kicker, text, primaryLabel, secondaryLabel, figure, wall, wallSpeed, marquee: words, ...sections } = page('home')
   const lists = page('lists')
   // every file of one folder, each with the name of its file
   const folder = (name) => Object.entries(content)
@@ -71,7 +74,7 @@ function assemble(content) {
   // Every piece of text has a built-in wording, so a content file that predates a field still works.
   visibility = site('visibility')
   brand = { name: 'JBeatsArt', hue: 312, ...name }
-  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, ...given({ kicker, text, primaryLabel, secondaryLabel, figure }) }
+  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, wallSpeed: 100, ...given({ kicker, text, primaryLabel, secondaryLabel, figure, wallSpeed }) }
   marquee = words || []
   home = {
     latestLabel: 'Fresh ink', latestTitle: 'Latest pieces',
@@ -128,6 +131,15 @@ function assemble(content) {
   categories = [...new Set(work.map((p) => p.category).filter(Boolean))]
   const picked = work.filter((p) => p.featured)
   latest = (picked.length ? picked : work).slice(0, 6)
+
+  const placed = (Array.isArray(wall) ? wall : []).map((w) => {
+    if (!w) return null
+    const column = ['left', 'middle', 'right'].includes(w.column) ? w.column : 'auto'
+    const piece = w.piece && work.find((p) => p.slug === w.piece) // a hidden or deleted piece drops out
+    if (piece) return { ...piece, column }
+    return w.picture ? { title: w.title || '', src: w.picture, column } : null
+  }).filter(Boolean)
+  heroWall = placed.length ? placed : work.map((p) => ({ ...p, column: 'auto' }))
 
   // a section's "also show pieces from Work" choice: none, every piece, or one category
   const fromWork = (from) => (!from || from === 'none' ? [] : work)
