@@ -2,7 +2,7 @@
   "title": "Finished pieces",
   "description": "Everything from the Work page, uncropped.",
   "order": 1,
-  "from": "all",
+  "from": "none",
   "hidden": false,
   "items": [
     {
