@@ -179,8 +179,37 @@ collections:
         fields:
           - { name: kicker, label: Small line above the name, widget: string, required: false }
           - { name: text, label: Sentence under the tagline, widget: text, required: false }
-          - { name: primaryLabel, label: First button, widget: string, hint: 'Goes to the Work page.' }
-          - { name: secondaryLabel, label: Second button, widget: string, hint: 'Goes to the Commissions page.' }
+          - name: buttons
+            label: Buttons under the name
+            label_singular: button
+            widget: list
+            collapsed: false
+            required: false
+            max: 3
+            summary: '{{fields.label}} ({{fields.page}})'
+            hint: 'Up to three, from the left in this order; one button sits on the left by itself. Drag to reorder. A button to a page that is switched off is left out.'
+            fields:
+              - { name: label, label: Wording, widget: string }
+              - name: page
+                label: Goes to
+                widget: select
+                default: work
+                options:
+                  - { label: 'Work page', value: work }
+                  - { label: 'Shop', value: shop }
+                  - { label: 'Commissions', value: commissions }
+                  - { label: 'About', value: about }
+                  - { label: 'Contact', value: contact }
+                  - { label: 'Support', value: support }
+                  - { label: 'Another address', value: link }
+              - name: style
+                label: Look
+                widget: select
+                default: filled
+                options:
+                  - { label: 'Filled (purple)', value: filled }
+                  - { label: 'Outline', value: outline }
+              - { name: url, label: Address, widget: string, required: false, hint: 'Only for "Another address": the full address, starting with https://' }
           - name: wall
             label: Pictures on the wall
             label_singular: picture
@@ -452,6 +481,22 @@ collections:
           - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
           - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'One line under every price and on the payment page, for example "A3 print, signed."' }
           - { name: buttonLabel, label: Wording of the Buy button, widget: string }
+          - name: pricePlace
+            label: Where the price shows on a card
+            widget: select
+            default: corner
+            required: false
+            options:
+              - { label: 'Top corner of the picture', value: corner }
+              - { label: 'Under the picture, beside the title', value: below }
+          - name: tagPlace
+            label: Where the tags show (New, Sale, Sold out)
+            widget: select
+            default: corner
+            required: false
+            options:
+              - { label: 'Top corner of the picture', value: corner }
+              - { label: 'Under the title', value: below }
           - { name: shipping, label: Ask for a delivery address, widget: boolean, default: true, required: false, hint: 'On for anything you post. Off for downloads.' }
           - { name: countries, label: Countries you post to, widget: list, required: false, hint: 'Two-letter country codes, separated by commas: AU, NZ, US, CA, GB.' }
           - { name: thanksTitle, label: Heading, widget: string, required: false }

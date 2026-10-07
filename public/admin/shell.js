@@ -52,8 +52,8 @@
     events: { groups: { name: 'The event', order: 'Rarely needed' }, half: ['name', 'when', 'role', 'place', 'order', 'hidden'] },
     'pages/home': {
       groups: { kicker: 'Top of the page', wall: 'Wall of pictures', figure: 'Character beside the name', marquee: 'Moving band of words', latestLabel: 'Latest pieces', galleryLabel: 'Work', redrawLabel: 'Then and now', commissionsTitle: 'Commissions', eventsLabel: 'Conventions' },
-      half: ['primaryLabel', 'secondaryLabel', 'latestLabel', 'latestTitle', 'galleryLabel', 'galleryTitle', 'redrawLabel', 'redrawTitle', 'commissionsTitle', 'commissionsButton', 'eventsLabel', 'eventsTitle'],
-      inner: ['layer', 'ground', 'size', 'x', 'y'],
+      half: ['latestLabel', 'latestTitle', 'galleryLabel', 'galleryTitle', 'redrawLabel', 'redrawTitle', 'commissionsTitle', 'commissionsButton', 'eventsLabel', 'eventsTitle'],
+      inner: ['layer', 'ground', 'size', 'x', 'y', 'page', 'style'],
     },
     'pages/lists': { groups: { workLabel: 'Shop page', galleryLabel: 'Work page' }, half: ['workLabel', 'workTitle', 'galleryLabel', 'galleryTitle'] },
     'pages/commissions': {
@@ -67,7 +67,7 @@
       half: ['label', 'title', 'logo', 'figure', 'aboutLabel', 'aboutTitle', 'artLabel', 'artTitle', 'supportLabel', 'supportTitle', 'customLabel', 'customUrl', 'soonTitle', 'soonText', 'goalSign', 'goalLabel', 'goalRaised', 'goalTarget'],
     },
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
-    'site/shop': { groups: { currency: 'What you sell', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'thanksTitle', 'thanksText'] },
+    'site/shop': { groups: { currency: 'What you sell', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 

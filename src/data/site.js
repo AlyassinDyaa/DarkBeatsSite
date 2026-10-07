@@ -64,7 +64,7 @@ function assemble(content) {
   const page = (name) => content[`content/pages/${name}.json`] || {}
   const site = (name) => content[`content/site/${name}.json`] || {}
   const { social: links, footerLine, footerFine, ...name } = site('brand')
-  const { kicker, text, primaryLabel, secondaryLabel, figure, wall, wallSpeed, wallAddNew, marquee: words, ...sections } = page('home')
+  const { kicker, text, primaryLabel, secondaryLabel, buttons, figure, wall, wallSpeed, wallAddNew, marquee: words, ...sections } = page('home')
   const lists = page('lists')
   // every file of one folder, each with the name of its file
   const folder = (name) => Object.entries(content)
@@ -74,7 +74,24 @@ function assemble(content) {
   // Every piece of text has a built-in wording, so a content file that predates a field still works.
   visibility = site('visibility')
   brand = { name: 'JBeatsArt', hue: 312, ...name }
-  hero = { primaryLabel: 'See the work', secondaryLabel: 'Commission a piece', figure: {}, wallSpeed: 100, ...given({ kicker, text, primaryLabel, secondaryLabel, figure, wallSpeed }) }
+  hero = { figure: {}, wallSpeed: 100, ...given({ kicker, text, figure, wallSpeed }) }
+  // The buttons under the name, chosen in the admin: up to three, each to one of the site's pages
+  // (left out while that page is switched off) or to another address.
+  const PAGES = { work: ['/work', 'gallery'], shop: ['/shop', 'work'], commissions: ['/commissions'], about: ['/about'], contact: ['/contact'], support: ['/support'] }
+  const chosen = Array.isArray(buttons) ? buttons : [
+    { label: primaryLabel || 'See the work', page: 'work', style: 'filled' },
+    { label: secondaryLabel || 'Commission a piece', page: 'commissions', style: 'outline' },
+  ]
+  hero.buttons = chosen.map((b) => {
+    if (!b || !String(b.label || '').trim()) return null
+    const look = b.style === 'outline' ? 'outline' : 'filled'
+    if (b.page === 'link') {
+      const url = String(b.url || '').trim()
+      return /^https?:\/\//i.test(url) ? { label: b.label, href: url, external: true, look } : null
+    }
+    const [to, key] = PAGES[b.page] || PAGES.work
+    return shows('pages', key || to.slice(1)) ? { label: b.label, href: to, look } : null
+  }).filter(Boolean).slice(0, 3)
   marquee = words || []
   home = {
     latestLabel: 'Fresh ink', latestTitle: 'Latest pieces',
@@ -107,7 +124,7 @@ function assemble(content) {
     ...given(page('support')),
   }
   shop = {
-    enabled: false, currency: 'aud', buttonLabel: 'Buy', shipping: true,
+    enabled: false, currency: 'aud', buttonLabel: 'Buy', shipping: true, pricePlace: 'corner', tagPlace: 'corner',
     thanksTitle: 'Thank you.', thanksText: 'Your order is in. A receipt is on its way to your email.',
     ...given(site('shop')),
   }

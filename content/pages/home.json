@@ -1,8 +1,18 @@
 {
   "kicker": "Jordan Beattie · Gold Coast, Australia",
   "text": "Heroes, villains and horror icons, painted loud on a black page.",
-  "primaryLabel": "See the work",
-  "secondaryLabel": "Commission a piece",
+  "buttons": [
+    {
+      "label": "See the work",
+      "page": "work",
+      "style": "filled"
+    },
+    {
+      "label": "Commission a piece",
+      "page": "commissions",
+      "style": "outline"
+    }
+  ],
   "wall": [
     {
       "piece": "ghost-rider",

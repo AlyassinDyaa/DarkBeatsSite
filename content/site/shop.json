@@ -3,6 +3,8 @@
   "currency": "aud",
   "note": "A3 print, signed.",
   "buttonLabel": "Buy this print",
+  "pricePlace": "corner",
+  "tagPlace": "corner",
   "shipping": true,
   "countries": [
     "AU",

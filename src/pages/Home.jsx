@@ -65,10 +65,17 @@ function Hero({ onOpen }) {
           </motion.h1>
           <motion.p className="hero-tag" {...rise(1.35)}>{brand.tagline}</motion.p>
           <motion.p className="lead" {...rise(1.45)}>{hero.text}</motion.p>
-          <motion.div className="hero-actions" {...rise(1.55)}>
-            {shows('pages', 'gallery') && <Magnetic><Link className="btn" to="/work">{hero.primaryLabel} <span className="arrow">→</span></Link></Magnetic>}
-            {shows('pages', 'commissions') && <Magnetic><Link className="btn ghost" to="/commissions">{hero.secondaryLabel}</Link></Magnetic>}
-          </motion.div>
+          {hero.buttons.length > 0 && (
+            <motion.div className="hero-actions" {...rise(1.55)}>
+              {hero.buttons.map((b, i) => (
+                <Magnetic key={`${b.href}-${i}`}>
+                  {b.external
+                    ? <a className={`btn ${b.look === 'outline' ? 'ghost' : ''}`} href={b.href} target="_blank" rel="noopener noreferrer">{b.label} <span className="arrow">↗</span></a>
+                    : <Link className={`btn ${b.look === 'outline' ? 'ghost' : ''}`} to={b.href}>{b.label}{b.look === 'filled' && <> <span className="arrow">→</span></>}</Link>}
+                </Magnetic>
+              ))}
+            </motion.div>
+          )}
         </div>
         <motion.div className="hero-wall" style={{ x: wallX, y: wallY }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.1, duration: 1.2 }}>
           <PosterWall pieces={heroWall} onOpen={onOpen} speed={hero.wallSpeed} />
