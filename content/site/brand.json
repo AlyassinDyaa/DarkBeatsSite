@@ -1,13 +1,7 @@
 {
-  "name": "JBeatsArt",
   "artist": "Jordan Beattie",
-  "tagline": "I draw things.",
-  "blurb": "Digital illustration by Jordan Beattie. Heroes, villains and the things that go bump in the night.",
-  "hue": 312,
-  "logo": "/uploads/logo.webp",
-  "email": "Jbeatsart@outlook.com",
-  "location": "Gold Coast, Australia",
-  "contactAction": "",
+  "logo": "/uploads/logo111111111.png",
+  "name": "JBeatsArt",
   "social": [
     {
       "label": "Instagram",
@@ -20,6 +14,12 @@
       "url": "https://www.threads.net/@jbeatsart"
     }
   ],
+  "tagline": "I draw things.",
   "footerLine": "Keep drawing.",
-  "footerFine": "Characters shown in fan art belong to their owners."
+  "footerFine": "Characters shown in fan art belong to their owners.",
+  "location": "Gold Coast, Australia",
+  "contactAction": "",
+  "hue": 312,
+  "blurb": "Digital illustration by Jordan Beattie. Heroes, villains and the things that go bump in the night.",
+  "email": "Jbeatsart@outlook.com"
 }
