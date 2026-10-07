@@ -4,5 +4,11 @@
   "order": 1,
   "from": "all",
   "hidden": false,
-  "items": []
+  "items": [
+    {
+      "home": true,
+      "src": "/uploads/space-boi.webp",
+      "title": "Space kook"
+    }
+  ]
 }
