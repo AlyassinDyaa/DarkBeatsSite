@@ -1,6 +1,8 @@
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import nodemailer from 'nodemailer'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
 
 /* What the customer-account functions share (the leading underscore keeps Vercel from serving it).
@@ -117,7 +119,8 @@ export const forgetTries = async (key) => (await db()).collection('attempts').de
      Emails then come from that address; handy for testing, and fine for small volumes.
    - Resend (resend.com): RESEND_API_KEY, sending from an address on a domain verified there.
    MAIL_FROM is the sender as people see it ("JBeatsArt <hello@...>"); MAIL_REPLY_TO, if set,
-   is where replies go. With neither set, on this computer the email is printed instead. */
+   is where replies go. With neither set, on this computer the email is printed instead.
+   An email is { to, subject, kicker, title, lines, button: { label, url }, picture: { src, title, text }, after }. */
 export const siteUrl = (req) => (process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL ? '' : `http://${req.headers.host}`)).replace(/\/$/, '')
 const smtpReady = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
 export const mailReady = () => smtpReady() || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM)
@@ -129,20 +132,82 @@ const smtp = () => transport || (transport = nodemailer.createTransport({
   auth: { user: process.env.SMTP_USER, pass: String(process.env.SMTP_PASS).replace(/\s+/g, '') },
 }))
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-export const sendMail = async ({ to, subject, lines, button }) => {
-  const brand = process.env.MAIL_BRAND || 'JBeatsArt'
-  const text = [...lines, button ? `\n${button.label}: ${button.url}` : '', '', `— ${brand}`].join('\n')
+// the site's name, tagline and links, from Site → Brand & contact in the admin
+const brandInfo = () => { try { return JSON.parse(readFileSync(join(process.cwd(), 'content/site/brand.json'), 'utf8')) || {} } catch { return {} } }
+/* Where the pictures in an email are fetched from: the live site (an inbox cannot reach this
+   computer), so they show once the site is deployed. */
+const LIVE = 'https://jbeatsart.vercel.app'
+const assetHost = () => {
+  const s = String(process.env.SITE_URL || '').replace(/\/$/, '')
+  if (/^https:\/\//.test(s)) return s
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  return LIVE
+}
+const pictureUrl = (path) => (/^https?:\/\//.test(path) ? path : `${assetHost()}${path.startsWith('/') ? '' : '/'}${path}`)
+
+/* Every email in the site's own look: a dark purple band with the logo and the name (the last
+   part in the brand purple), a dark panel with a small slanted tag, a big tall heading, the words,
+   a picture when there is one, a purple button with a hard offset shadow, the link written out
+   under it, and a quiet footer. Built from tables with the styles on each piece, the way email
+   apps need it. */
+const DISPLAY = "Anton, Impact, 'Arial Narrow Bold', 'Helvetica Neue', Arial, sans-serif"
+const BODY = "'Helvetica Neue', Helvetica, Arial, sans-serif"
+const MONO = "'JetBrains Mono', Consolas, 'Courier New', monospace"
+const C = { page: '#09070d', panel: '#15101c', band: '#3d0a57', line: '#2c2236', accent: '#c565f8', ink: '#0a0710', text: '#ddd6e4', soft: '#9b90a6', gold: '#ffd34d' }
+export const emailHtml = ({ subject, kicker, title, lines = [], button, picture, after }) => {
+  const b = brandInfo()
+  const name = String(b.name || 'JBeatsArt').trim()
+  // "JBeatsArt" reads JBEATS + ART, as the site's wordmark does
+  const cut = /^(.*?)(Art|ART|art)$/.exec(name)
+  const [first, second] = cut && cut[1] ? [cut[1], cut[2]] : [name, '']
+  const insta = (Array.isArray(b.social) ? b.social : []).find((x) => /instagram/i.test(x.label || ''))
+  const home = String(process.env.SITE_URL || assetHost()).replace(/\/$/, '')
+  const para = (t) => `<p style="margin:0 0 14px;font-family:${BODY};font-size:16px;line-height:1.65;color:${C.text};">${esc(t)}</p>`
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"><title>${esc(subject)}</title></head>
+<body style="margin:0;padding:0;background:${C.page};">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page};">${esc(lines[1] || lines[0] || '')}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};"><tr><td align="center" style="padding:28px 12px 36px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+  <tr><td style="background:${C.band};background-image:linear-gradient(120deg,#540075,#2a0a3d 70%);border:1px solid ${C.line};border-bottom:3px solid ${C.accent};padding:16px 22px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="vertical-align:middle;"><img src="${esc(pictureUrl('/email/logo.png'))}" width="44" height="44" alt="" style="display:block;width:44px;height:44px;border-radius:50%;border:2px solid ${C.accent};background:${C.page};"></td>
+      <td style="vertical-align:middle;padding-left:12px;font-family:${DISPLAY};font-size:24px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#ffffff;line-height:1;">${esc(first)}${second ? `<span style="color:${C.accent};">${esc(second)}</span>` : ''}</td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="background:${C.panel};border:1px solid ${C.line};border-top:0;padding:30px 26px 30px;">
+    ${kicker ? `<span style="display:inline-block;padding:5px 11px 4px;background:${C.accent};font-family:${MONO};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${C.ink};">${esc(kicker)}</span>` : ''}
+    <h1 style="margin:16px 0 18px;font-family:${DISPLAY};font-size:36px;line-height:1.02;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:#f4eff8;">${esc(title || subject)}</h1>
+    ${lines.map(para).join('\n    ')}
+    ${picture ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 22px;"><tr>
+      <td style="vertical-align:middle;"><img src="${esc(pictureUrl(picture.src))}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;border-radius:50%;border:3px solid ${C.gold};"></td>
+      <td style="vertical-align:middle;padding-left:14px;font-family:${BODY};font-size:14px;line-height:1.55;color:${C.text};"><strong style="display:block;margin-bottom:2px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:${C.gold};">${esc(picture.title)}</strong>${esc(picture.text)}</td>
+    </tr></table>` : ''}
+    ${button ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 6px;"><tr><td style="background:${C.accent};border-right:6px solid #540075;border-bottom:6px solid #540075;">
+      <a href="${esc(button.url)}" style="display:inline-block;padding:14px 26px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:${C.ink};text-decoration:none;">${esc(button.label)} &rarr;</a>
+    </td></tr></table>
+    <p style="margin:18px 0 0;font-family:${BODY};font-size:12px;line-height:1.6;color:${C.soft};">Button not working? Paste this into your browser:<br><a href="${esc(button.url)}" style="color:${C.accent};word-break:break-all;">${esc(button.url)}</a></p>` : ''}
+    ${after ? `<p style="margin:22px 0 0;padding-top:16px;border-top:1px dashed ${C.line};font-family:${BODY};font-size:13px;line-height:1.6;color:${C.soft};">${esc(after)}</p>` : ''}
+  </td></tr>
+  <tr><td align="center" style="padding:20px 10px 0;font-family:${BODY};font-size:12px;line-height:1.7;color:#6f6578;">
+    ${b.tagline ? `${esc(b.tagline)}${b.location ? ` &middot; ${esc(b.location)}` : ''}<br>` : ''}<a href="${esc(home)}" style="color:${C.soft};text-decoration:underline;">${esc(home.replace(/^https?:\/\//, ''))}</a>${insta ? ` &middot; <a href="${esc(insta.url)}" style="color:${C.soft};text-decoration:underline;">Instagram</a>` : ''}
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`
+}
+
+export const sendMail = async (mail) => {
+  const { to, subject, lines = [], button, after } = mail
+  const brand = process.env.MAIL_BRAND || brandInfo().name || 'JBeatsArt'
+  const text = [mail.title || subject, '', ...lines, mail.picture ? `\n${mail.picture.title}: ${mail.picture.text}` : '', button ? `\n${button.label}: ${button.url}` : '', after ? `\n${after}` : '', '', `— ${brand}`].join('\n')
   if (!mailReady()) {
     // on this computer the link is printed instead, so the whole journey can be tried without email
     if (!process.env.VERCEL) console.log(`\n[email to ${to}] ${subject}\n${text}\n`)
     else console.warn('email not sent: no SMTP_* or RESEND_API_KEY / MAIL_FROM set')
     return false
   }
-  const html = `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1b1622">
-    <p style="font-size:13px;letter-spacing:2px;text-transform:uppercase;color:#8b3fd1;margin:0 0 18px">${esc(brand)}</p>
-    ${lines.map((l) => `<p style="font-size:16px;line-height:1.55;margin:0 0 14px">${esc(l)}</p>`).join('')}
-    ${button ? `<p style="margin:26px 0"><a href="${esc(button.url)}" style="background:#b55cf0;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">${esc(button.label)}</a></p><p style="font-size:13px;color:#6b6475">Or paste this into your browser: ${esc(button.url)}</p>` : ''}
-  </div>`
+  const html = emailHtml(mail)
   const from = process.env.MAIL_FROM || `${brand} <${process.env.SMTP_USER}>`
   const replyTo = process.env.MAIL_REPLY_TO || undefined
   if (smtpReady()) {
@@ -168,6 +233,7 @@ export const publicUser = (u) => (u ? {
   createdAt: u.createdAt,
   lastVisit: u.prevLogin || u.createdAt, // for "new since your last visit"
   avatar: typeof u.avatar === 'string' ? u.avatar : '',
+  card: typeof u.card === 'string' ? u.card : '', // the membership card design they chose (a reward)
   memberNo: Number(u.memberNo) || null, // the order they signed up in: the first customer is 1
   saved: Array.isArray(u.saved) ? u.saved : [],
   cart: Array.isArray(u.cart) ? u.cart : [],

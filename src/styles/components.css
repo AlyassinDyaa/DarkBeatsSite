@@ -1384,3 +1384,83 @@ a.buy-btn { text-decoration: none; }
   .acc-orow-chev { display: none; }
   .acc-orow-pics { grid-row: span 2; }
 }
+
+/* =====================================================================
+   Rewards: pictures, card designs and discounts customers earn
+   ===================================================================== */
+/* in the picture picker: reward pictures, gold-ringed; locked ones grey with a padlock */
+.acct-pick-group.is-reward { margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--line-strong); }
+.acct-pick-group.is-reward .acct-pick-label em { background: #ffd34d; color: #0a0710; }
+.acct-pick-one.is-reward { border-color: #ffd34d; }
+.acct-pick-one.is-reward::after { content: '★'; position: absolute; right: -2px; bottom: -2px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-size: 0.62rem; background: #ffd34d; color: #0a0710; box-shadow: 0 0 0 2px var(--bg); }
+.acct-pick-one.is-reward:disabled { cursor: not-allowed; border-color: var(--line-strong); transform: none; }
+.acct-pick-one.is-reward:disabled img { filter: grayscale(1) brightness(0.5); }
+.acct-pick-one.is-reward:disabled::after { content: '🔒'; background: #1d1626; font-size: 0.56rem; }
+.acct-earn { display: grid; gap: 6px; margin: 12px 0 0; padding: 12px 14px; list-style: none; border: 1px dashed var(--line-strong); font-size: 0.9rem; color: var(--fg-dim); }
+.acct-earn li { display: flex; align-items: center; gap: 10px; }
+.acct-earn i { font-style: normal; font-size: 0.8rem; }
+
+/* the membership card designs: ink, gold foil, chrome, or a picture across the card */
+.acc-card3d.is-ink { background: radial-gradient(120% 90% at 100% 0%, oklch(0.4 0.17 var(--h) / 0.55), transparent 60%), linear-gradient(140deg, #1d1a22, #050407 70%); box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--accent); }
+.acc-card3d.is-gold, .acc-card3d.is-chrome { color: #0a0710; }
+.acc-card3d.is-gold { background: linear-gradient(135deg, #fff1b8 0%, #f2c94c 28%, #b8860b 55%, #f6d77a 78%, #c9971f 100%); }
+.acc-card3d.is-chrome { background: linear-gradient(135deg, #ffffff 0%, #c9ccd2 30%, #8d929b 55%, #eef0f3 78%, #a4a9b1 100%); }
+.acc-card3d.is-gold .acc-card3d-foot small, .acc-card3d.is-chrome .acc-card3d-foot small { color: rgba(10, 7, 16, 0.6); }
+.acc-card3d.is-gold .acc-card3d-foot span:last-child { color: #5b1a00; }
+.acc-card3d.is-chrome .acc-card3d-foot span:last-child { color: #540075; }
+.acc-card3d.is-gold .acc-card3d-mark, .acc-card3d.is-chrome .acc-card3d-mark { -webkit-text-stroke-color: rgba(10, 7, 16, 0.14); }
+.acc-card3d.is-gold .acc-card3d-brand .wordmark, .acc-card3d.is-chrome .acc-card3d-brand .wordmark { color: #0a0710; }
+.acc-card3d.is-gold .acc-card3d-kind, .acc-card3d.is-chrome .acc-card3d-kind { background: #0a0710; color: #fff; }
+.acc-card3d.has-art { background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.8)), var(--card-art) center 25% / cover, #09070d; color: var(--fg); }
+
+/* choosing the card design (Details) */
+.acct-cards { margin-top: 4px; }
+.acct-cards > p { margin: 8px 0 14px; color: var(--fg-dim); }
+.acct-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.acct-card-pick { display: grid; gap: 6px; justify-items: start; padding: 10px; text-align: left; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.02); color: var(--fg); cursor: pointer; transition: border-color 0.2s, transform 0.2s; }
+.acct-card-pick:hover:not(:disabled) { border-color: var(--fg-mute); transform: translateY(-2px); }
+.acct-card-pick.on { border-color: var(--accent); box-shadow: 0 0 0 3px oklch(0.76 0.19 var(--h) / 0.3); }
+.acct-card-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acct-card-pick:disabled { cursor: not-allowed; }
+.acct-card-pick:disabled .acct-card-mini { filter: grayscale(1) brightness(0.5); }
+.acct-card-mini { position: relative; display: block; width: 100%; aspect-ratio: 1.586; overflow: hidden; border-radius: 8px; background: radial-gradient(120% 90% at 100% 0%, oklch(0.55 0.22 var(--h) / 0.8), transparent 60%), linear-gradient(140deg, oklch(0.3 0.12 var(--h)), #0e0b14 70%); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.acct-card-mini b { position: absolute; right: 8px; bottom: -2px; font-family: var(--display); font-weight: 400; font-size: 2rem; line-height: 1; opacity: 0.35; transform: skewX(-12deg); }
+.acct-card-mini i { position: absolute; left: 10px; top: 12px; width: 18px; height: 13px; border-radius: 3px; background: linear-gradient(135deg, oklch(0.85 0.1 calc(var(--h) + 60)), oklch(0.6 0.16 var(--h))); }
+.acct-card-mini.is-ink { background: radial-gradient(120% 90% at 100% 0%, oklch(0.4 0.17 var(--h) / 0.55), transparent 60%), linear-gradient(140deg, #1d1a22, #050407 70%); box-shadow: inset 0 0 0 1px var(--accent); }
+.acct-card-mini.is-gold { background: linear-gradient(135deg, #fff1b8, #f2c94c 30%, #b8860b 58%, #f6d77a); color: #0a0710; }
+.acct-card-mini.is-chrome { background: linear-gradient(135deg, #ffffff, #c9ccd2 30%, #8d929b 58%, #eef0f3); color: #0a0710; }
+.acct-card-mini.is-gold i, .acct-card-mini.is-chrome i { background: rgba(10, 7, 16, 0.25); }
+.acct-card-mini.has-art { background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.6)), var(--card-art) center 25% / cover; }
+.acct-card-name { font-family: var(--display); font-weight: 400; font-size: 1rem; letter-spacing: 0.03em; text-transform: uppercase; }
+.acct-card-pick small { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-mute); }
+.acct-card-pick.on small { color: var(--accent); }
+
+/* the Rewards tab: how far they have come, then every reward */
+.acct-progress { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.acct-progress span { display: inline-flex; align-items: baseline; gap: 8px; padding: 10px 14px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.02); font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-mute); }
+.acct-progress b { font-family: var(--display); font-weight: 400; font-size: 1.4rem; letter-spacing: 0; color: var(--fg); }
+.acct-reward-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.acct-reward { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; align-items: center; padding: 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+.acct-reward.is-earned { border-color: rgba(255, 211, 77, 0.6); box-shadow: inset 4px 0 0 #ffd34d; background: rgba(255, 211, 77, 0.04); }
+.acct-reward-art { display: grid; place-items: center; }
+.acct-reward-art .acct-pick-pic { position: relative; inset: auto; display: block; width: 80px; height: 80px; box-shadow: 0 0 0 3px var(--line-strong); }
+.acct-reward.is-earned .acct-reward-art .acct-pick-pic { box-shadow: 0 0 0 3px #ffd34d; }
+.acct-reward-art .acct-pick-pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.acct-reward-art .acct-card-mini { width: 96px; }
+.acct-reward:not(.is-earned) .acct-reward-art { filter: grayscale(1) brightness(0.55); }
+.acct-reward-off { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 30% 25%, oklch(0.78 0.18 var(--h)), oklch(0.45 0.2 var(--h)) 70%); color: #fff; line-height: 0.9; transform: rotate(-8deg); box-shadow: 5px 5px 0 #3d0a57; }
+.acct-reward-off b { font-family: var(--display); font-weight: 400; font-size: 1.7rem; }
+.acct-reward-off small { font-family: var(--mono); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.acct-reward-body { display: grid; gap: 4px; min-width: 0; justify-items: start; }
+.acct-reward-kind { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); }
+.acct-reward-body strong { font-family: var(--display); font-weight: 400; font-size: 1.3rem; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.05; }
+.acct-reward-how { font-size: 0.9rem; color: var(--fg-dim); }
+.acct-reward.is-earned .acct-reward-how { color: #ffd34d; font-weight: 600; }
+.acct-meter { position: relative; width: 100%; height: 22px; margin-top: 4px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); overflow: hidden; }
+.acct-meter i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, oklch(0.45 0.2 var(--h)), var(--accent)); }
+.acct-meter small { position: relative; display: block; padding: 4px 8px 0; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: #fff; }
+.acct-code { display: grid; grid-template-columns: auto auto; gap: 6px 10px; align-items: center; margin-top: 6px; }
+.acct-code code { padding: 8px 12px; border: 2px dashed #ffd34d; font-family: var(--mono); font-size: 0.95rem; font-weight: 700; letter-spacing: 0.08em; color: var(--fg); background: rgba(255, 211, 77, 0.08); }
+.acct-code small { grid-column: 1 / -1; font-size: 0.8rem; color: var(--fg-mute); }
+.acct-reward-wait { font-size: 0.82rem; color: var(--fg-mute); }
+@media (max-width: 479px) { .acct-reward { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; } .acct-reward-art .acct-pick-pic { width: 64px; height: 64px; } .acct-reward-art .acct-card-mini { width: 72px; } .acct-reward-off { width: 66px; height: 66px; } }

@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { paidWithOf, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { ours, paidWithOf, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -45,8 +45,8 @@ export default async function handler(req, res) {
 
   try {
     const o = event.data && event.data.object
-    // a checkout another site made in a shared Stripe account says so (metadata site): none of this site's business
-    if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o && o.payment_status === 'paid' && !(o.metadata && o.metadata.site)) {
+    // a checkout of another site sharing the Stripe account is none of this site's business
+    if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o && o.payment_status === 'paid' && ours(o)) {
       const lines = await stripe(`checkout/sessions/${o.id}/line_items?limit=100`)
       const ship = (o.collected_information && o.collected_information.shipping_details) || o.shipping_details || null
       const who = o.customer_details || {}

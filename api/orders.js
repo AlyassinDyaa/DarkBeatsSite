@@ -1,6 +1,6 @@
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
-import { describeItem, paidWithOf, piecesNow, setTrack } from './_orders.js'
+import { describeItem, ours, paidWithOf, piecesNow, setTrack } from './_orders.js'
 
 /* The admin's Orders screen. Everything paid through Stripe (prints from the Shop, and support
    through the payment links) is read here, straight from Stripe, for the logged-in admin only.
@@ -128,8 +128,8 @@ export default async function handler(req, res) {
         list = Array.isArray(got.said.data) ? got.said.data : []
         more = Boolean(got.said.has_more)
       }
-      // a checkout another site made in a shared Stripe account says so (metadata site) and is left out
-      const orders = list.filter((s) => !(s.metadata && s.metadata.site)).map(shape).filter((o) => !o.hidden)
+      // this site's checkouts only: a Stripe sandbox shared with another site keeps their orders apart
+      const orders = list.filter(ours).map(shape).filter((o) => !o.hidden)
       // PayPal orders from the database, with the first page
       if (!after && dbReady()) {
         try {

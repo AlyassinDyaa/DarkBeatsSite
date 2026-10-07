@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { currentUser } from './_users.js'
-import { boughtOf, dbReady, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { SITE, boughtOf, dbReady, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
@@ -215,6 +215,7 @@ export default async function handler(req, res) {
     if (typeof l.piece.src === 'string' && l.piece.src.startsWith('/')) ask.set(`${at}[price_data][product_data][images][0]`, origin + l.piece.src)
   })
   ask.set('metadata[order]', summary.slice(0, 500))
+  ask.set('metadata[site]', SITE) // this site's checkout (see api/_orders.js)
   // a logged-in buyer: the order is tied to their account (api/stripe-webhook.js reads this back)
   if (user) {
     ask.set('client_reference_id', user._id); ask.set('customer_email', user.email)

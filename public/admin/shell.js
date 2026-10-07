@@ -68,6 +68,7 @@
     },
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
     'site/shop': { groups: { enabled: 'Selling online', currency: 'What you sell', signedChoice: 'Signed prints', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'cartIcon', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
+    'pages/rewards': { groups: { rewardText: 'Before they confirm', rewards: 'The rewards' }, half: [], inner: ['kind', 'earnedBy', 'count', 'percent', 'days', 'cardLook', 'hidden'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
@@ -75,7 +76,7 @@
      group's sections in the order given. The Orders group (orders.js) goes in right after Shop.
      A section not named here lands in the last group, so nothing new ever goes missing. */
   const GROUPS = [
-    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, how it is sorted, and how buyers pay.', keys: ['work', 'site/categories', 'site/shop'] },
+    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, how it is sorted, and how buyers pay.', keys: ['work', 'site/categories', 'site/shop', 'pages/rewards'] },
     { id: 'art', label: 'Your art', short: 'Your art', lead: 'The Work page, before-and-afters, conventions, and every picture you have uploaded.', keys: ['gallery_sections', 'redraws', 'events'], media: true },
     { id: 'pages', label: 'Words on each page', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', keys: ['pages/home', 'pages/lists', 'pages/commissions', 'pages/about', 'pages/contact', 'pages/support', 'pages/account'] },
     { id: 'site', label: 'Whole site', short: 'Site', lead: 'Your name and colour, and which parts are switched on.', keys: ['site/brand', 'site/visibility'] },
@@ -85,7 +86,7 @@
   const inOrder = (g, list) => list.filter(g.has).sort((a, b) => (g.keys.indexOf(a.key) + 1 || 99) - (g.keys.indexOf(b.key) + 1 || 99))
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
+  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'pages/rewards': 'Rewards', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -94,7 +95,8 @@
     'pages/about': 'Who you are: the heading, the paragraphs and the quick facts.',
     'pages/contact': 'The heading, the introduction and what visitors can say their message is about.',
     'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
-    'pages/account': 'What customers read on their account page: your note to them, and its headings.',
+    'pages/account': 'What customers read on their account page: your note to them, its headings, and the free profile pictures.',
+    'pages/rewards': 'Profile pictures, membership card designs and discounts customers earn: by confirming their email, every few orders, or the prints they collect.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
     'site/categories': 'The Shop’s lists: categories (Heroes, Villains...), types (Posters, Stickers...) and universes (DC, Marvel...).',
@@ -108,6 +110,7 @@
     'pages/contact': 'M4 6h16v12H4z M4 7l8 6 8-6',
     'pages/account': 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c.8-3.800 4-6 8-6s7.200 2.200 8 6 M17 3.500l.900 1.800 2 .300-1.450 1.400.350 2-1.800-.950-1.800.950.350-2L14.100 5.600l2-.300z',
     'pages/support': 'M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 10c0 5.500-7 10-7 10z',
+    'pages/rewards': 'M8 4h8v5a4 4 0 0 1-8 0z M8 6H5a3 3 0 0 0 3 4 M16 6h3a3 3 0 0 1-3 4 M12 13v4 M8 20h8 M9.500 17h5v3h-5z',
     'site/brand': 'M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z',
     'site/shop': 'M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2',
     'site/categories': 'M4 5h7v7H4z M13 5h7v7h-7z M4 14h7v5H4z M13 14h7v5h-7z',
@@ -874,4 +877,52 @@
       },
     }))
   }
+
+  /* ---------- asking before a reward (or a free profile picture) is removed ----------
+     The × on an item of these lists removes it at once; here it asks first, in a window. Yes
+     removes it (nothing changes on the site until the form is saved); No, Escape or a click
+     outside keeps it. */
+  const ASK_BEFORE_REMOVING = {
+    rewards: { what: 'reward', text: 'Customers who earned it lose it: a picture or card design they chose goes back to the usual one, and they no longer see it under Rewards. Discount codes already made from it keep working until they run out. To stop offering it for now without losing it, switch on "Hide (not offered for now)" instead.' },
+    icons: { what: 'free picture', text: 'Customers using it as their profile picture go back to their initials.' },
+  }
+  let removing = false // the confirmed click passes straight through
+  const askRemove = (kind, name, onYes) => {
+    const back = el('div', { className: 'io-modal-back' })
+    const close = () => { back.remove(); removeEventListener('keydown', esc, true) }
+    const esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close() } }
+    const no = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Keep it' })
+    const yes = el('button', { type: 'button', className: 'ia-btn io-danger', textContent: `Delete ${kind.what}` })
+    no.addEventListener('click', close)
+    yes.addEventListener('click', () => { close(); onYes() })
+    back.addEventListener('click', (e) => { if (e.target === back) close() })
+    back.append(el('div', { className: 'io-modal', role: 'alertdialog', ariaModal: 'true', ariaLabel: `Delete ${kind.what}` }, [
+      el('header', { className: 'io-modal-head' }, [el('h2', { textContent: name ? `Delete “${name}”?` : `Delete this ${kind.what}?` })]),
+      el('div', { className: 'io-modal-body' }, [
+        el('p', { textContent: 'It is taken off the list. Nothing changes on the site until you press Save.' }),
+        el('p', { textContent: kind.text }),
+      ]),
+      el('footer', { className: 'io-modal-foot' }, [no, yes]),
+    ]))
+    document.body.append(back)
+    addEventListener('keydown', esc, true)
+    setTimeout(() => no.focus(), 30)
+  }
+  document.addEventListener('click', (e) => {
+    if (removing) return
+    const btn = e.target.closest && e.target.closest('button')
+    const bar = btn && btn.parentElement
+    if (!bar || !/ListItemTopBar/.test(String(bar.className)) || bar.lastElementChild !== btn) return // the × is the last button of an item's top bar
+    let list = null
+    for (let f = btn.closest('[class*="ControlContainer"]'); f; f = f.parentElement && f.parentElement.closest('[class*="ControlContainer"]')) {
+      const name = ((f.querySelector(':scope > [class*="ControlTopbar"] label[for]') || {}).htmlFor || '').replace(/-field-\d+$/, '')
+      if (ASK_BEFORE_REMOVING[name]) { list = name; break }
+    }
+    if (!list) return // only the lists named above
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation()
+    const item = btn.closest('[class*="-listControlItem"]')
+    const named = item && [...item.querySelectorAll('input[type="text"], input:not([type])')].find((i) => /^name-field/.test(i.id || ''))
+    const label = (named && named.value) || (item && (item.querySelector('[class*="ListItemTopBar"]') || {}).textContent) || ''
+    askRemove(ASK_BEFORE_REMOVING[list], String(label).trim(), () => { removing = true; try { btn.click() } finally { removing = false } })
+  }, true)
 })()

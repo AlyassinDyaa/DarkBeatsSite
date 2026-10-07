@@ -12,6 +12,12 @@ export { dbReady }
 const text = (v, max = 200) => String(v ?? '').trim().slice(0, max)
 export const shapeAddress = (a, name) => (a ? { name: text(name), line1: text(a.line1), line2: text(a.line2), city: text(a.city), state: text(a.state), postal_code: text(a.postal_code), country: text(a.country, 2) } : null)
 
+/* This site's Stripe checkouts carry metadata site = SITE, so a Stripe account shared with another
+   site (the sandbox used for this site and the Milton Aguiar site while testing) never mixes their
+   orders. Checkouts from before the tag (and payment links) carry none, and count as this site's. */
+export const SITE = 'jbeatsart'
+export const ours = (session) => { const site = session && session.metadata && session.metadata.site; return !site || site === SITE }
+
 /* What was bought, line by line, as [slug, size, signed 1/0]: kept with the checkout so that, once
    the payment is in, those lines leave the buyer's saved cart (and are never paid for twice). */
 export const boughtOf = (lines) => lines.map((l) => [l.slug, l.size || '', l.signed ? 1 : 0])

@@ -407,6 +407,56 @@ collections:
               - { name: face, label: Crop, widget: facecrop, required: false }
               - { name: name, label: Name, widget: string, required: false }
 
+      - name: rewards
+        label: Rewards
+        file: content/pages/rewards.json
+        fields:
+          - { name: rewardText, label: What confirming the email unlocks, widget: string, required: false, hint: 'Shown to customers who have not confirmed their email yet, in the reminder on their account page.' }
+          - name: rewards
+            label: Rewards
+            label_singular: reward
+            widget: list
+            collapsed: true
+            required: false
+            summary: '{{fields.name}}'
+            hint: 'What customers earn, and when: confirming their email, every few orders (3, 6, 10...), or a number of prints collected. Each reward is a profile picture, a membership card design, or a discount (a personal code made the moment they earn it). Customers see every reward in their account with how close they are, locked until they earn it. Drag to reorder.'
+            fields:
+              - { name: name, label: Name, widget: string, hint: 'Shown to customers. Keep it once customers have it: the name is how the site knows the reward.' }
+              - name: kind
+                label: What it is
+                widget: select
+                default: picture
+                options:
+                  - { label: 'A profile picture', value: picture }
+                  - { label: 'A membership card design', value: card }
+                  - { label: 'A discount', value: discount }
+              - name: earnedBy
+                label: How it is earned
+                widget: select
+                default: verify
+                options:
+                  - { label: 'Confirming their email', value: verify }
+                  - { label: 'A number of orders', value: orders }
+                  - { label: 'A number of prints collected', value: pieces }
+              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders or prints it takes: 1 for their first order, 3, 6, 10... Refunded and deleted orders do not count.' }
+              - { name: percent, label: Discount (%), widget: number, value_type: float, min: 1, max: 100, default: 10, required: false, hint: 'For a discount: the percentage off one order.' }
+              - { name: days, label: Days to use it, widget: number, value_type: int, min: 1, default: 60, required: false, hint: 'For a discount: how long their code works after they earn it. Codes show under Orders → Discounts too.' }
+              - { name: picture, label: The picture, widget: image, choose_url: false, required: false, hint: 'For a profile picture.' }
+              - { name: face, label: Its crop, widget: facecrop, required: false, hint: 'For a profile picture: drag it in the circle, zoom with the slider.' }
+              - name: cardLook
+                label: The card’s look
+                widget: select
+                default: ink
+                required: false
+                options:
+                  - { label: 'Ink: black, with the brand purple', value: ink }
+                  - { label: 'Gold foil', value: gold }
+                  - { label: 'Chrome', value: chrome }
+                  - { label: 'A picture of your choosing (below)', value: art }
+                hint: 'For a membership card design.'
+              - { name: cardArt, label: Picture across the card, widget: image, choose_url: false, required: false, hint: 'For a membership card design: optional with any look, needed for "A picture of your choosing". The name and number sit on top of it, so a picture with a quiet bottom half works best.' }
+              - { name: hidden, label: Hide (not offered for now), widget: boolean, default: false, required: false, hint: 'Customers who chose it go back to the usual picture or card.' }
+
       - name: support
         label: Support page
         file: content/pages/support.json
