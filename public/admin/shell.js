@@ -71,15 +71,21 @@
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
-  /* The navigation and the Home screen list the sections in these groups, in this order. */
+  /* The navigation and the Home screen list the sections in these groups, in this order, each
+     group's sections in the order given. The Orders group (orders.js) goes in right after Shop.
+     A section not named here lands in the last group, so nothing new ever goes missing. */
   const GROUPS = [
-    { label: 'Artwork and events', short: 'Content', lead: 'What you add to over time.', has: (s) => !s.file },
-    { label: 'Words on each page', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', has: (s) => s.name === 'pages' },
-    { label: 'Whole site', short: 'Site', lead: 'Your name and colour, and which parts are switched on.', has: (s) => s.name === 'site' },
+    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, how it is sorted, and how buyers pay.', keys: ['work', 'site/categories', 'site/shop'] },
+    { id: 'art', label: 'Your art', short: 'Your art', lead: 'The Work page, before-and-afters, conventions, and every picture you have uploaded.', keys: ['gallery_sections', 'redraws', 'events'], media: true },
+    { id: 'pages', label: 'Words on each page', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', keys: ['pages/home', 'pages/lists', 'pages/commissions', 'pages/about', 'pages/contact', 'pages/support', 'pages/account'] },
+    { id: 'site', label: 'Whole site', short: 'Site', lead: 'Your name and colour, and which parts are switched on.', keys: ['site/brand', 'site/visibility'] },
   ]
+  const named = new Set(GROUPS.flatMap((g) => g.keys))
+  GROUPS.forEach((g, i) => { g.has = (s) => g.keys.includes(s.key) || (i === GROUPS.length - 1 && !named.has(s.key)) })
+  const inOrder = (g, list) => list.filter(g.has).sort((a, b) => (g.keys.indexOf(a.key) + 1 || 99) - (g.keys.indexOf(b.key) + 1 || 99))
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/shop': 'Shop & payments', 'site/categories': 'Shop categories', 'site/visibility': 'Show / hide' }
+  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -145,7 +151,7 @@
   const build = async () => {
     const sections = known = await readSections()
     const hrefOf = (s) => (s.file ? `#/collections/${s.name}/entries/${s.file}` : `#/collections/${s.name}`)
-    const groups = GROUPS.map((g) => ({ ...g, sections: sections.filter(g.has) })).filter((g) => g.sections.length)
+    const groups = GROUPS.map((g) => ({ ...g, sections: inOrder(g, sections) })).filter((g) => g.sections.length)
 
     // ---- left navigation
     const search = el('input', { type: 'search', placeholder: 'Search everything', ariaLabel: 'Search everything' })
@@ -175,7 +181,11 @@
       // the list of sections scrolls by itself on a short screen; the brand above and the foot below stay put
       el('div', { className: 'ia-scroll' }, [
         el('nav', { ariaLabel: 'Admin' }, [home]),
-        ...groups.flatMap((g, i) => [el('div', { className: 'ia-label', textContent: g.short }), el('nav', { ariaLabel: g.label }, [...g.sections.map(linkTo), ...(i === 0 ? [media] : [])])]),
+        ...groups.flatMap((g) => {
+          const nav = el('nav', { ariaLabel: g.label }, [...g.sections.map(linkTo), ...(g.media ? [media] : [])])
+          nav.dataset.group = g.id
+          return [el('div', { className: 'ia-label', textContent: g.short }), nav]
+        }),
       ]),
       el('div', { className: 'ia-foot' }, [
         el('a', { className: 'ia-site', href: '../', target: '_blank', rel: 'noopener' }, [icon('external'), el('span', { textContent: 'View site' })]),
@@ -199,10 +209,10 @@
         el('div', { className: 'ia-kicker', textContent: 'JBeatsArt admin' }),
         el('h1', { textContent: 'What do you want to update?' }),
         el('p', { className: 'ia-lead', textContent: 'Pick a part of the site. Changes go live when you press Save.' }),
-        ...groups.map((g, i) => el('section', { className: 'ia-group' }, [
+        ...groups.map((g) => el('section', { className: 'ia-group' }, [
           el('h2', { textContent: g.label }),
           el('p', { textContent: g.lead }),
-          el('div', { className: 'ia-tiles' }, [...g.sections.map(tile), ...(i === 0 ? [mediaTile] : [])]),
+          el('div', { className: 'ia-tiles' }, [...g.sections.map(tile), ...(g.media ? [mediaTile] : [])]),
         ])),
       ]),
     ])

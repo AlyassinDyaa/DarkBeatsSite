@@ -1081,13 +1081,17 @@
     const scroll = document.querySelector('.ia-side .ia-scroll')
     if (!scroll) return
     clearInterval(place)
-    scroll.append(el('div', { className: 'io-divider', role: 'separator' }), el('div', { className: 'ia-label', textContent: 'Orders' }), el('nav', { ariaLabel: 'Orders and customers' }, [link, clink, dlink]))
+    const ours = [el('div', { className: 'ia-label', textContent: 'Orders' }), el('nav', { ariaLabel: 'Orders and customers' }, [link, clink, dlink])]
+    const shopNav = scroll.querySelector('nav[data-group="shop"]')
+    if (shopNav) shopNav.after(...ours)
+    else scroll.append(el('div', { className: 'io-divider', role: 'separator' }), ...ours)
     document.body.append(screen, cscreen, dscreen)
     // the Overview: the same two, as tiles at the end
     const overview = document.querySelector('.ia-home-inner')
     if (overview) {
       const tile = (icon, title, text, href, action) => el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [svg(icon)]), el('h3', { textContent: title }), el('p', { textContent: text }), el('div', { className: 'ia-tile-actions' }, [el('a', { className: 'ia-btn', href, textContent: action })])])
-      overview.append(el('section', { className: 'ia-group' }, [
+      const groupsShown = overview.querySelectorAll(':scope > .ia-group')
+      const section = (el('section', { className: 'ia-group' }, [
         el('h2', { textContent: 'Orders, customers and discounts' }),
         el('p', { textContent: 'What has been bought through the Shop, who bought it, the posting of each order, and discount codes.' }),
         el('div', { className: 'ia-tiles' }, [
@@ -1096,6 +1100,8 @@
           tile(TAG, 'Discounts', 'Make a discount code: a percentage off, for chosen customers or anyone with the code, for as long as you like.', DROUTE, 'Open discounts'),
         ]),
       ]))
+      if (groupsShown[0]) groupsShown[0].after(section)
+      else overview.append(section)
     }
     sync()
     // once logged in, a quiet first look so the number beside Orders is right from the start
