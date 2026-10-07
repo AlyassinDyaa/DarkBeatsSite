@@ -20,8 +20,8 @@ function shipsTo(codes) {
 export default function Buy({ piece }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
-  // signed or not, when the admin offers the choice; signed is picked to start with
-  const [signed, setSigned] = useState(true)
+  // a signature, when the admin offers one: a single switch, off to start with
+  const [signed, setSigned] = useState(false)
   if (!buyable(piece)) return null
   const where = shop.shipping !== false ? shipsTo(shop.countries) : ''
   const out = soldOut(piece)
@@ -53,15 +53,14 @@ export default function Buy({ piece }) {
       {shop.note && <p className="buy-what">{shop.note}</p>}
       {onSale(piece) && !out && <p className="buy-save">You save {money(Number(piece.price) - nowPrice(piece))}</p>}
       {choice && !out && (
-        <div className="buy-options" role="radiogroup" aria-label="Signed or unsigned">
-          <span className="buy-options-label" aria-hidden="true">Print</span>
-          {[[true, 'Signed'], [false, 'Unsigned']].map(([value, label]) => (
-            <button key={label} type="button" role="radio" aria-checked={signed === value} className={signed === value ? 'on' : ''} onClick={() => setSigned(value)}>
-              <span>{label}</span>
-              {value && Number(shop.signedExtra) > 0 && <small>+{money(shop.signedExtra, true)}</small>}
-            </button>
-          ))}
-        </div>
+        <button type="button" role="switch" aria-checked={signed} className={`buy-sign ${signed ? 'on' : ''}`} onClick={() => setSigned(!signed)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c2.500-.500 3.500-4 5-4s1 3 3 3 2.500-5 4.500-5 1 4 2.500 4 1.500-1 2.500-1.500 M4 21h16" /></svg>
+          <span className="buy-sign-text">
+            <strong>Signed by {brand.artist ? brand.artist.split(' ')[0] : 'the artist'}</strong>
+            <small>{Number(shop.signedExtra) > 0 ? `Add a signature for ${money(shop.signedExtra, true)}` : 'Add a signature at no extra cost'}</small>
+          </span>
+          <i className="buy-sign-toggle" aria-hidden="true" />
+        </button>
       )}
       {out ? (
         <>

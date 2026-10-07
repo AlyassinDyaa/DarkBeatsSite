@@ -32,7 +32,7 @@ export default async function handler(req, res) {
   const base = piece && piece.status === 'sale' && sale > 0 && sale < usual ? sale : usual
   // signed or unsigned: only while the admin offers the choice; the extra for signing is read here too
   const choice = Boolean(shop.signedChoice)
-  const signed = choice ? req.body && req.body.signed !== false : null
+  const signed = choice ? Boolean(req.body && req.body.signed === true) : null
   const amount = base + (signed ? Math.max(0, Number(shop.signedExtra) || 0) : 0)
   const cents = Math.round(amount * 100)
   if (!piece || piece.hidden || !(cents >= 50)) return res.status(404).json({ message: 'That piece is not for sale.' })
