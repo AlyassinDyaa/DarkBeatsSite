@@ -335,7 +335,7 @@
     }
     markRequired(pane)
     nameTheForm()
-    for (const input of pane.querySelectorAll('.ia-compact input:not([placeholder])')) {
+    for (const input of pane.querySelectorAll('.ia-compact input:not([placeholder]), .ia-pics input:not([placeholder])')) {
       const label = input.closest('[class*="ControlContainer"]')?.querySelector('label')
       if (label) input.placeholder = label.textContent.replace(/\s*\(optional\)\s*$/i, '')
     }
@@ -344,6 +344,9 @@
       const name = (field.querySelector(':scope > [class*="ControlTopbar"] label[for]') || {}).htmlFor || ''
       const compact = (currentSection() === 'site' && /^(subjects|types|universes)-field/.test(name)) || (currentSection() === 'work' && /^sizes-field/.test(name))
       if (compact !== field.classList.contains('ia-compact')) field.classList.toggle('ia-compact', compact)
+      // the free profile pictures (Customer account page): a grid of round tiles
+      const pics = currentSection() === 'pages' && /^icons-field/.test(name)
+      if (pics !== field.classList.contains('ia-pics')) field.classList.toggle('ia-pics', pics)
     }
     // the wall on the home page: only the fields that matter for what it shows
     const fields = new Map([...pane.children].map((f) => [fieldName(f), f]))
