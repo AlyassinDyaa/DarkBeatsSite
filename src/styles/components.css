@@ -358,10 +358,18 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 
 /* ---------- buying (components/Buy.jsx, pages/Shop.jsx) ---------- */
 /* a tile: the picture lifts as one piece with its price tag; on a mouse, a bar slides up to say what a click does */
-.tile-art { position: relative; display: block; transition: transform 0.45s var(--ease-out), box-shadow 0.45s var(--ease-out); }
+/* A Shop card sits on a block of the brand colour, offset to the lower right, the way an opened
+   piece does. Pointing at it presses the card down into that block (and the picture leans in a
+   little); a sold-out card sits on grey. */
+.tile-art { --drop: 10px; position: relative; display: block; box-shadow: var(--drop) var(--drop) 0 var(--accent); transition: transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease-out); }
 .tile .poster { transition: none; }
 .tile:hover .poster, .tile:focus-visible .poster { transform: none; box-shadow: none; }
-.tile:hover .tile-art, .tile:focus-visible .tile-art { transform: translate(-5px, -5px); box-shadow: 9px 9px 0 var(--accent); }
+.tile:hover .tile-art, .tile:focus-visible .tile-art { transform: translate(calc(var(--drop) - 3px), calc(var(--drop) - 3px)); box-shadow: 3px 3px 0 var(--accent); }
+.tile:active .tile-art { transform: translate(var(--drop), var(--drop)); box-shadow: 0 0 0 var(--accent); transition-duration: 0.12s; }
+.tile:has(.tile-badge.is-soldout) .tile-art { box-shadow: var(--drop) var(--drop) 0 #2a2433; }
+.tile:has(.tile-badge.is-soldout):hover .tile-art, .tile:has(.tile-badge.is-soldout):focus-visible .tile-art { box-shadow: 3px 3px 0 #2a2433; }
+.tile-art + .tile-cap { padding-top: 24px; }
+@media (max-width: 599px) { .tile-art { --drop: 7px; } .tile-art + .tile-cap { padding-top: 18px; } .grid:has(.tile-art) { column-gap: 20px; } }
 .tile .poster img { transition: opacity 0.4s, transform 0.8s var(--ease-out); }
 .tile:hover .poster img, .tile:focus-visible .poster img { transform: scale(1.045); }
 .tile-price { position: absolute; z-index: 2; top: 14px; right: -6px; padding: 7px 16px 6px; font-family: var(--display); font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
