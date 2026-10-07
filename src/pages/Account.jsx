@@ -2,9 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Page from '../components/Page'
-import { accountPage, asset, brand, canBuy, marquee, money, priceOf, priceVaries, shows, soldOut, work } from '../data/site'
+import { accountPage, asset, brand, canBuy, money, priceOf, priceVaries, soldOut, work } from '../data/site'
 import Poster from '../components/Poster'
-import Marquee from '../components/Marquee'
 import Wordmark from '../components/Wordmark'
 import { useAccount } from '../hooks/useAccount'
 import { useCart } from '../hooks/useCart'
@@ -585,7 +584,6 @@ function Home() {
         <h1 className="display h-xl">{tab === 'overview' ? <>{first || 'Hello'}<span className="acct-dot">.</span></> : tabName}</h1>
         <p className="lead">{LEADS[tab]}</p>
       </header>
-      {shows('home', 'ticker') && marquee.length > 0 && <div className="acct-band"><Marquee items={marquee} speed={40} /></div>}
       <div className="container acct">
         <aside className="acct-side">
           <div className="acct-me">
