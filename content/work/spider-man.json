@@ -1,12 +1,14 @@
 {
-  "title": "Spider-Man",
-  "category": "Heroes",
-  "date": "2026-03-24",
-  "hue": 200,
+  "salePrice": 34,
   "src": "/uploads/spider-man.webp",
-  "link": "https://www.instagram.com/jbeatsart/p/DWQ4cFagRm6/",
-  "note": "",
-  "featured": false,
+  "price": 40,
   "hidden": false,
-  "price": 40
+  "featured": false,
+  "date": "2026-03-24",
+  "note": "",
+  "status": "sale",
+  "hue": 200,
+  "title": "Spider-Man",
+  "link": "https://www.instagram.com/jbeatsart/p/DWQ4cFagRm6/",
+  "category": "Heroes"
 }
