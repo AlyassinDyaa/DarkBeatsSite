@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { asset, brand, commissions, nav, shows, social } from '../data/site'
+import { asset, brand, commissions, nav, shop, shows, social } from '../data/site'
 import Wordmark from './Wordmark'
+import { useCart } from '../hooks/useCart'
 
 function Status() {
   return <><i className={commissions.open ? 'on' : ''} />{commissions.open ? 'Commissions open' : 'Commissions closed'}</>
 }
 
 export default function Nav() {
+  const cart = useCart()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
@@ -34,6 +36,12 @@ export default function Nav() {
             {nav.map((n) => <NavLink key={n.to} to={n.to} end className={({ isActive }) => `nav-link ${isActive ? 'on' : ''} ${n.to === '/support' ? 'is-support' : ''}`}>{n.label}</NavLink>)}
           </nav>
           {hire && <Link className="nav-status" to="/commissions"><Status /></Link>}
+          {shop.enabled && (
+            <button type="button" className="nav-cart" onClick={() => { setOpen(false); cart.setOpen(true) }} aria-label={`Cart, ${cart.count} ${cart.count === 1 ? 'print' : 'prints'}`}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.500l2.200 11.500h10.300L20.500 8H6.500 M9.500 20a1 1 0 1 0 0-.1 M17 20a1 1 0 1 0 0-.1" /></svg>
+              {cart.count > 0 && <span key={cart.count} className="nav-cart-count">{cart.count}</span>}
+            </button>
+          )}
           <button className={`burger ${open ? 'open' : ''}`} aria-expanded={open} aria-label="Menu" onClick={() => setOpen((o) => !o)}>
             <span /><span />
           </button>

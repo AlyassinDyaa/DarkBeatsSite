@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useCart } from '../hooks/useCart'
 import { AnimatePresence, motion } from 'framer-motion'
 import { badge, brand, buyable, money, nowPrice, onSale, shop, soldOut } from '../data/site'
 
@@ -22,6 +23,11 @@ export default function Buy({ piece }) {
   const [note, setNote] = useState('')
   // a signature, when the admin offers one: a single switch, off to start with
   const [signed, setSigned] = useState(false)
+  const cart = useCart()
+  const [added, setAdded] = useState(false)
+  useEffect(() => { if (!added) return; const t = setTimeout(() => setAdded(false), 1800); return () => clearTimeout(t) }, [added])
+  const addToCart = () => { cart.add(piece.slug, choice && signed); setAdded(true); setTimeout(() => cart.setOpen(true), 350) }
+  const inCart = cart.lines.filter((l) => l.slug === piece.slug).reduce((n, l) => n + l.qty, 0)
   if (!buyable(piece)) return null
   const where = shop.shipping !== false ? shipsTo(shop.countries) : ''
   const out = soldOut(piece)
@@ -69,10 +75,14 @@ export default function Buy({ piece }) {
         </>
       ) : (
         <>
-          <button type="button" className={`buy-btn ${busy ? 'is-busy' : ''}`} onClick={buy} aria-busy={busy}>
-            <span className="buy-btn-label">{busy ? 'Opening secure checkout' : shop.buttonLabel}</span>
-            <span className="buy-btn-icon" aria-hidden="true">{busy ? <i className="buy-spin" /> : '→'}</span>
+          <button type="button" className={`buy-btn ${added ? 'is-added' : ''}`} onClick={addToCart}>
+            <span className="buy-btn-label">{added ? 'Added to cart' : 'Add to cart'}</span>
+            <span className="buy-btn-icon" aria-hidden="true">{added ? '✓' : <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14 M5 12h14" /></svg>}</span>
           </button>
+          <div className="buy-also">
+            <button type="button" className={`buy-now ${busy ? 'is-busy' : ''}`} onClick={buy} aria-busy={busy}>{busy ? 'Opening secure checkout…' : `${shop.buttonLabel} now`} <span aria-hidden="true">→</span></button>
+            {inCart > 0 && <button type="button" className="buy-incart" onClick={() => cart.setOpen(true)}>{inCart} in your cart</button>}
+          </div>
           <p className="buy-secure">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10.5h12v9.5H6z M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg>
             <span>Secure checkout by Stripe{where ? ` · Ships to ${where}` : ''}</span>

@@ -8,6 +8,8 @@ import { useReducedMotion } from './hooks/useMedia'
 import Preloader from './components/Preloader'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
+import CartDrawer from './components/CartDrawer'
+import { CartProvider } from './hooks/useCart'
 import Home from './pages/Home'
 import Shop from './pages/Shop'
 import Work from './pages/Work'
@@ -38,7 +40,7 @@ export default function App() {
     for (const link of document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]')) { link.href = asset(brand.icon); link.removeAttribute('type') }
   }, [])
   return (
-    <>
+    <CartProvider>
       {new URLSearchParams(loc.search).get('preview') === 'hero' ? <PreviewReady onReady={() => setReady(true)} /> : <Preloader onDone={() => setReady(true)} />}
       <Nav />
       {/* A slanted slash of the current colour crosses the screen between routes
@@ -65,6 +67,7 @@ export default function App() {
       </AnimatePresence>
       <Footer />
       {previewing && <div className="fresh-note" role="status">Admin view: showing your latest saved changes. Visitors see them in about a minute.</div>}
-    </>
+      <CartDrawer />
+    </CartProvider>
   )
 }

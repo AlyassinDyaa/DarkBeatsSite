@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useCart } from '../hooks/useCart'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { badge, buyable, canBuy, categories, day, home, money, nowPrice, onSale, pages, redraws, shop, soldOut, work } from '../data/site'
@@ -46,6 +47,9 @@ function TileBody({ p, eager }) {
 export default function Shop() {
   const [params] = useSearchParams()
   const thanks = params.get('thanks') === '1'
+  const cart = useCart()
+  const clearCart = cart.clear
+  useEffect(() => { if (thanks) clearCart() }, [thanks, clearCart])
   const [filter, setFilter] = useState('All')
   const [sel, setSel] = useState(null)
   // Sold-out pieces wait at the end, in their usual order; back in stock, a piece is back in its place.
