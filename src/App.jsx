@@ -17,6 +17,12 @@ import Contact from './pages/Contact'
 import Support from './pages/Support'
 import NotFound from './pages/NotFound'
 
+/* In the admin's live preview there is no opening card: the page is ready at once. */
+function PreviewReady({ onReady }) {
+  useEffect(() => { onReady() }, [onReady])
+  return null
+}
+
 export default function App() {
   const loc = useLocation()
   const reduced = useReducedMotion()
@@ -33,7 +39,7 @@ export default function App() {
   }, [])
   return (
     <>
-      <Preloader onDone={() => setReady(true)} />
+      {new URLSearchParams(loc.search).get('preview') === 'hero' ? <PreviewReady onReady={() => setReady(true)} /> : <Preloader onDone={() => setReady(true)} />}
       <Nav />
       {/* A slanted slash of the current colour crosses the screen between routes
           (not on arrival: the opening card has just done that job) */}

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { asset, brand, commissions, day, events, galleryHome, hero, heroWall, home, latest, marquee, nameParts, redraws, shows, support, work } from '../data/site'
@@ -21,10 +21,28 @@ import { useGalleryView } from '../hooks/useGalleryView'
    (translateZ under one perspective), so when the whole name tilts toward the pointer they slide
    past each other the way near and far things do. The poster wall drifts the other way, as the
    furthest thing back. Without a mouse, or with reduced motion, the layers simply hold still. */
+/* The admin's live preview shows this page in a small frame, at /?preview=hero, and sends the
+   character settings from its form as they change (before they are saved). Only messages from
+   this site's own address are listened to. */
+const previewing = typeof location !== 'undefined' && new URLSearchParams(location.search).get('preview') === 'hero'
+function usePreviewFigure() {
+  const [figure, setFigure] = useState(undefined)
+  useEffect(() => {
+    if (!previewing) return
+    const take = (e) => { if (e.origin === location.origin && e.data && e.data.type === 'hero-preview') setFigure(e.data.figure || null) }
+    addEventListener('message', take)
+    if (window.parent !== window) window.parent.postMessage({ type: 'hero-preview-ready' }, location.origin)
+    return () => removeEventListener('message', take)
+  }, [])
+  return figure
+}
+
 function Hero({ onOpen }) {
+  const preview = usePreviewFigure()
   const ref = useRef(null)
   const [a, b] = nameParts(brand.name)
-  const figure = hero.figure?.src ? hero.figure : null
+  const shown = preview === undefined ? hero.figure : preview
+  const figure = shown?.src ? shown : null
   const fine = useFinePointer(), reduced = useReducedMotion()
   const live = fine && !reduced
   const mx = useMotionValue(0), my = useMotionValue(0)

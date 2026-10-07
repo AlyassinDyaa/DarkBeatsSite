@@ -506,6 +506,21 @@ html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::afte
    above use it to tell that somebody is logged in. */
 [class*='AppHeaderContent'] { min-height: 0 !important; height: 0 !important; padding-block: 0 !important; overflow: hidden !important; }
 
+/* the live preview of the top of the home page (shell.js, "heropreview") */
+[class*='ControlContainer']:has(> .ia-heroprev) > [class*='ControlTopbar'] { display: none !important; }
+[class*='ControlContainer'] > .ia-heroprev { padding: 14px !important; background: var(--panel-2) !important; border: 1px solid var(--line-strong) !important; border-radius: var(--r-card) !important; }
+.ia-heroprev-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.ia-heroprev-head strong { font-family: var(--display); font-weight: 800; font-size: 16px; color: var(--fg); }
+.ia-heroprev-switch { display: inline-flex; gap: 2px; padding: 3px; background: var(--field); border: 1px solid var(--line); border-radius: 10px; }
+#nc-root .ia-heroprev-switch button:not(#_) { all: unset; box-sizing: border-box; height: 30px; padding: 0 14px; border-radius: 7px; color: var(--mute); font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+#nc-root .ia-heroprev-switch button:not(#_):hover { color: var(--fg); }
+#nc-root .ia-heroprev-switch button[aria-pressed='true']:not(#_) { background: var(--accent); color: #0b0911; }
+.ia-heroprev-stage { position: relative; overflow: hidden; border-radius: 10px; background: #09070d; border: 1px solid var(--line); min-height: 120px; }
+.ia-heroprev-stage iframe { position: absolute; top: 0; left: 50%; border: 0; transform-origin: top center; pointer-events: none; background: #09070d; }
+.ia-heroprev-stage.is-phone { border-color: transparent; background: transparent; }
+.ia-heroprev-stage.is-phone iframe { border-radius: 22px; box-shadow: 0 0 0 10px #1c1627; }
+.ia-heroprev-note { margin: 10px 2px 0 !important; font-size: 0.78rem; color: var(--mute); }
+
 /* on/off: one box. The name, with its explanation under it, on the left; the switch on the right,
    level with the middle of the box however many lines the explanation runs to. */
 [class*='ControlContainer']:has(> div > [class*='ToggleContainer']) {

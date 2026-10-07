@@ -713,4 +713,58 @@
       },
     }))
   }
+  /* ---------- the character beside the name: a live preview ----------
+     The top of the home page, in a small frame, with the character as it is in the form right now
+     (picture, place, size, position), before anything is saved. The frame is the site itself at
+     /?preview=hero; this field reads the whole form a few times a second and sends the character's
+     settings over whenever they change. It stores nothing. Computer or phone shape, at the press
+     of a button. */
+  if (window.CMS && window.createClass && window.h) {
+    const h = window.h
+    const SHAPES = { computer: [1440, 810], phone: [390, 844] }
+    window.CMS.registerWidget('heropreview', window.createClass({
+      getInitialState() { return { shape: 'computer' } },
+      componentDidMount() {
+        this.timer = setInterval(() => { this.fit(); this.send() }, 200)
+        this.ready = (e) => { if (e.origin === location.origin && e.data && e.data.type === 'hero-preview-ready') { this.sent = ''; this.send() } }
+        addEventListener('message', this.ready)
+      },
+      componentWillUnmount() { clearInterval(this.timer); removeEventListener('message', this.ready) },
+      figure() {
+        const entry = this.props.getEntry && this.props.getEntry()
+        const data = entry && entry.get('data') ? entry.get('data').toJS() : {}
+        const f = data.figure || {}
+        const src = f.src ? String(this.props.getAsset(f.src) || '') : ''
+        return { ...f, src }
+      },
+      send() {
+        const frame = this.frame
+        if (!frame || !frame.contentWindow) return
+        const figure = this.figure()
+        const said = JSON.stringify(figure)
+        if (said === this.sent) return
+        this.sent = said
+        frame.contentWindow.postMessage({ type: 'hero-preview', figure }, location.origin)
+      },
+      fit() {
+        const box = this.box, frame = this.frame
+        if (!box || !frame) return
+        const [w, ht] = SHAPES[this.state.shape]
+        const k = this.state.shape === 'phone' ? Math.min(box.clientWidth / w, 480 / ht) : box.clientWidth / w
+        const want = `translateX(-50%) scale(${k.toFixed(4)})`
+        if (frame.style.transform !== want) { frame.style.width = `${w}px`; frame.style.height = `${ht}px`; frame.style.transform = want; box.style.height = `${Math.round(ht * k)}px` }
+      },
+      render() {
+        const shape = this.state.shape
+        const choice = (label, value) => h('button', { type: 'button', 'aria-pressed': String(shape === value), onClick: () => { this.sent = ''; this.setState({ shape: value }, () => this.fit()) } }, label)
+        return h('div', { className: 'ia-heroprev' },
+          h('div', { className: 'ia-heroprev-head' },
+            h('strong', {}, 'Live preview'),
+            h('div', { className: 'ia-heroprev-switch', role: 'group', 'aria-label': 'Screen' }, choice('Computer', 'computer'), choice('Phone', 'phone'))),
+          h('div', { className: `ia-heroprev-stage is-${shape}`, ref: (el) => { this.box = el } },
+            h('iframe', { key: shape, ref: (el) => { this.frame = el }, src: '../?preview=hero', title: 'Live preview of the top of the home page', tabIndex: -1, onLoad: () => { this.sent = ''; this.send() } })),
+          h('p', { className: 'ia-heroprev-note' }, 'Changes show here as you make them. Visitors see them once you press Save and the site has rebuilt.'))
+      },
+    }))
+  }
 })()
