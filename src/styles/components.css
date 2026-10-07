@@ -1274,3 +1274,23 @@ a.buy-btn { text-decoration: none; }
   .acct2-who p .acct2-since { flex-basis: 100%; }
   .acct2-who p .acct2-since::before { content: none; }
 }
+
+/* logging out: in a soft red, so it reads as leaving */
+.acct2-out { display: inline-flex; align-items: center; gap: 7px; color: #ff8a9b; transition: color 0.2s; }
+.acct2-out svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.acct2-out:hover, .acct2-out:focus-visible { color: #ffb3be; outline: 0; }
+.acc-out-all { --line-strong: rgba(255, 107, 127, 0.55); color: #ff8a9b; }
+
+/* the confirmation window */
+.acc-modal { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(5, 3, 8, 0.72); backdrop-filter: blur(4px); }
+.acc-modal-box { position: relative; width: min(440px, 100%); padding: 30px 28px 26px; border: 1px solid var(--line-strong); background: linear-gradient(160deg, oklch(0.24 0.08 var(--h) / 0.9), #0e0b14 60%); box-shadow: 0 40px 90px rgba(0, 0, 0, 0.7), 12px 12px 0 -2px #ff6b7f; }
+.acc-modal-x { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; font-size: 1.5rem; line-height: 1; color: var(--fg-mute); cursor: pointer; }
+.acc-modal-x:hover { color: var(--fg); }
+.acc-modal-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 16px; border-radius: 50%; background: rgba(255, 107, 127, 0.14); color: #ff8a9b; }
+.acc-modal-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.acc-modal-box h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 2rem; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1; }
+.acc-modal-box p { margin: 12px 0 0; color: var(--fg-dim); line-height: 1.55; overflow-wrap: anywhere; }
+.acc-modal-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.acc-modal-yes { background: #ff6b7f; color: #1a0710; }
+.acc-modal-yes:hover, .acc-modal-yes:focus-visible { background: #ff8a9b; color: #1a0710; }
+@media (max-width: 479px) { .acc-modal { align-items: end; padding: 12px; } .acc-modal-actions { flex-direction: column-reverse; } .acc-modal-actions .btn { width: 100%; justify-content: center; } }

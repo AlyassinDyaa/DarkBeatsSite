@@ -262,6 +262,40 @@ function Verify() {
   )
 }
 
+/* ---------- "are you sure?": a small window over the page. Escape, the cross or a click outside
+   says no; the answer button runs the action and shows that it is working. */
+function Confirm({ open, title, text, yes, onYes, onClose }) {
+  const [busy, setBusy] = useState(false)
+  const yesBtn = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const before = document.activeElement
+    const key = (e) => { if (e.key === 'Escape') onClose() }
+    addEventListener('keydown', key)
+    const t = setTimeout(() => yesBtn.current?.focus(), 60)
+    window.__lenis?.stop?.()
+    return () => { removeEventListener('keydown', key); clearTimeout(t); window.__lenis?.start?.(); before?.focus?.() }
+  }, [open, onClose])
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="acc-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose() }}>
+          <motion.div className="acc-modal-box" role="alertdialog" aria-modal="true" aria-labelledby="acc-modal-title" aria-describedby="acc-modal-text" initial={{ opacity: 0, y: 18, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}>
+            <button type="button" className="acc-modal-x" onClick={onClose} aria-label="Close" disabled={busy}>×</button>
+            <span className="acc-modal-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4 M10 16l-4-4 4-4 M6 12h10" /></svg></span>
+            <h2 id="acc-modal-title">{title}</h2>
+            <p id="acc-modal-text">{text}</p>
+            <div className="acc-modal-actions">
+              <button type="button" className="btn ghost sm" onClick={onClose} disabled={busy}>Stay logged in</button>
+              <button ref={yesBtn} type="button" className="btn sm acc-modal-yes" disabled={busy} onClick={async () => { setBusy(true); try { await onYes() } finally { setBusy(false) } }}>{busy ? 'Logging out…' : yes}</button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 /* ---------- the account ---------- */
 // the piece an order line is about ("The Rider · A2 (signed)" → The Rider); the longest title wins
 const pieceFor = (name) => work.filter((p) => p.title && String(name || '').startsWith(p.title)).sort((a, b) => b.title.length - a.title.length)[0] || null
@@ -456,7 +490,7 @@ function Security() {
   const [changed, setChanged] = useState(false)
   const del = useForm({ password: '' })
   const [deleting, setDeleting] = useState(false)
-  const [busyAll, setBusyAll] = useState(false)
+  const [askAll, setAskAll] = useState(false)
   return (
     <div className="acc-stack">
       <form className="acc-card" onSubmit={(e) => pw.run(e, async () => { await call('password', pw.values); setChanged(true); pw.set('current')(''); pw.set('password')('') })} noValidate>
@@ -471,7 +505,8 @@ function Security() {
       <div className="acc-card">
         <h3 className="acc-h3">Log out everywhere</h3>
         <p className="acc-p">Lost a phone, or logged in on a shared computer? This logs out every device, this one too.</p>
-        <button type="button" className="btn ghost sm" disabled={busyAll} onClick={async () => { setBusyAll(true); try { await call('everywhere'); navigate('/account/login', { replace: true }) } catch { setBusyAll(false) } }}>{busyAll ? 'One moment…' : 'Log out of every device'}</button>
+        <button type="button" className="btn ghost sm acc-out-all" onClick={() => setAskAll(true)}>Log out of every device</button>
+        <Confirm open={askAll} title="Log out everywhere?" text="Every phone, tablet and computer logged in to this account is logged out, this one too. You can log back in with your password." yes="Log out everywhere" onYes={async () => { await call('everywhere').catch(() => {}); setAskAll(false); navigate('/account/login', { replace: true }) }} onClose={() => setAskAll(false)} />
       </div>
       <div className="acc-card is-danger">
         <h3 className="acc-h3">Delete the account</h3>
@@ -600,6 +635,7 @@ function Home() {
   const tab = TABS.some(([k]) => k === params.get('tab')) ? params.get('tab') : 'overview'
   const [resent, setResent] = useState('')
   const { orders, problem } = useOrders()
+  const [leaving, setLeaving] = useState(false) // the 'log out?' window
   const owned = [...new Map((orders || []).filter((o) => o.kind !== 'support').flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
   const grid = useRef(null)
   // the browser tab's title follows the section, without the page's own scroll-to-top on a new title
@@ -630,9 +666,10 @@ function Home() {
     details: 'Your name, how to reach you, and your picture.',
     security: 'Your password, your devices, your account.',
   }
-  const logout = async () => { await call('logout').catch(() => {}); navigate('/', { replace: true }) }
+  const logout = async () => { await call('logout').catch(() => {}); setLeaving(false); navigate('/', { replace: true }) }
   return (
     <Page title="Your account">
+      <Confirm open={leaving} title="Log out?" text={`You can log back in any time with ${user.email}. Your cart and saved pieces stay with your account.`} yes="Log out" onYes={logout} onClose={() => setLeaving(false)} />
       <div className="container acct2">
         {/* the profile: a banner of their own art, their picture over its edge, their name */}
         <header className="acct2-hero">
@@ -653,7 +690,10 @@ function Home() {
             </div>
             <div className="acct2-actions">
               <button type="button" className="btn ghost sm" onClick={() => go('details')}>Edit profile</button>
-              <button type="button" className="acct2-out" onClick={logout}>Log out</button>
+              <button type="button" className="acct2-out" onClick={() => setLeaving(true)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4 M10 16l-4-4 4-4 M6 12h10" /></svg>
+                Log out
+              </button>
             </div>
           </div>
         </header>
