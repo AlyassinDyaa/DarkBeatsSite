@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, buyable, canBuy, categories, day, home, money, nowPrice, onSale, pages, redraws, shop, shows, soldOut, work } from '../data/site'
+import { badge, buyable, canBuy, categories, home, money, nowPrice, onSale, pages, redraws, shop, shows, soldOut, types, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
 import Compare from '../components/Compare'
 import Lightbox from '../components/Lightbox'
+import FilterMenu from '../components/FilterMenu'
 
 /* Every piece. While online purchases are switched on (in the admin), each piece with a price
    shows it, and opening the piece offers the Buy button. Stripe sends a buyer back here with
@@ -37,7 +38,7 @@ function TileBody({ p, eager }) {
           <strong>{p.title}</strong>
           {price && !priceUp && <span className="tile-cap-price">{amount}</span>}
         </span>
-        <small>{[p.category, day(p.date)].filter(Boolean).join(' · ')}</small>
+        <small>{[p.type, p.category].filter(Boolean).join(' · ')}</small>
         {tag && !tagsUp && <span className="tile-cap-tags">{tagEl('is-inline')}</span>}
       </span>
     </>
@@ -50,15 +51,20 @@ export default function Shop() {
   const cart = useCart()
   const clearCart = cart.clear
   useEffect(() => { if (thanks) clearCart() }, [thanks, clearCart])
-  const [filter, setFilter] = useState('All')
+  const [filter, setFilter] = useState('All') // subject
+  const [kind, setKind] = useState('All') // type
   const [sel, setSel] = useState(null)
   // Sold-out pieces wait at the end, in their usual order; back in stock, a piece is back in its place.
   const shown = useMemo(() => {
-    const list = filter === 'All' ? work : work.filter((p) => p.category === filter)
+    const list = work.filter((p) => (filter === 'All' || p.category === filter) && (kind === 'All' || p.type === kind))
     return [...list.filter((p) => !soldOut(p)), ...list.filter((p) => soldOut(p))]
-  }, [filter])
-  const count = (c) => (c === 'All' ? work.length : work.filter((p) => p.category === c).length)
+  }, [filter, kind])
+  // each count reads with the other drop-down’s choice, so it says what picking it would show
+  const count = (field, value, other, otherValue) => work.filter((p) => (value === 'All' || p[field] === value) && (otherValue === 'All' || p[other] === otherValue)).length
   const choose = (c) => { setSel(null); setFilter(c) }
+  const chooseKind = (t) => { setSel(null); setKind(t) }
+  const subjectOptions = ['All', ...categories].map((c) => ({ value: c, label: c === 'All' ? 'All subjects' : c, count: count('category', c, 'type', kind) }))
+  const typeOptions = ['All', ...types].map((t) => ({ value: t, label: t === 'All' ? 'All products' : t, count: count('type', t, 'category', filter) }))
   return (
     <Page title="Shop">
       <header className="page-head container">
@@ -78,19 +84,19 @@ export default function Shop() {
             <li><b>03</b>{shop.shipping !== false ? 'Posted to your door' : 'Sent to your inbox'}</li>
           </ol>
         )}
-        {categories.length > 1 && (
-          <div className="filters" role="group" aria-label="Show">
-            {['All', ...categories].map((c) => (
-              <button key={c} type="button" className={`chip ${filter === c ? 'on' : ''}`} aria-pressed={filter === c} onClick={() => choose(c)}>
-                {c}<small>{count(c)}</small>
-              </button>
-            ))}
+        {(categories.length > 1 || types.length > 1) && (
+          <div className="shop-filters">
+            {types.length > 1 && <FilterMenu label="Product" value={kind} options={typeOptions} onChange={chooseKind} />}
+            {categories.length > 1 && <FilterMenu label="Subject" value={filter} options={subjectOptions} onChange={choose} />}
+            {(filter !== 'All' || kind !== 'All') && <button type="button" className="shop-filters-clear" onClick={() => { choose('All'); chooseKind('All') }}>Clear</button>}
+            <span className="shop-filters-count">{shown.length} {shown.length === 1 ? 'piece' : 'pieces'}</span>
           </div>
         )}
       </header>
 
       <section className="section tight">
         <div className="container">
+          {shown.length === 0 && <p className="shop-empty">Nothing here yet in that combination. <button type="button" onClick={() => { choose('All'); chooseKind('All') }}>Show everything</button></p>}
           <motion.ul className="grid" layout>
             <AnimatePresence mode="popLayout" initial={false}>
               {shown.map((p, i) => (
@@ -105,7 +111,7 @@ export default function Shop() {
         </div>
       </section>
 
-      {shows('shop', 'redraws') && redraws.length > 0 && filter === 'All' && (
+      {shows('shop', 'redraws') && redraws.length > 0 && filter === 'All' && kind === 'All' && (
         <section className="section">
           <div className="container">
             <div className="section-head">

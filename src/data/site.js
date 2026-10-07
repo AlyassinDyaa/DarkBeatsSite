@@ -30,8 +30,10 @@ export let nav
    (The folders and the show/hide switches keep their first names: "work" is the Shop page and
    its pieces, "gallery" is the Work page and its sections.) */
 export let work
-/* The categories that have at least one piece, in the order they first appear. */
-export let categories
+/* The Shop’s two ways of sorting a piece, each a list the admin keeps (Shop categories): its
+   subject (Heroes, Villains...) and its type (Posters, Stickers...). Only those that have at least
+   one piece are listed, in the admin’s order; any a piece names that is not in the list follow. */
+export let categories, types
 /* The drifting wall of pictures in the home page's top: the pictures chosen for it in the admin, in
    their order, each either a Shop piece or a picture of its own; with none chosen, every Shop piece. */
 export let heroWall
@@ -145,7 +147,17 @@ function assemble(content) {
   work = live(folder('work'))
     .filter((p) => p.title)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)))
-  categories = [...new Set(work.map((p) => p.category).filter(Boolean))]
+  const shopLists = site('categories')
+  const names = (list) => (Array.isArray(list) ? list : []).map((x) => String((x && x.name) || x || '').trim()).filter(Boolean)
+  const inUse = (listed, field) => {
+    const used = new Set(work.map((p) => p[field]).filter(Boolean))
+    return [...names(listed).filter((n) => used.has(n)), ...[...used].filter((n) => !names(listed).includes(n))]
+  }
+  categories = inUse(shopLists.subjects, 'category')
+  types = inUse(shopLists.types, 'type')
+  // what the buyer gets: the line the admin wrote for the piece’s type, or the shop’s own line
+  const typeNotes = Object.fromEntries((Array.isArray(shopLists.types) ? shopLists.types : []).filter((t) => t && t.name).map((t) => [String(t.name).trim(), String(t.note || '').trim()]))
+  work = work.map((p) => ({ ...p, what: typeNotes[p.type] || shop.note || '' }))
   const picked = work.filter((p) => p.featured)
   latest = (picked.length ? picked : work).slice(0, 6)
 

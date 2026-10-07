@@ -46,7 +46,7 @@
      single pages is looked up as "collection/page". A heading never goes on an on/off switch:
      a switch is drawn as a box of its own and the heading would land inside it. */
   const LAYOUT = {
-    work: { groups: { title: 'The piece', src: 'Picture, and where it shows' }, half: ['title', 'category', 'date', 'link', 'status', 'salePrice', 'price', 'featured', 'hidden'] },
+    work: { groups: { title: 'The piece', src: 'Picture, and where it shows' }, half: ['category', 'type', 'date', 'link', 'status', 'salePrice', 'price', 'featured', 'hidden'] },
     gallery_sections: { groups: { title: 'Section', from: 'Pictures' }, half: ['title', 'order'] },
     redraws: { groups: { title: 'The set', stages: 'The drawings, oldest first', order: 'Rarely needed' }, half: ['title', 'text'] },
     events: { groups: { name: 'The event', order: 'Rarely needed' }, half: ['name', 'when', 'role', 'place', 'order', 'hidden'] },
@@ -79,7 +79,7 @@
   ]
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'site/brand': 'Brand & contact', 'site/shop': 'Shop & payments', 'site/visibility': 'Show / hide' }
+  const SHORT = { 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'site/brand': 'Brand & contact', 'site/shop': 'Shop & payments', 'site/categories': 'Shop categories', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -90,6 +90,7 @@
     'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
+    'site/categories': 'The Shop’s two lists: subjects (Heroes, Villains...) and products (Posters, Stickers...).',
     'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
   }
   Object.assign(ICONS, {
@@ -101,6 +102,7 @@
     'pages/support': 'M12 20s-7-4.500-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 10c0 5.500-7 10-7 10z',
     'site/brand': 'M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z',
     'site/shop': 'M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2',
+    'site/categories': 'M4 5h7v7H4z M13 5h7v7h-7z M4 14h7v5H4z M13 14h7v5h-7z',
     'site/visibility': 'M2.500 12s3.500-6.500 9.500-6.500 9.500 6.500 9.500 6.500-3.500 6.500-9.500 6.500S2.500 12 2.500 12z M12 9.500a2.500 2.500 0 1 0 0 5 2.500 2.500 0 0 0 0-5z',
   })
   ICONS.adminhome = 'M4 4h7v7H4z M13 4h7v4h-7z M13 10h7v10h-7z M4 13h7v7H4z'

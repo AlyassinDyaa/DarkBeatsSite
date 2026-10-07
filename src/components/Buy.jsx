@@ -56,7 +56,7 @@ export default function Buy({ piece }) {
         </div>
         {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       </div>
-      {shop.note && <p className="buy-what">{shop.note}</p>}
+      {piece.what && <p className="buy-what">{piece.what}</p>}
       {onSale(piece) && !out && <p className="buy-save">You save {money(Number(piece.price) - nowPrice(piece))}</p>}
       {choice && !out && (
         <button type="button" role="switch" aria-checked={signed} className={`buy-sign ${signed ? 'on' : ''}`} onClick={() => setSigned(!signed)}>

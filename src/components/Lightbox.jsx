@@ -83,7 +83,7 @@ export default function Lightbox({ items, sel, setSel }) {
               </motion.div>
             </AnimatePresence>
             <div className="lightbox-info">
-              {(piece.category || piece.date) && <div className="label accent">{[piece.category, day(piece.date)].filter(Boolean).join(' · ')}</div>}
+              {(piece.category || piece.date) && <div className="label accent">{[piece.type, piece.category, day(piece.date)].filter(Boolean).join(' · ')}</div>}
               {piece.title && <h2 className="display h-md">{piece.title}</h2>}
               {piece.note && <p className="dim">{piece.note}</p>}
               <Buy key={piece.slug || sel} piece={piece} />

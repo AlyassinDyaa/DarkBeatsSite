@@ -1,0 +1,40 @@
+{
+  "subjects": [
+    {
+      "name": "Heroes"
+    },
+    {
+      "name": "Villains"
+    },
+    {
+      "name": "Horror"
+    },
+    {
+      "name": "Games"
+    },
+    {
+      "name": "Original"
+    },
+    {
+      "name": "Commissions"
+    }
+  ],
+  "types": [
+    {
+      "name": "Posters",
+      "note": ""
+    },
+    {
+      "name": "Foil posters",
+      "note": ""
+    },
+    {
+      "name": "Stickers",
+      "note": ""
+    },
+    {
+      "name": "Shirts",
+      "note": ""
+    }
+  ]
+}

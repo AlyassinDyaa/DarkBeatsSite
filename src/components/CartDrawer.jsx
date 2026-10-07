@@ -71,7 +71,7 @@ export default function CartDrawer() {
                         <span className="cart-thumb">{l.piece.src && <img src={asset(l.piece.src)} alt="" />}</span>
                         <div className="cart-info">
                           <strong>{l.piece.title}</strong>
-                          <small>{[shop.signedChoice ? (l.signed ? 'Signed' : 'Unsigned') : '', shop.note].filter(Boolean).join(' · ')}</small>
+                          <small>{[shop.signedChoice ? (l.signed ? 'Signed' : 'Unsigned') : '', l.piece.what].filter(Boolean).join(' · ')}</small>
                           <div className="cart-row">
                             <div className="cart-qty" role="group" aria-label={`How many of ${l.piece.title}`}>
                               <button type="button" onClick={() => (l.qty > 1 ? cart.setQty(l.slug, l.signed, l.qty - 1) : cart.remove(l.slug, l.signed))} aria-label="One fewer">−</button>

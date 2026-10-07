@@ -1,6 +1,7 @@
 {
   "title": "Superman",
   "category": "Heroes",
+  "type": "Posters",
   "date": "2026-04-18",
   "hue": 88,
   "src": "/uploads/superman.webp",

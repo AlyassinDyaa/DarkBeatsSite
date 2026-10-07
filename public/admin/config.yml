@@ -54,7 +54,8 @@ collections:
     sortable_fields: [date, title, category]
     fields:
       - { name: title, label: Title, widget: string }
-      - { name: category, label: Category, widget: select, options: [Heroes, Villains, Horror, Games, Original, Commissions], default: Heroes, hint: 'The Shop page gets a filter button for every category in use.' }
+      - { name: category, label: Subject, widget: relation, collection: site, file: categories, value_field: 'subjects.*.name', search_fields: ['subjects.*.name'], display_fields: ['subjects.*.name'], hint: 'Heroes, Villains... The list is kept under Site → Shop categories.' }
+      - { name: type, label: Product, widget: relation, collection: site, file: categories, value_field: 'types.*.name', search_fields: ['types.*.name'], display_fields: ['types.*.name'], hint: 'Posters, Stickers... The list is kept under Site → Shop categories.' }
       - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, hint: 'Newest pieces come first.' }
       - { name: link, label: Link to the post, widget: string, required: false, hint: 'The Instagram post, if there is one.' }
       - name: status
@@ -514,6 +515,30 @@ collections:
           - { name: countries, label: Countries you post to, widget: list, required: false, hint: 'Two-letter country codes, separated by commas: AU, NZ, US, CA, GB.' }
           - { name: thanksTitle, label: Heading, widget: string, required: false }
           - { name: thanksText, label: Text, widget: string, required: false }
+
+      - name: categories
+        label: Shop categories
+        file: content/site/categories.json
+        fields:
+          - name: subjects
+            label: Subjects
+            label_singular: subject
+            widget: list
+            collapsed: true
+            summary: '{{fields.name}}'
+            hint: 'What a piece shows: Heroes, Villains, Horror... The Shop’s Subject drop-down lists them in this order (only those with pieces). Drag to reorder. Renaming one here does not rename it on the pieces that use it: change those too.'
+            fields:
+              - { name: name, label: Name, widget: string }
+          - name: types
+            label: Products
+            label_singular: product
+            widget: list
+            collapsed: true
+            summary: '{{fields.name}}'
+            hint: 'What a piece is: Posters, Foil posters, Stickers, Shirts... The Shop’s Product drop-down lists them in this order (only those with pieces).'
+            fields:
+              - { name: name, label: Name, widget: string }
+              - { name: note, label: What the buyer gets, widget: string, required: false, hint: 'For example "A3 print." or "Vinyl sticker, 7 cm." Shown under the price and on the payment page. Empty: the shop’s own line (Shop and payments).' }
 
       - name: visibility
         label: Show or hide

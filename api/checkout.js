@@ -33,6 +33,8 @@ export default async function handler(req, res) {
 
   // signed or unsigned: only while the admin offers the choice; the extra for signing is read here too
   const choice = Boolean(shop.signedChoice)
+  const lists = read('content/site/categories.json') || {}
+  const typeNote = (type) => { const t = (Array.isArray(lists.types) ? lists.types : []).find((x) => x && String(x.name).trim() === String(type || '').trim()); return (t && String(t.note || '').trim()) || '' }
   const extra = Math.max(0, Number(shop.signedExtra) || 0)
   const lines = []
   for (const item of asked) {
@@ -62,7 +64,8 @@ export default async function handler(req, res) {
     ask.set(`${at}[price_data][currency]`, String(shop.currency || 'aud').toLowerCase())
     ask.set(`${at}[price_data][unit_amount]`, String(l.cents))
     ask.set(`${at}[price_data][product_data][name]`, `${String(l.piece.title || l.slug).slice(0, 230)}${choice ? (l.signed ? ' (signed)' : ' (unsigned)') : ''}`)
-    if (shop.note) ask.set(`${at}[price_data][product_data][description]`, String(shop.note).slice(0, 500))
+    const what = typeNote(l.piece.type) || shop.note
+    if (what) ask.set(`${at}[price_data][product_data][description]`, String(what).slice(0, 500))
     if (typeof l.piece.src === 'string' && l.piece.src.startsWith('/')) ask.set(`${at}[price_data][product_data][images][0]`, origin + l.piece.src)
   })
   // what was ordered, readable in the Stripe dashboard: "venom x2 signed, superman x1"
