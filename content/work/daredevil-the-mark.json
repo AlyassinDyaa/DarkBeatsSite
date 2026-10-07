@@ -1,12 +1,13 @@
 {
-  "title": "Daredevil: The Mark",
-  "category": "Heroes",
-  "date": "2026-03-29",
-  "hue": 18,
   "src": "/uploads/daredevil-the-mark.webp",
-  "link": "https://www.instagram.com/jbeatsart/p/DWdjYAeAfM6/",
-  "note": "",
-  "featured": false,
+  "price": 40,
   "hidden": false,
-  "price": 40
+  "featured": false,
+  "date": "2026-03-29",
+  "note": "",
+  "status": "soldout",
+  "hue": 18,
+  "title": "Daredevil: The Mark",
+  "link": "https://www.instagram.com/jbeatsart/p/DWdjYAeAfM6/",
+  "category": "Heroes"
 }
