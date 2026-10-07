@@ -30,9 +30,9 @@
     "src": "/uploads/leonk.webp",
     "layer": "behind",
     "ground": false,
-    "size": 107,
-    "x": -19,
-    "y": -31
+    "size": 100,
+    "x": -10,
+    "y": 10
   },
   "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
   "galleryTitle": "Up on the wall",
