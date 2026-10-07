@@ -391,16 +391,20 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .how-buy b { font-family: var(--mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; color: var(--accent); }
 
 /* the price and the button, beside an opened piece */
-.buy { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line-strong); }
-.buy-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+/* the product panel: price with its tag beside it; what you get; the choice; the button. Each step
+   has room around it, and nothing crowds the price. */
+.buy { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line-strong); }
+.buy-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.buy-amount { display: flex; align-items: baseline; gap: 12px; }
 .buy-price { font-family: var(--display); font-size: clamp(2.4rem, 4vw, 3rem); line-height: 1; color: var(--fg); transform: skewX(var(--slant)); transform-origin: 0 100%; }
-.buy-what { font-size: 0.92rem; color: var(--fg-dim); }
-.buy-badge { position: static; display: inline-flex; margin-bottom: 14px; }
+.buy-what { margin: 12px 0 0; font-size: 0.95rem; color: var(--fg-dim); }
+.buy-badge { position: static; display: inline-flex; margin: 0; }
 .buy-was { font-family: var(--display); font-size: 1.5rem; line-height: 1; color: var(--fg-mute); text-decoration-thickness: 2px; transform: skewX(var(--slant)); }
 .buy-price.is-out { color: var(--fg-mute); text-decoration: line-through; }
-.buy-save { margin: 8px 0 0; font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: oklch(0.8 0.2 calc(var(--h) + 28)); }
+.buy-save { margin: 10px 0 0; font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: oklch(0.8 0.2 calc(var(--h) + 28)); }
 /* signed or unsigned */
-.buy-options { display: flex; gap: 8px; margin-top: 16px; }
+.buy-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.buy-options-label { flex: 1 1 100%; margin-bottom: 2px; font-family: var(--mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); }
 .buy-options button { flex: 1 1 0; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 2px 14px 0; font-family: var(--display); font-size: 1.05rem; line-height: 1; letter-spacing: 0.05em; text-transform: uppercase; color: var(--fg-dim); border: 1px solid var(--line-strong); background: rgba(9, 7, 13, 0.5); transition: background 0.2s, color 0.2s, border-color 0.2s; }
 .buy-options button:hover { color: var(--fg); background: var(--bg-3); }
 .buy-options button.on { color: var(--fg); background: oklch(0.3 0.13 var(--h)); border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
@@ -411,7 +415,7 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .buy-secure a { color: var(--fg); border-bottom: 2px solid var(--accent); }
 .buy-btn {
   position: relative; isolation: isolate; overflow: hidden;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; height: 60px; margin-top: 18px; padding: 0 22px 0 28px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; height: 60px; margin-top: 24px; padding: 0 22px 0 28px;
   font-family: var(--display); font-size: 1.15rem; letter-spacing: 0.07em; text-transform: uppercase;
   background: var(--accent); color: var(--on-accent); clip-path: var(--lean);
   transition: color 0.35s var(--ease-out), transform 0.2s var(--ease-out);
@@ -430,7 +434,7 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .buy-spin { display: block; width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid rgba(10, 7, 16, 0.25); border-top-color: var(--on-accent); animation: buy-spin 0.7s linear infinite; }
 @keyframes buy-spin { to { transform: rotate(1turn); } }
 @keyframes buy-sheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }
-.buy-secure { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 0.8rem; color: var(--fg-mute); }
+.buy-secure { display: flex; align-items: center; gap: 8px; margin: 14px 0 0; font-size: 0.8rem; color: var(--fg-mute); }
 .buy-secure svg { flex: 0 0 auto; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
 .buy-note { overflow: hidden; }
 .buy-note p { margin: 14px 0 6px; padding: 12px 14px 0; font-size: 0.88rem; color: var(--fg-dim); border-left: 3px solid #ff8fa0; }
@@ -447,14 +451,16 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 
 /* ---------- a piece, opened ---------- */
 .lightbox { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 28px clamp(16px, 6vw, 88px); overflow-y: auto; background: rgba(9, 7, 13, 0.95); backdrop-filter: blur(16px); }
-.lightbox-inner { display: grid; grid-template-columns: auto minmax(220px, 340px); align-items: end; gap: clamp(24px, 4vw, 56px); max-width: 100%; }
+.lightbox-inner { display: grid; grid-template-columns: auto minmax(260px, 380px); align-items: center; gap: clamp(28px, 4vw, 64px); max-width: 100%; }
 .lightbox-art { box-shadow: 14px 14px 0 var(--accent); }
 .lightbox-art img { width: auto; height: auto; max-height: min(86svh, 900px); max-width: calc(100vw - 620px); }
 /* a piece with no picture yet: its title card, at poster size */
 .lightbox-art.is-card { height: min(86svh, 900px); aspect-ratio: 5 / 7; }
 .lightbox-art.is-card .poster { width: 100%; height: 100%; aspect-ratio: auto; }
-.lightbox-info .display { margin-bottom: 14px; }
-.lightbox-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.lightbox-info .label { margin-bottom: 12px; }
+.lightbox-info .display { margin-bottom: 10px; }
+.lightbox-info > p.dim { margin: 12px 0 0; }
+.lightbox-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
 .lightbox-hint { margin: 26px 0 0; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-mute); }
 .lightbox-nav, .lightbox-x { position: fixed; z-index: 2; display: grid; place-items: center; width: 50px; height: 50px; font-size: 1.3rem; background: rgba(6, 4, 9, 0.6); border: 1px solid var(--line-strong); transition: background 0.2s, color 0.2s, border-color 0.2s; }
 .lightbox-nav:hover, .lightbox-x:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
@@ -463,10 +469,15 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .lightbox-nav.next { right: 14px; }
 .lightbox-x { top: 14px; right: 14px; font-size: 1.6rem; }
 @media (max-width: 899px) {
-  .lightbox { place-items: start center; padding: 76px 20px 32px; }
-  .lightbox-inner { grid-template-columns: 1fr; justify-items: start; }
+  .lightbox { place-items: start center; padding: 76px 20px calc(36px + env(safe-area-inset-bottom)); }
+  .lightbox-inner { grid-template-columns: minmax(0, 1fr); justify-items: stretch; gap: 26px; width: 100%; }
+  .lightbox-art { justify-self: center; }
+  .lightbox-info .display { font-size: 2rem; }
+  .buy { margin-top: 20px; padding-top: 20px; }
+  .buy-price { font-size: 2.4rem; }
+  .lightbox-actions .btn { flex: 1 1 auto; }
   .lightbox-art { box-shadow: 8px 8px 0 var(--accent); }
-  .lightbox-art img { max-width: 100%; max-height: 62svh; }
+  .lightbox-art img { max-width: 100%; max-height: 50svh; }
   .lightbox-art.is-card { height: auto; width: min(100%, 44svh); }
   .lightbox-nav { top: 14px; margin: 0; }
   .lightbox-nav.next { left: 72px; right: auto; }

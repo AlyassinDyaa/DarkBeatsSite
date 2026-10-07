@@ -43,15 +43,18 @@ export default function Buy({ piece }) {
   }
   return (
     <motion.div className="buy" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45, ease: EASE }}>
-      {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       <div className="buy-head">
-        {onSale(piece) && <s className="buy-was">{money(Number(piece.price) + extra, true)}</s>}
-        <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece) + extra)}</span>
-        {shop.note && <span className="buy-what">{shop.note}</span>}
+        <div className="buy-amount">
+          {onSale(piece) && <s className="buy-was">{money(Number(piece.price) + extra, true)}</s>}
+          <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece) + extra)}</span>
+        </div>
+        {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       </div>
+      {shop.note && <p className="buy-what">{shop.note}</p>}
       {onSale(piece) && !out && <p className="buy-save">You save {money(Number(piece.price) - nowPrice(piece))}</p>}
       {choice && !out && (
         <div className="buy-options" role="radiogroup" aria-label="Signed or unsigned">
+          <span className="buy-options-label" aria-hidden="true">Print</span>
           {[[true, 'Signed'], [false, 'Unsigned']].map(([value, label]) => (
             <button key={label} type="button" role="radio" aria-checked={signed === value} className={signed === value ? 'on' : ''} onClick={() => setSigned(value)}>
               <span>{label}</span>
