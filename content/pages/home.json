@@ -36,7 +36,7 @@
   },
   "redrawText": "Old pieces get redrawn. Drag the line to see what a few years of drawing every day does.",
   "galleryTitle": "Up on the wall",
-  "wallShow": "pick",
+  "wallShow": "list",
   "wallCategory": "Villains",
   "wallAddNew": true,
   "wall": [
@@ -89,7 +89,7 @@
   "galleryView": "wall",
   "commissionsButton": "How it works",
   "eventsLabel": "In person",
-  "wallSpeed": 100,
+  "wallSpeed": 300,
   "redrawLabel": "Keep drawing",
   "eventsTitle": "Find me at"
 }
