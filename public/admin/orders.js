@@ -967,7 +967,7 @@
   const LEFT_IN_STRIPE = 'The payment record itself stays in your Stripe account (Stripe never deletes payments) and nothing is refunded.'
   const deleteOrder = (o) => sure({
     title: 'Delete this order?',
-    lines: [`${o.name || o.email || 'No name'} · ${money(o.amount, o.currency)} · ${when(o.created)}`, `It leaves Orders and Customers here for good. ${LEFT_IN_STRIPE}`],
+    lines: [`${o.name || o.email || 'No name'} · ${money(o.amount, o.currency)} · ${when(o.created)}`, `It is erased from the database: it leaves Orders, Customers and the buyer's account for good. ${LEFT_IN_STRIPE}`],
     run: async () => { await dropOrders([o]); after() },
   })
   const codesOf = (email) => (email ? disc.list.filter((d) => d.email && d.email.toLowerCase() === email.toLowerCase()) : [])
@@ -976,7 +976,7 @@
     const codes = codesOf(p.email)
     sure({
       title: `Delete ${p.name || p.email || 'this customer'}?`,
-      lines: [`Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} leave the admin for good${codes.length ? '; the codes stop working' : ''}.`, LEFT_IN_STRIPE],
+      lines: [`Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} are erased from the database and leave the admin for good${codes.length ? '; the codes stop working' : ''}.`, LEFT_IN_STRIPE],
       run: async () => { await dropOrders(p.orders); if (codes.length) await dropCodes(codes); people.open.delete(p.key); after() },
     })
   }

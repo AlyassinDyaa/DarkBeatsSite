@@ -10,8 +10,9 @@ import { describeItem, piecesNow, setTrack } from './_orders.js'
 
    GET  /api/orders[?after=<id>]  the latest 100 completed checkouts, newest first
    POST /api/orders { id, status, carrier, number, note }  saves the posting details of one
-   POST /api/orders { action: 'hide', pis: [...] }  takes orders out of the admin. Stripe cannot
-        delete a payment, so the payment is marked (jb_hidden) and the admin no longer lists it.
+   POST /api/orders { action: 'hide', pis: [...], refs: [...] }  deletes orders: they are erased
+        from the database (and so from the buyer's account). Stripe cannot delete a payment, so the
+        payment is marked (jb_hidden) and the admin no longer lists it.
 
    With the database set up (MONGODB_URI), PayPal orders are listed here too (they are kept in the
    database: ids start "pp_"), and every posting update is copied to the database, which is what
@@ -153,12 +154,12 @@ export default async function handler(req, res) {
           const got = await stripe(`payment_intents/${pi}`, { method: 'POST', body: 'metadata[jb_hidden]=1' })
           if (got.ok) done.push(pi)
         }
-        // the buyer's account drops it too (their orders, their count, their pictures)
+        // erased from the database, so it leaves the buyer's account too (orders, count, pictures)
         if (done.length && dbReady()) {
-          try { await (await db()).collection('orders').updateMany({ pi: { $in: done } }, { $set: { hidden: true } }) } catch (e) { console.error('not hidden in the database:', e.message) }
+          try { await (await db()).collection('orders').deleteMany({ pi: { $in: done } }) } catch (e) { console.error('not erased from the database:', e.message) }
         }
         if (refs.length && dbReady()) {
-          await (await db()).collection('orders').updateMany({ ref: { $in: refs } }, { $set: { hidden: true } })
+          await (await db()).collection('orders').deleteMany({ ref: { $in: refs } })
           done.push(...refs)
         }
         return res.status(done.length ? 200 : 502).json({ hidden: done, ...(done.length < pis.length + refs.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
