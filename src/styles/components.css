@@ -1101,3 +1101,34 @@ a.buy-btn { text-decoration: none; }
 .acct-band { margin: 0 0 clamp(10px, 2vw, 24px); }
 .acct { padding-top: clamp(26px, 3vw, 44px); }
 .acct-overview > .acct-stats { margin-top: 0; }
+
+/* the collector card beside the login forms */
+.acc-card3d-wrap { width: min(100%, 460px); perspective: 1100px; }
+.acc-card3d { --rx: 4deg; --ry: -12deg; --mx: 30%; position: relative; aspect-ratio: 1.586; overflow: hidden; display: grid; grid-template-rows: auto auto 1fr auto; padding: clamp(18px, 2.6vw, 28px); border-radius: 20px; color: var(--fg); background:
+    radial-gradient(120% 90% at 100% 0%, oklch(0.55 0.22 var(--h) / 0.55), transparent 55%),
+    radial-gradient(90% 80% at 0% 100%, oklch(0.4 0.18 calc(var(--h) + 40) / 0.45), transparent 60%),
+    repeating-linear-gradient(-58deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 9px),
+    linear-gradient(150deg, #1d1428, #0c0912 70%);
+  border: 1px solid rgba(244, 239, 248, 0.16); box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 18px 18px 0 -2px var(--accent);
+  transform: rotateX(var(--rx)) rotateY(var(--ry)); transform-style: preserve-3d; transition: transform 0.5s var(--ease-out); }
+.acc-card3d-wrap:hover .acc-card3d { transition-duration: 0.15s; }
+/* a strip of light that sweeps across now and then, and follows the pointer */
+.acc-card3d-shine { position: absolute; inset: -40%; background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.16) 47%, oklch(0.85 0.12 calc(var(--h) + 60) / 0.18) 50%, rgba(255, 255, 255, 0.08) 53%, transparent 60%); transform: translateX(calc(var(--mx) - 60%)); pointer-events: none; animation: card-sweep 7s ease-in-out infinite; mix-blend-mode: screen; }
+.acc-card3d-wrap:hover .acc-card3d-shine { animation: none; }
+@keyframes card-sweep { 0%, 60% { transform: translateX(-70%); } 100% { transform: translateX(70%); } }
+.acc-card3d-mark { position: absolute; right: -2%; bottom: -24%; font-family: var(--display); font-size: clamp(12rem, 24vw, 17rem); line-height: 1; color: transparent; -webkit-text-stroke: 1.5px rgba(244, 239, 248, 0.09); transform: skewX(-12deg); pointer-events: none; }
+.acc-card3d-top { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.acc-card3d-brand { display: flex; align-items: center; gap: 10px; }
+.acc-card3d-brand img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.acc-card3d-brand .wordmark { font-size: 1.15rem; }
+.acc-card3d-kind { padding: 5px 11px 4px; font-family: var(--mono); font-size: 0.64rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
+.acc-card3d-chip { position: relative; width: 46px; height: 34px; margin-top: clamp(14px, 2vw, 22px); border-radius: 7px; background: linear-gradient(135deg, oklch(0.85 0.1 calc(var(--h) + 60)), oklch(0.6 0.16 var(--h)) 60%, oklch(0.8 0.12 calc(var(--h) + 30))); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); }
+.acc-card3d-chip::before { content: ''; position: absolute; inset: 9px 7px; border: 1px solid rgba(0, 0, 0, 0.35); border-radius: 3px; }
+.acc-card3d-name { position: relative; align-self: end; font-family: var(--display); font-size: clamp(1.6rem, 3vw, 2.3rem); line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transform: skewX(-6deg); transform-origin: left; }
+.acc-card3d-name.is-empty { color: rgba(244, 239, 248, 0.32); }
+.acc-card3d-foot { position: relative; display: flex; gap: clamp(14px, 2.4vw, 30px); margin-top: 14px; font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.acc-card3d-foot small { display: block; margin-bottom: 3px; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--fg-mute); }
+.acc-card3d-foot span:last-child { color: var(--accent); }
+@media (max-width: 1023px) { .acc-card3d-wrap { width: min(100%, 420px); } .acc-card3d { --ry: 0deg; --rx: 0deg; } }
+@media (max-width: 479px) { .acc-card3d-foot span:last-child { display: none; } }
+@media (prefers-reduced-motion: reduce) { .acc-card3d-shine { animation: none; } .acc-card3d { transition: none; } }

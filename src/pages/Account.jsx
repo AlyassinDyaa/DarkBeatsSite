@@ -5,6 +5,7 @@ import Page from '../components/Page'
 import { accountPage, asset, brand, canBuy, marquee, money, priceOf, priceVaries, shows, soldOut, work } from '../data/site'
 import Poster from '../components/Poster'
 import Marquee from '../components/Marquee'
+import Wordmark from '../components/Wordmark'
 import { useAccount } from '../hooks/useAccount'
 import { useCart } from '../hooks/useCart'
 
@@ -42,7 +43,7 @@ function Submit({ busy, children }) {
 }
 
 /* the frame of the smaller pages: a label, a title, a line, and a card with the form */
-function Shell({ title, label, lead, children }) {
+function Shell({ title, label, lead, children, cardName }) {
   return (
     <Page title={title}>
       <div className="container acc-split">
@@ -54,28 +55,52 @@ function Shell({ title, label, lead, children }) {
           </header>
           <div className="acc-narrow">{children}</div>
         </div>
-        <AuthArt />
+        <AuthArt cardName={cardName} />
       </div>
     </Page>
   )
 }
 
-/* beside the forms: three of the artist's prints, fanned out, and what an account is good for */
+/* beside the forms: a collector card (the name on it follows what is typed when making an account),
+   and what an account is good for */
 const PERKS = [
   ['Track every order', 'From the studio to your door, step by step.'],
   ['Save pieces for later', 'A heart on every print, kept in one place.'],
   ['Your cart, everywhere', 'Start on your phone, finish on your laptop.'],
   ['Your own corner', 'Your collection, hung on your own wall.'],
 ]
-function AuthArt() {
-  const [picks] = useState(() => {
-    const pool = work.filter((p) => p.src && !soldOut(p))
-    return [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
-  })
+function AuthArt({ cardName }) {
+  const [number] = useState(() => String(Math.floor(1000 + Math.random() * 9000)))
+  const card = useRef(null)
+  // the card leans toward the pointer, a little
+  const lean = (e) => {
+    const el = card.current
+    if (!el || e.pointerType === 'touch') return
+    const r = el.getBoundingClientRect()
+    el.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -10}deg`)
+    el.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 14}deg`)
+    el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`)
+  }
+  const rest = () => { const el = card.current; if (el) { el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); el.style.removeProperty('--mx') } }
+  const name = (cardName || '').trim()
   return (
     <aside className="acc-art">
-      <div className="acc-art-stack" aria-hidden="true">
-        {picks.map((p, i) => <figure key={p.slug} style={{ '--i': i }}><Poster title={p.title} hue={p.hue} src={p.src} seed={i} eager /></figure>)}
+      <div className="acc-card3d-wrap" onPointerMove={lean} onPointerLeave={rest}>
+        <div ref={card} className="acc-card3d" aria-hidden="true">
+          <span className="acc-card3d-shine" />
+          <span className="acc-card3d-mark">J</span>
+          <div className="acc-card3d-top">
+            <span className="acc-card3d-brand">{brand.logo && <img src={asset(brand.logo)} alt="" />}<Wordmark /></span>
+            <span className="acc-card3d-kind">Collector</span>
+          </div>
+          <span className="acc-card3d-chip" />
+          <div className={`acc-card3d-name ${name ? '' : 'is-empty'}`}>{name || 'Your name here'}</div>
+          <div className="acc-card3d-foot">
+            <span><small>Member since</small>{new Date().getFullYear()}</span>
+            <span><small>Card no.</small>{number}</span>
+            <span><small>Prints</small>Your collection</span>
+          </div>
+        </div>
       </div>
       <ul className="acc-perks">
         {PERKS.map(([t, d]) => <li key={t}><i aria-hidden="true" /><div><b>{t}</b><span>{d}</span></div></li>)}
@@ -138,7 +163,7 @@ function Signup() {
   const made = useRef(false) // just made here: the account page greets them
   if (user) return <Navigate to={made.current && next === '/account' ? '/account?welcome=1' : next} replace />
   return (
-    <Shell title="Make an account" label="Your account" lead="Keep your cart, follow your orders, and buy faster next time.">
+    <Shell title="Make an account" label="Your account" lead="Keep your cart, follow your orders, and buy faster next time." cardName={f.values.name}>
       <form className="acc-card" onSubmit={(e) => f.run(e, async () => { made.current = true; await call('signup', { ...f.values, cart: cart.stored }); navigate(next === '/account' ? '/account?welcome=1' : next, { replace: true }) })} noValidate>
         <Field label="Your name" autoComplete="name" value={f.values.name} onChange={f.set('name')} required={false} maxLength={80} />
         <Field label="Email" type="email" autoComplete="email" value={f.values.email} onChange={f.set('email')} error={errorFor(f.problem, 'email')} />
@@ -247,7 +272,7 @@ function Avatar({ user, size = 'md' }) {
 }
 
 /* a small piece card: picture, title, price; a heart to keep it for later */
-function PieceCard({ p, isNew = false }) {
+function PieceCard({ p }) {
   const { isSaved, toggleSaved } = useAccount()
   const low = priceOf(p)
   const saved = isSaved(p.slug)
@@ -255,7 +280,6 @@ function PieceCard({ p, isNew = false }) {
     <div className="acct-piece">
       <Link className="acct-piece-art" to="/shop" title={`Find ${p.title} in the Shop`}>
         <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} />
-        {isNew && <span className="acct-new">New</span>}
       </Link>
       <button type="button" className={`acct-heart ${saved ? 'on' : ''}`} onClick={() => toggleSaved(p.slug)} aria-pressed={saved} aria-label={saved ? `Remove ${p.title} from saved` : `Save ${p.title} for later`}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.500s-7.500-4.600-7.500-10.300A4.300 4.300 0 0 1 12 7.400a4.300 4.300 0 0 1 7.500 2.800c0 5.700-7.500 10.300-7.500 10.300z" /></svg>
@@ -495,7 +519,6 @@ function Overview({ orders, go }) {
         )}
       </section>
 
-      <Fresh />
 
       {accountPage.note && (
         <section className="acct-note">
@@ -508,19 +531,6 @@ function Overview({ orders, go }) {
         </section>
       )}
     </div>
-  )
-}
-
-/* the newest pieces, marked New when they arrived since the last visit */
-function Fresh() {
-  const { user } = useAccount()
-  const since = new Date(user.lastVisit || user.createdAt)
-  const fresh = [...work].filter((p) => p.src).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))).slice(0, 4)
-  return (
-    <section className="acct-block">
-      <div className="acct-block-head"><h2>{accountPage.freshTitle}</h2><Link className="acc-link" to="/shop">The Shop</Link></div>
-      <div className="acct-pieces">{fresh.map((p) => <PieceCard key={p.slug} p={p} isNew={Boolean(p.date) && new Date(p.date) > since} />)}</div>
-    </section>
   )
 }
 
@@ -611,7 +621,6 @@ function Home() {
             {tab === 'saved' && <Saved />}
             {tab === 'details' && <Details />}
             {tab === 'security' && <Security />}
-            {tab !== 'overview' && <Fresh />}
           </motion.div>
         </div>
       </div>
