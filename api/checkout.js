@@ -145,7 +145,9 @@ export default async function handler(req, res) {
     lines.push({ slug, piece, size, signed, cents, qty })
   }
 
-  const origin = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`
+  // Vercel always says which protocol was used; the local dev server does not, and it only speaks http
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(String(req.headers.host || ''))
+  const origin = `${req.headers['x-forwarded-proto'] || (local ? 'http' : 'https')}://${req.headers.host}`
   const currency = String(shop.currency || 'aud').toLowerCase()
   const brand = String((read('content/site/brand.json') || {}).name || 'Shop')
   const nameOf = (l, max) => `${String(l.piece.title || l.slug).slice(0, max)}${l.size ? ` · ${l.size.slice(0, 30)}` : ''}${choice ? (l.signed ? ' (signed)' : ' (unsigned)') : ''}`
