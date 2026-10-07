@@ -520,12 +520,23 @@ html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::afte
 .ia-compact [class*='-listControlItem'] > div:last-child:not([class*='StyledListItemTopBar']):not([class*='NestedObjectLabel']) { order: 1; flex: 1 1 auto; display: block !important; padding: 0 !important; min-width: 0; }
 .ia-compact [class*='-listControlItem'] > div:last-child > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 6px; }
 .ia-compact [class*='-listControlItem'] > div:last-child > div > :only-child { grid-column: 1 / -1; }
+/* a list with more than one box to a row names its columns once, over its first row */
+.ia-compact [class*='-listControlItem']:not([class*='-listControlItem'] ~ *):has(> div:last-child > div > :nth-child(2)) { align-items: end; }
+.ia-compact [class*='-listControlItem']:not([class*='-listControlItem'] ~ *):has(> div:last-child > div > :nth-child(2)) > [class*='StyledListItemTopBar'] { margin-bottom: 3px; }
+.ia-compact [class*='-listControlItem']:not([class*='-listControlItem'] ~ *):has(> div:last-child > div > :nth-child(2)) [class*='ControlTopbar'] { display: block !important; min-height: 0 !important; margin: 0 !important; padding: 2px 2px 6px !important; background: none !important; border: 0 !important; }
+.ia-compact [class*='-listControlItem']:not([class*='-listControlItem'] ~ *):has(> div:last-child > div > :nth-child(2)) [class*='ControlTopbar'] label { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 0.62rem !important; letter-spacing: 0.14em; color: var(--mute) !important; }
+/* three boxes to a row (a size, its price, its discount price) */
+.ia-compact [class*='-listControlItem'] > div:last-child > div:has(> :nth-child(3)) { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); }
 .ia-compact [class*='-listControlItem'] [class*='ControlContainer'] { margin: 0 !important; }
 .ia-compact [class*='-listControlItem'] [class*='ControlTopbar'], .ia-compact [class*='-listControlItem'] [class*='ControlHint'] { display: none !important; }
 .ia-compact [class*='-listControlItem'] input { height: 40px !important; min-height: 40px !important; padding: 0 12px !important; font-size: 0.92rem !important; }
 .ia-compact [class*='-listControlItem'] input::placeholder { color: var(--mute); }
 .ia-compact > div > [class*='TopBarContainer'] + div:has(*) { padding: 4px 10px 10px !important; }
-@media (max-width: 699px) { .ia-compact [class*='-listControlItem'] > div:last-child > div { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 699px) {
+  .ia-compact [class*='-listControlItem'] > div:last-child > div { grid-template-columns: minmax(0, 1fr); }
+  .ia-compact [class*='-listControlItem'] > div:last-child > div:has(> :nth-child(3)) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ia-compact [class*='-listControlItem'] > div:last-child > div:has(> :nth-child(3)) > :first-child { grid-column: 1 / -1; }
+}
 
 /* the live preview of the top of the home page (shell.js, "heropreview") */
 [class*='ControlContainer']:has(> .ia-heroprev) > [class*='ControlTopbar'] { display: none !important; }

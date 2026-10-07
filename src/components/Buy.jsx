@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, brand, buyable, money, nowPrice, onSale, shop, soldOut } from '../data/site'
+import { badge, brand, buyable, money, priceOf, shop, sizesOf, soldOut } from '../data/site'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -23,10 +23,15 @@ export default function Buy({ piece }) {
   const [note, setNote] = useState('')
   // a signature, when the admin offers one: a single switch, off to start with
   const [signed, setSigned] = useState(false)
+  // a size, when the piece comes in more than one: the first on the list to start with
+  const sizes = sizesOf(piece)
+  const [size, setSize] = useState(sizes[0]?.name)
+  const chosen = sizes.find((s) => s.name === size) ? size : sizes[0]?.name
+  const cost = priceOf(piece, chosen)
   const cart = useCart()
   const [added, setAdded] = useState(false)
   useEffect(() => { if (!added) return; const t = setTimeout(() => setAdded(false), 1800); return () => clearTimeout(t) }, [added])
-  const addToCart = () => { cart.add(piece.slug, choice && signed); setAdded(true); setTimeout(() => cart.setOpen(true), 350) }
+  const addToCart = () => { cart.add(piece.slug, choice && signed, chosen); setAdded(true); setTimeout(() => cart.setOpen(true), 350) }
   const inCart = cart.lines.filter((l) => l.slug === piece.slug).reduce((n, l) => n + l.qty, 0)
   if (!buyable(piece)) return null
   const where = shop.shipping !== false ? shipsTo(shop.countries) : ''
@@ -38,7 +43,7 @@ export default function Buy({ piece }) {
     if (busy || out) return
     setBusy(true); setNote('')
     try {
-      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(choice ? { slug: piece.slug, signed } : { slug: piece.slug }) })
+      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: piece.slug, ...(choice ? { signed } : {}), ...(chosen ? { size: chosen } : {}) }) })
       const said = await answer.json().catch(() => ({}))
       if (answer.ok && said.url) { window.location.href = said.url; return } // stays "busy" while the page changes
       setNote(said.message || 'The checkout did not answer. Try again in a moment.')
@@ -51,13 +56,30 @@ export default function Buy({ piece }) {
     <motion.div className="buy" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.45, ease: EASE }}>
       <div className="buy-head">
         <div className="buy-amount">
-          {onSale(piece) && <s className="buy-was">{money(Number(piece.price) + extra, true)}</s>}
-          <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(nowPrice(piece) + extra)}</span>
+          {cost.sale && <s className="buy-was">{money(cost.was + extra, true)}</s>}
+          <span className={`buy-price ${out ? 'is-out' : ''}`}>{money(cost.now + extra)}</span>
         </div>
         {tag && <span className={`tile-badge buy-badge is-${tag.kind}`}>{tag.text}</span>}
       </div>
       {piece.what && <p className="buy-what">{piece.what}</p>}
-      {onSale(piece) && !out && <p className="buy-save">You save {money(Number(piece.price) - nowPrice(piece))}</p>}
+      {cost.sale && !out && <p className="buy-save">You save {money(cost.was - cost.now)}</p>}
+      {sizes.length > 0 && !out && (
+        <div className="buy-sizes" role="radiogroup" aria-label="Size">
+          <span className="buy-sizes-label">Size</span>
+          <div className="buy-sizes-row">
+            {sizes.map((s) => {
+              const p = priceOf(piece, s.name)
+              const on = s.name === chosen
+              return (
+                <button key={s.name} type="button" role="radio" aria-checked={on} className={`buy-size ${on ? 'on' : ''}`} onClick={() => setSize(s.name)}>
+                  <strong>{s.name}</strong>
+                  <small>{p.sale && <s>{money(p.was + extra, true)}</s>}{money(p.now + extra, true)}</small>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {choice && !out && (
         <button type="button" role="switch" aria-checked={signed} className={`buy-sign ${signed ? 'on' : ''}`} onClick={() => setSigned(!signed)}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17c2.500-.500 3.500-4 5-4s1 3 3 3 2.500-5 4.500-5 1 4 2.500 4 1.500-1 2.500-1.500 M4 21h16" /></svg>

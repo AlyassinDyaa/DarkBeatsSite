@@ -340,7 +340,7 @@
     // the lists of Shop categories are drawn as compact rows
     for (const field of pane.querySelectorAll('[class*="ControlContainer"]')) {
       const name = (field.querySelector(':scope > [class*="ControlTopbar"] label[for]') || {}).htmlFor || ''
-      const compact = currentSection() === 'site' && /^(subjects|types|universes)-field/.test(name)
+      const compact = (currentSection() === 'site' && /^(subjects|types|universes)-field/.test(name)) || (currentSection() === 'work' && /^sizes-field/.test(name))
       if (compact !== field.classList.contains('ia-compact')) field.classList.toggle('ia-compact', compact)
     }
     // the wall on the home page: only the fields that matter for what it shows

@@ -64,6 +64,11 @@ const visit = Math.random().toString(36).slice(2)
 const hash = (text) => { let h = 2166136261; for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0 }
 const mixed = (list) => list.map((p) => [hash(visit + p.slug), p]).sort((a, b) => a[0] - b[0]).map(([, p]) => p)
 
+/* The sizes typed into the admin, tidied: each with a name and a price above nothing. */
+const cleanSizes = (list) => (Array.isArray(list) ? list : [])
+  .map((s) => ({ name: String((s && s.name) || '').trim(), price: Number(s && s.price), salePrice: Number(s && s.salePrice) || 0 }))
+  .filter((s) => s.name && s.price > 0)
+
 /* Leaves out anything not filled in, so the built-in wording below it shows through. */
 const given = (fields) => Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined && v !== null))
 
@@ -163,7 +168,7 @@ function assemble(content) {
   types = inUse(shopLists.types, 'type')
   // what the buyer gets: the line the admin wrote for the piece’s type, or the shop’s own line
   const typeNotes = Object.fromEntries((Array.isArray(shopLists.types) ? shopLists.types : []).filter((t) => t && t.name).map((t) => [String(t.name).trim(), String(t.note || '').trim()]))
-  work = work.map((p) => ({ ...p, what: typeNotes[p.type] || shop.note || '' }))
+  work = work.map((p) => ({ ...p, sizes: cleanSizes(p.sizes), what: typeNotes[p.type] || shop.note || '' }))
   const picked = work.filter((p) => p.featured)
   latest = (picked.length ? picked : work).slice(0, 6)
 
@@ -224,13 +229,29 @@ export function showLatest({ content = {}, media = {} }) {
 /* Uploaded images are stored as "/uploads/x.jpg". Prefix the deploy base path. */
 export const asset = (url) => newPictures[url] || (url && url.startsWith('/') ? import.meta.env.BASE_URL.replace(/\/$/, '') + url : url)
 
+/* Prices. A piece has one price of its own, or a list of sizes (A3, A2...) each with its own
+   price. Either way a discount price is only used while the piece's status is "On sale" and it
+   is below the usual price, so a sale starts and ends with that one switch.
+   priceOf(piece, size) is what one way of buying it costs: { size, was, now, sale }. A size that
+   is not on the list gets the first size. Leaving the size out (undefined) means the cheapest. */
+export const sizesOf = (piece) => (Array.isArray(piece?.sizes) ? piece.sizes : [])
+export const priceOf = (piece, size) => {
+  const sizes = sizesOf(piece)
+  if (sizes.length && size === undefined) return sizes.map((s) => priceOf(piece, s.name)).sort((a, b) => a.now - b.now)[0]
+  const s = sizes.length ? sizes.find((x) => x.name === size) || sizes[0] : { name: '', price: Number(piece?.price), salePrice: Number(piece?.salePrice) }
+  const sale = piece?.status === 'sale' && s.salePrice > 0 && s.salePrice < s.price
+  return { size: s.name, was: s.price, now: sale ? s.salePrice : s.price, sale }
+}
+/* "From" goes before a tile's price when the sizes do not all cost the same. */
+export const priceVaries = (piece) => new Set(sizesOf(piece).map((s) => priceOf(piece, s.name).now)).size > 1
 /* A piece shows its price while online purchases are switched on and it has a price. */
-export const buyable = (piece) => Boolean(shop.enabled && piece && piece.slug && Number(piece.price) > 0)
-/* Its status, set in the admin: "new", "sale" (with a sale price below the price) or "soldout". */
+export const buyable = (piece) => Boolean(shop.enabled && piece && piece.slug && priceOf(piece).was > 0)
+/* Its status, set in the admin: "new", "sale" (with a discount price below the price) or "soldout". */
 export const soldOut = (piece) => piece?.status === 'soldout'
-export const onSale = (piece) => piece?.status === 'sale' && Number(piece.salePrice) > 0 && Number(piece.salePrice) < Number(piece.price)
+/* On sale: one size (or, with no size named, any of them) costs less than usual. */
+export const onSale = (piece, size) => (size === undefined && sizesOf(piece).length ? sizesOf(piece).some((s) => priceOf(piece, s.name).sale) : priceOf(piece, size).sale)
 /* What it costs now: the sale price while it is on sale, otherwise the price. */
-export const nowPrice = (piece) => (onSale(piece) ? Number(piece.salePrice) : Number(piece.price))
+export const nowPrice = (piece, size) => priceOf(piece, size).now
 /* It can go into a checkout: it shows a price and is not sold out. */
 export const canBuy = (piece) => buyable(piece) && !soldOut(piece)
 /* The small tag on a piece. "New" shows whenever it is set; "Sale" and "Sold out" only while
@@ -238,7 +259,11 @@ export const canBuy = (piece) => buyable(piece) && !soldOut(piece)
 export const badge = (piece) => {
   if (!piece) return null
   if (buyable(piece) && soldOut(piece)) return { kind: 'soldout', text: 'Sold out' }
-  if (buyable(piece) && onSale(piece)) return { kind: 'sale', text: `Sale −${Math.round((1 - Number(piece.salePrice) / Number(piece.price)) * 100)}%` }
+  if (buyable(piece) && onSale(piece)) {
+    // the biggest discount across its sizes
+    const off = Math.max(...(sizesOf(piece).length ? sizesOf(piece).map((s) => priceOf(piece, s.name)) : [priceOf(piece)]).map((p) => Math.round((1 - p.now / p.was) * 100)))
+    return { kind: 'sale', text: `Sale −${off}%` }
+  }
   if (piece.status === 'new') return { kind: 'new', text: 'New' }
   return null
 }

@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-/* Buying prints. The site sends the cart here as a list of { slug, signed, qty } (or a single
-   piece as { slug, signed }); this function looks each piece up in the site's own content, asks
+/* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
+   piece as { slug, size, signed }); this function looks each piece up in the site's own content, asks
    Stripe for one checkout page with a line per print, and answers with that page's address.
    The buyer pays on Stripe's page: no card details come near this site.
 
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   if (!key) return res.status(503).json({ message: 'Online purchase is not set up yet. Get in touch to buy a print.' })
 
   const body = req.body && typeof req.body === 'object' ? req.body : {}
-  const asked = Array.isArray(body.items) ? body.items : [{ slug: body.slug, signed: body.signed, qty: 1 }]
+  const asked = Array.isArray(body.items) ? body.items : [{ slug: body.slug, size: body.size, signed: body.signed, qty: 1 }]
   if (!asked.length) return res.status(400).json({ message: 'The cart is empty.' })
   if (asked.length > MAX_LINES) return res.status(400).json({ message: `At most ${MAX_LINES} different prints in one order.` })
 
@@ -43,14 +43,22 @@ export default async function handler(req, res) {
     const piece = read(`content/work/${slug}.json`)
     if (!piece || piece.hidden) return res.status(404).json({ message: 'Something in the cart is no longer for sale. Remove it and try again.' })
     if (piece.status === 'soldout') return res.status(409).json({ message: `"${piece.title || slug}" has sold out. Remove it from the cart and try again.` })
-    // the sale price while the piece is on sale (and it is below the usual price), otherwise the price
-    const usual = Number(piece.price), sale = Number(piece.salePrice)
+    // the piece's own price, or the chosen size's when it comes in sizes; the discount price
+    // while the piece is on sale (and it is below the usual price)
+    const sizes = (Array.isArray(piece.sizes) ? piece.sizes : []).filter((s) => s && String(s.name || '').trim() && Number(s.price) > 0)
+    let size = ''
+    let usual = Number(piece.price), sale = Number(piece.salePrice)
+    if (sizes.length) {
+      const s = sizes.find((x) => String(x.name).trim() === String((item && item.size) || '').trim())
+      if (!s) return res.status(409).json({ message: `"${piece.title || slug}" does not come in that size any more. Remove it from the cart and add it again.` })
+      size = String(s.name).trim(); usual = Number(s.price); sale = Number(s.salePrice)
+    }
     const base = piece.status === 'sale' && sale > 0 && sale < usual ? sale : usual
     const signed = choice ? Boolean(item.signed === true) : null
     const cents = Math.round((base + (signed ? extra : 0)) * 100)
     if (!(cents >= 50)) return res.status(404).json({ message: `"${piece.title || slug}" is not for sale.` })
     const qty = Math.min(MAX_QTY, Math.max(1, Math.round(Number(item.qty) || 1)))
-    lines.push({ slug, piece, signed, cents, qty })
+    lines.push({ slug, piece, size, signed, cents, qty })
   }
 
   const origin = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`
@@ -63,13 +71,13 @@ export default async function handler(req, res) {
     ask.set(`${at}[quantity]`, String(l.qty))
     ask.set(`${at}[price_data][currency]`, String(shop.currency || 'aud').toLowerCase())
     ask.set(`${at}[price_data][unit_amount]`, String(l.cents))
-    ask.set(`${at}[price_data][product_data][name]`, `${String(l.piece.title || l.slug).slice(0, 230)}${choice ? (l.signed ? ' (signed)' : ' (unsigned)') : ''}`)
+    ask.set(`${at}[price_data][product_data][name]`, `${String(l.piece.title || l.slug).slice(0, 200)}${l.size ? ` · ${l.size.slice(0, 30)}` : ''}${choice ? (l.signed ? ' (signed)' : ' (unsigned)') : ''}`)
     const what = typeNote(l.piece.type) || shop.note
     if (what) ask.set(`${at}[price_data][product_data][description]`, String(what).slice(0, 500))
     if (typeof l.piece.src === 'string' && l.piece.src.startsWith('/')) ask.set(`${at}[price_data][product_data][images][0]`, origin + l.piece.src)
   })
-  // what was ordered, readable in the Stripe dashboard: "venom x2 signed, superman x1"
-  ask.set('metadata[order]', lines.map((l) => `${l.slug} x${l.qty}${choice ? (l.signed ? ' signed' : ' unsigned') : ''}`).join(', ').slice(0, 500))
+  // what was ordered, readable in the Stripe dashboard: "venom A2 x2 signed, superman x1"
+  ask.set('metadata[order]', lines.map((l) => `${l.slug}${l.size ? ` ${l.size}` : ''} x${l.qty}${choice ? (l.signed ? ' signed' : ' unsigned') : ''}`).join(', ').slice(0, 500))
   if (shop.shipping !== false) {
     const countries = (Array.isArray(shop.countries) ? shop.countries : []).map((c) => String(c).trim().toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c))
     ;(countries.length ? countries : ['AU']).forEach((c, i) => ask.set(`shipping_address_collection[allowed_countries][${i}]`, c))

@@ -40,7 +40,7 @@ export default function CartDrawer() {
   const pay = async () => {
     if (busy || !lines.length) return
     setBusy(true); setNote('')
-    const problem = await checkout(lines.map((l) => ({ slug: l.slug, signed: l.signed, qty: l.qty })))
+    const problem = await checkout(lines.map((l) => ({ slug: l.slug, size: l.size, signed: l.signed, qty: l.qty })))
     if (problem) { setNote(problem); setBusy(false) }
   }
 
@@ -71,12 +71,12 @@ export default function CartDrawer() {
                         <span className="cart-thumb">{l.piece.src && <img src={asset(l.piece.src)} alt="" />}</span>
                         <div className="cart-info">
                           <strong>{l.piece.title}</strong>
-                          <small>{[shop.signedChoice ? (l.signed ? 'Signed' : 'Unsigned') : '', l.piece.what].filter(Boolean).join(' · ')}</small>
+                          <small>{[l.size, shop.signedChoice ? (l.signed ? 'Signed' : 'Unsigned') : '', l.piece.what].filter(Boolean).join(' · ')}</small>
                           <div className="cart-row">
                             <div className="cart-qty" role="group" aria-label={`How many of ${l.piece.title}`}>
-                              <button type="button" onClick={() => (l.qty > 1 ? cart.setQty(l.slug, l.signed, l.qty - 1) : cart.remove(l.slug, l.signed))} aria-label="One fewer">−</button>
+                              <button type="button" onClick={() => (l.qty > 1 ? cart.setQty(l.slug, l.signed, l.size, l.qty - 1) : cart.remove(l.slug, l.signed, l.size))} aria-label="One fewer">−</button>
                               <span aria-live="polite">{l.qty}</span>
-                              <button type="button" onClick={() => cart.setQty(l.slug, l.signed, l.qty + 1)} disabled={l.qty >= cart.max} aria-label="One more">+</button>
+                              <button type="button" onClick={() => cart.setQty(l.slug, l.signed, l.size, l.qty + 1)} disabled={l.qty >= cart.max} aria-label="One more">+</button>
                             </div>
                             <span className="cart-price">{money(l.each * l.qty)}</span>
                           </div>

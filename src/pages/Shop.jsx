@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, buyable, canBuy, categories, home, money, nowPrice, onSale, pages, redraws, shop, shows, soldOut, types, work } from '../data/site'
+import { badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, shop, shows, soldOut, types, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
@@ -23,7 +23,8 @@ function TileBody({ p, eager }) {
   const priceUp = price && shop.pricePlace !== 'below'
   const tagsUp = shop.tagPlace !== 'below'
   const saleWithPrice = tag?.kind === 'sale' && priceUp && tagsUp
-  const amount = <>{onSale(p) && <s>{money(p.price, true)}</s>}{money(nowPrice(p))}</>
+  const low = priceOf(p) // the cheapest size, or the piece's own price
+  const amount = <>{priceVaries(p) && <small className="tile-from">From </small>}{low.sale && <s>{money(low.was, true)}</s>}{money(low.now)}</>
   const tagEl = (extra = '') => <span className={`tile-badge is-${tag.kind} ${extra}`}>{tag.text}</span>
   return (
     <>

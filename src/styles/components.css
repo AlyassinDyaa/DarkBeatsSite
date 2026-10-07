@@ -374,6 +374,7 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .tile-badge.is-soldout { background: repeating-linear-gradient(-58deg, #1c1627 0 8px, #241d32 8px 16px); color: var(--fg-dim); box-shadow: inset 0 -3px 0 var(--fg-mute); }
 .tile-badge.is-soldout::before { background: var(--fg-mute); }
 .tile-price s { margin-right: 8px; font-size: 0.8em; opacity: 0.6; text-decoration-thickness: 2px; }
+.tile-from { margin-right: 5px; font-family: var(--mono); font-size: 0.62em; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
 .tile-price.is-out { background: #2a2433; color: var(--fg-mute); text-decoration: line-through; }
 /* the price, with a sale tag under it when there is one */
 .tile-tags { position: absolute; z-index: 2; top: 14px; right: -6px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
@@ -454,6 +455,18 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .buy-save { margin: 10px 0 0; font-family: var(--mono); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: oklch(0.8 0.2 calc(var(--h) + 28)); }
 /* signed or unsigned */
 /* the signature: one switch in a box, off to start with */
+/* the sizes a piece comes in: one button each, with its price under its name */
+.buy-sizes { margin-top: 22px; }
+.buy-sizes-label { display: block; margin-bottom: 8px; font-family: var(--mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); }
+.buy-sizes-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.buy-size { display: grid; gap: 3px; padding: 11px 12px 10px; text-align: left; border: 1px solid var(--line-strong); background: rgba(9, 7, 13, 0.5); transition: border-color 0.2s, background 0.2s; }
+.buy-size:hover { border-color: var(--fg-mute); }
+.buy-size.on { border-color: var(--accent); background: oklch(0.3 0.13 var(--h) / 0.55); box-shadow: inset 0 0 0 1px var(--accent); }
+.buy-size:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.buy-size strong { font-family: var(--display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg); overflow-wrap: anywhere; }
+.buy-size small { font-family: var(--mono); font-size: 0.74rem; color: var(--fg-dim); }
+.buy-size small s { margin-right: 6px; opacity: 0.6; }
+.buy-size.on small { color: var(--fg); }
 .buy-sign { display: flex; align-items: center; gap: 14px; width: 100%; margin-top: 22px; padding: 14px 16px; text-align: left; border: 1px solid var(--line-strong); background: rgba(9, 7, 13, 0.5); transition: border-color 0.2s, background 0.2s; }
 .buy-sign:hover { border-color: var(--fg-mute); }
 .buy-sign.on { border-color: var(--accent); background: oklch(0.3 0.13 var(--h) / 0.55); }
