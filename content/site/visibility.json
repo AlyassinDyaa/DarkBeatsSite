@@ -12,8 +12,8 @@
     "latest": true,
     "gallery": true,
     "redraws": true,
-    "commissions": true,
+    "commissions": false,
     "events": true,
-    "support": true
+    "support": false
   }
 }
