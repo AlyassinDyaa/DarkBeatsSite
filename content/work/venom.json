@@ -1,15 +1,23 @@
 {
-  "src": "/uploads/venom.webp",
+  "src": "/uploads/illustration4.webp",
+  "universe": "Marvel",
   "price": 40,
   "hidden": false,
   "featured": true,
   "date": "2026-05-28",
+  "sizes": [
+    {
+      "name": "A3",
+      "price": 40
+    }
+  ],
   "note": "",
   "status": "soldout",
   "hue": 285,
   "title": "Lethal Protector",
   "type": "Posters",
   "link": "https://www.instagram.com/jbeatsart/p/DY5hawTEt3D/",
-  "category": "Villains",
-  "universe": "Marvel"
+  "hover": "/uploads/1.webp",
+  "face": "46,40,100",
+  "category": "Villains"
 }
