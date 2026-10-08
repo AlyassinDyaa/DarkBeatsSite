@@ -133,7 +133,7 @@ const adminBundle = () => ({
     // Keys for trying payments, accounts and email on this computer: put them in .env.local (never
     // committed: *.local is in .gitignore). On Vercel they come from the project settings instead.
     const keys = loadEnv('development', process.cwd(), '')
-    for (const [k, v] of Object.entries(keys)) if (/^(STRIPE_|PAYPAL_|MONGODB_|RESEND_|MAIL_|SMTP_|SITE_URL$)/.test(k) && v && !process.env[k]) process.env[k] = v
+    for (const [k, v] of Object.entries(keys)) if (/^(STRIPE_|PAYPAL_|MONGODB_|RESEND_|MAIL_|SMTP_|CONTACT_TO$|SITE_URL$)/.test(k) && v && !process.env[k]) process.env[k] = v
     // These functions run on Vercel. While developing, the same files answer here, so the Buy
     // button and the accounts behave as they will live (without their keys they say so). The
     // Stripe webhook reads its message as it arrived, so its body is left alone.
@@ -143,7 +143,7 @@ const adminBundle = () => ({
     const ADMIN = ['orders', 'discounts']
     if (!process.env.ADMIN_PASSCODE) process.env.ADMIN_PASSCODE = randomBytes(24).toString('hex')
     if (!process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = randomBytes(24).toString('hex')
-    for (const name of ['checkout', 'account', 'stripe-webhook', ...ADMIN]) {
+    for (const name of ['checkout', 'account', 'stripe-webhook', 'contact', ...ADMIN]) {
       server.middlewares.use(`/api/${name}`, async (req, res) => {
         res.status = (code) => { res.statusCode = code; return res }
         res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }

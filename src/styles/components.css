@@ -1464,3 +1464,13 @@ a.buy-btn { text-decoration: none; }
 .acct-code small { grid-column: 1 / -1; font-size: 0.8rem; color: var(--fg-mute); }
 .acct-reward-wait { font-size: 0.82rem; color: var(--fg-mute); }
 @media (max-width: 479px) { .acct-reward { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; } .acct-reward-art .acct-pick-pic { width: 64px; height: 64px; } .acct-reward-art .acct-card-mini { width: 72px; } .acct-reward-off { width: 66px; height: 66px; } }
+
+/* the Contact and Commission forms: the trap field bots fill in (never seen), and the message sent */
+.hp-trap { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.form-alt.is-bad { color: #ffb3be; }
+.form-alt.is-bad a { color: var(--fg); text-decoration: underline; border: 0; }
+.form-sent { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px 16px; padding: 20px; border: 1px solid oklch(0.82 0.2 150 / 0.45); background: oklch(0.82 0.2 150 / 0.08); }
+.form-sent i { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; font-style: normal; font-weight: 700; background: var(--open); color: #06140c; }
+.form-sent strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.5rem; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1; }
+.form-sent span { display: block; margin-top: 5px; color: var(--fg-dim); }
+.form-sent .btn { grid-column: 1 / -1; justify-self: start; }

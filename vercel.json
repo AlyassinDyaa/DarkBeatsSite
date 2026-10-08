@@ -32,6 +32,9 @@
     },
     "api/orders.js": {
       "includeFiles": "content/work/**"
+    },
+    "api/contact.js": {
+      "includeFiles": "content/site/**"
     }
   }
 }

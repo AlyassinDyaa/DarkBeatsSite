@@ -120,7 +120,7 @@ export const forgetTries = async (key) => (await db()).collection('attempts').de
    - Resend (resend.com): RESEND_API_KEY, sending from an address on a domain verified there.
    MAIL_FROM is the sender as people see it ("JBeatsArt <hello@...>"); MAIL_REPLY_TO, if set,
    is where replies go. With neither set, on this computer the email is printed instead.
-   An email is { to, subject, kicker, title, lines, button: { label, url }, picture: { src, title, text }, after }. */
+   An email is { to, subject, kicker, title, lines, button: { label, url }, picture: { src, title, text }, after, replyTo }. */
 export const siteUrl = (req) => (process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL ? '' : `http://${req.headers.host}`)).replace(/\/$/, '')
 const smtpReady = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
 export const mailReady = () => smtpReady() || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM)
@@ -209,7 +209,7 @@ export const sendMail = async (mail) => {
   }
   const html = emailHtml(mail)
   const from = process.env.MAIL_FROM || `${brand} <${process.env.SMTP_USER}>`
-  const replyTo = process.env.MAIL_REPLY_TO || undefined
+  const replyTo = mail.replyTo || process.env.MAIL_REPLY_TO || undefined // a contact message: replies go to the visitor
   if (smtpReady()) {
     try {
       await smtp().sendMail({ from, to, subject, text, html, replyTo })
