@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { currentUser } from './_users.js'
-import { SITE, boughtOf, checkCode, codeUsed, dbReady, discountCents, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { SITE, boughtOf, checkCode, codeUsed, dbReady, discountCents, readBought, recordOrder, shapeAddress, takeFromCart, tellAdmin } from './_orders.js'
 import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
@@ -52,7 +52,7 @@ const paypalToken = async () => {
 const twoPlaces = (cents) => (cents / 100).toFixed(2)
 
 /* a PayPal payment taken: the order waiting in the database gets the buyer and the address */
-const savePaypal = async (id, said) => {
+const savePaypal = async (id, said, siteBase = '') => {
   if (!dbReady()) return
   const unit = (said.purchase_units || [])[0] || {}
   const ship = unit.shipping || {}
@@ -70,6 +70,7 @@ const savePaypal = async (id, said) => {
   // paid: what was bought leaves the buyer's saved cart
   if (before && before.userId) await takeFromCart(before.userId, readBought(before.bought))
   if (before && before.code) await codeUsed({ code: before.code, promoId: before.promoId, viaPaypal: true, userId: before.userId, ref: `pp_${id}` })
+  await tellAdmin(`pp_${id}`, siteBase)
 }
 
 export default async function handler(req, res) {
@@ -102,7 +103,7 @@ export default async function handler(req, res) {
       const said = await answer.json().catch(() => ({}))
       const already = Array.isArray(said.details) && said.details.some((d) => d.issue === 'ORDER_ALREADY_CAPTURED')
       if (answer.ok && said.status === 'COMPLETED') {
-        try { await savePaypal(id, said) } catch (e) { console.error('paypal order not saved:', e.message) }
+        try { await savePaypal(id, said, process.env.SITE_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`) } catch (e) { console.error('paypal order not saved:', e.message) }
         return res.status(200).json({ paid: true, account: Boolean(user) })
       }
       if (already) return res.status(200).json({ paid: true, account: Boolean(user) })
@@ -201,7 +202,7 @@ export default async function handler(req, res) {
       }
       // kept as waiting until the buyer comes back and the payment is taken
       try {
-        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100 })), bought: boughtOf(lines), amount: (total - off) / 100, discount: off / 100, ...(discount ? { code: discount.code, promoId: discount.promoId } : {}), currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
+        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100, slug: l.slug, title: l.piece.title || l.slug, src: typeof l.piece.src === 'string' ? l.piece.src : '', size: l.size || '', signed: l.signed, type: l.piece.type || '' })), bought: boughtOf(lines), amount: (total - off) / 100, discount: off / 100, ...(discount ? { code: discount.code, promoId: discount.promoId } : {}), currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
       } catch (e) { console.error('paypal order not saved:', e.message) }
       return res.status(200).json({ url: link.href })
     } catch (e) {

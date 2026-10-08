@@ -28,6 +28,7 @@ import {
         { action: 'orders' }                              this customer's orders, newest first
         { action: 'rewards' }                             every reward, earned or not, and how far they have come
         { action: 'seenGifts' }                           the gifts the admin gave them are no longer new
+        { action: 'giftShelf', id, to }                   a gift ("code:<id>" or a reward id) archived, restored or deleted
         { action: 'removeOrder', number, password }       takes an order out of their account (the shop keeps it)
         { action: 'everywhere' }                          logs out every device
         { action: 'delete', password }                    deletes the account (orders stay, unlinked)
@@ -337,7 +338,20 @@ export default async function handler(req, res) {
         if (state === 'ready' && g.until && g.until < Date.now()) state = 'ended'
         giftCodes.push({ id: g.id, code: g.code, percent: g.percent, until: g.until || null, at: g.at || '', usedAt: g.usedAt || '', state })
       }
-      return say(res, 200, { progress: { verified: p.verified, orders: p.orders, pieces: p.pieces }, rewards: list, giftCodes })
+      return say(res, 200, { progress: { verified: p.verified, orders: p.orders, pieces: p.pieces }, rewards: list, giftCodes, archived: Array.isArray(user.archivedGifts) ? user.archivedGifts : [], deleted: Array.isArray(user.deletedGifts) ? user.deletedGifts : [] })
+    }
+
+    if (action === 'giftShelf') {
+      // only tidies their list: a gifted picture or card design stays theirs, a code still works until deleted from view
+      const id = clean(body.id, 120)
+      if (!/^(code:promo_[A-Za-z0-9]+|[a-z0-9-]{1,60})$/.test(id)) return say(res, 400, { message: 'That is not one of your gifts.' })
+      const archived = (Array.isArray(user.archivedGifts) ? user.archivedGifts : []).filter((g) => g !== id)
+      const deleted = (Array.isArray(user.deletedGifts) ? user.deletedGifts : []).filter((g) => g !== id)
+      if (body.to === 'archive') archived.push(id)
+      else if (body.to === 'delete') deleted.push(id)
+      else if (body.to !== 'restore') return say(res, 400, { message: 'Nothing to do.' })
+      await users.updateOne({ _id: user._id }, { $set: { archivedGifts: archived.slice(-200), deletedGifts: deleted.slice(-200) } })
+      return say(res, 200, { archived, deleted })
     }
 
     if (action === 'seenGifts') {

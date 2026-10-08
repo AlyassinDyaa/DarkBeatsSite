@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
+import { sendMail } from './_users.js'
 
 /* Orders in the database. Each is kept under `ref`: the Stripe checkout's id (cs_...) or "pp_"
    and the PayPal order's id. Stripe orders arrive through api/stripe-webhook.js once paid; PayPal
@@ -77,6 +78,50 @@ export const paidWithOf = (details) => {
 }
 const paidWithLabel = (o) => o.paidWith || (o.provider === 'paypal' ? 'PayPal' : o.provider === 'stripe' ? 'Card' : '')
 
+/* An order line with its piece kept on it (slug, picture, size, signed, type), so the order still
+   shows the print after the piece is taken off the site. */
+export const withPiece = (item, pieces = piecesNow()) => {
+  const d = describeItem(item.name, pieces)
+  return d.slug ? { ...item, slug: d.slug, title: d.title, src: d.src, size: d.size, signed: d.signed, type: d.type } : item
+}
+
+/* A paid order, told to the admin by email, once: what was bought, by whom, where it goes. Sent to
+   ORDER_EMAIL_TO, else CONTACT_TO, else the email in Site → Brand & contact. */
+export const tellAdmin = async (ref, siteUrl) => {
+  if (!dbReady()) return
+  const col = (await db()).collection('orders')
+  const o = await col.findOneAndUpdate({ ref, status: 'paid', adminTold: { $ne: true } }, { $set: { adminTold: true } })
+  const order = o && o.value !== undefined && o.ok !== undefined ? o.value : o // older drivers wrap the document
+  if (!order) return
+  let brand = {}
+  try { brand = JSON.parse(readFileSync(join(process.cwd(), 'content/site/brand.json'), 'utf8')) || {} } catch { /* no brand file */ }
+  const senderOf = String(process.env.MAIL_FROM || '').match(/<([^>]+)>/)
+  const to = process.env.ORDER_EMAIL_TO || process.env.CONTACT_TO || brand.email || (senderOf && senderOf[1]) || process.env.SMTP_USER
+  if (!to) return
+  const cur = order.currency || 'AUD'
+  const price = (n) => { try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: cur, currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2 }).format(Number(n) || 0) } catch { return `${n} ${cur}` } }
+  const a = order.address
+  const items = (order.items || []).map((i) => `${i.qty > 1 ? `${i.qty} × ` : ''}${i.name}${i.amount != null ? `, ${price(i.amount)}` : ''}`)
+  const support = order.kind === 'support'
+  try {
+    await sendMail({
+      to,
+      subject: `${support ? 'New support' : 'New order'}: ${price(order.amount)}${order.name ? ` from ${order.name}` : ''}${order.test ? ' (test)' : ''}`,
+      kicker: support ? 'New support' : 'New order',
+      title: `${price(order.amount)} ${support ? 'from a fan' : 'paid'}`,
+      lines: [
+        `${order.name || 'Someone'}${order.email ? ` (${order.email})` : ''} paid ${price(order.amount)} by ${order.paidWith || (order.provider === 'paypal' ? 'PayPal' : 'card')}${order.test ? ', with test money' : ''}.`,
+        ...(items.length ? ['What they bought:', ...items] : []),
+        ...(order.discount > 0 ? [`Discount: −${price(order.discount)}${order.code ? ` (code ${order.code})` : ''}`] : []),
+        ...(a ? [`Post to: ${[a.name, a.line1, a.line2, [a.city, a.state, a.postal_code].filter(Boolean).join(' '), a.country].filter(Boolean).join(', ')}`] : []),
+        ...(order.phone ? [`Phone: ${order.phone}`] : []),
+      ],
+      button: { label: 'Open orders', url: `${String(siteUrl || '').replace(/\/$/, '')}/admin/#/orders` },
+      after: 'Mark it packed and shipped in Orders: the buyer sees each step, and the tracking number, in their account.',
+    })
+  } catch (e) { console.error('order email not sent:', e.message) }
+}
+
 // a new order, or more about one (fields already set by the admin, such as tracking, are kept)
 export const recordOrder = async (order) => {
   if (!dbReady()) return
@@ -115,7 +160,7 @@ export const forCustomer = (o) => {
     provider: o.provider,
     paidWith: paidWithLabel(o),
     status: o.status === 'refunded' ? 'refunded' : o.status === 'pending' ? 'pending' : t.status || 'new',
-    items: Array.isArray(o.items) ? o.items.map((i) => ({ name: text(i.name, 200), qty: i.qty || 1, amount: i.amount })) : [],
+    items: Array.isArray(o.items) ? o.items.map((i) => ({ name: text(i.name, 200), qty: i.qty || 1, amount: i.amount, slug: i.slug || '', title: i.title || '', src: i.src || '' })) : [],
     amount: o.amount,
     discount: o.discount || 0,
     currency: o.currency || 'AUD',

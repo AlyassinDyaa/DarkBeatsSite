@@ -140,7 +140,20 @@ export default async function handler(req, res) {
       }
       // each line with its piece: picture, size, signed or not, type, category, universe
       const pieces = piecesNow()
-      for (const o of orders) o.items = o.items.map((i) => ({ ...i, ...describeItem(i.name, pieces) }))
+      // what each order kept of its pieces when it was paid (for pieces taken off the site since)
+      let kept = new Map()
+      if (dbReady()) {
+        try { kept = new Map((await (await db()).collection('orders').find({ ref: { $in: orders.map((o) => o.id) } }).toArray()).map((o) => [o.ref, o.items || []])) } catch (e) { console.error('kept lines not read:', e.message) }
+      }
+      for (const o of orders) {
+        const saved = kept.get(o.id) || []
+        o.items = o.items.map((i, n) => {
+          const now = describeItem(i.name, pieces)
+          if (now.slug) return { ...i, ...now }
+          const k = saved[n] && saved[n].name === i.name ? saved[n] : saved.find((x) => x.name === i.name)
+          return k && k.slug ? { ...i, slug: k.slug, title: k.title, src: k.src, size: k.size, signed: k.signed, type: k.type, gone: true } : i
+        })
+      }
       return res.status(200).json({ orders, more, next: list.length ? list[list.length - 1].id : null })
     }
 

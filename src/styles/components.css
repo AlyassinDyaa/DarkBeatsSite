@@ -1572,3 +1572,21 @@ a.buy-btn { text-decoration: none; }
 .acct2-tabs button small.is-alert { background: #ffd34d; color: #0a0710; }
 .acct-reward.is-spent { opacity: 0.7; }
 .acct-reward.is-spent .acct-reward-art { filter: grayscale(1) brightness(0.6); }
+
+/* putting gifts away: an archive icon on each gift, and the archived ones folded into a list */
+.acct-gift-archive { position: absolute; top: 8px; right: 8px; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid transparent; color: var(--fg-mute); cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; }
+.acct-gift-archive svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.acct-gift-archive:hover, .acct-gift-archive:focus-visible { color: var(--fg); border-color: var(--line-strong); background: rgba(255, 255, 255, 0.04); outline: 0; }
+.acct-reward.is-new .acct-gift-archive { top: 14px; }
+.acct-shelf { margin-top: 12px; }
+.acct-shelf-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 6px 0; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); cursor: pointer; }
+.acct-shelf-toggle small { padding: 1px 6px; background: var(--line); color: var(--fg); }
+.acct-shelf-toggle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; transition: transform 0.25s; }
+.acct-shelf-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.acct-shelf-toggle:hover { color: var(--fg); }
+.acct-shelf-list { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.acct-shelf-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 10px 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+.acct-shelf-list li > span { display: grid; flex: 1 1 200px; min-width: 0; }
+.acct-shelf-list b { font-family: var(--display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--fg); }
+.acct-shelf-list small { font-size: 0.82rem; color: var(--fg-mute); }
+.acc-link.is-danger { color: #ff8a9b; }

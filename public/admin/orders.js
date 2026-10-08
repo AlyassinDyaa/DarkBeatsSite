@@ -391,7 +391,7 @@
       ]),
       el('div', { className: 'io-piece-foot' }, [
         i.amount != null ? el('b', { textContent: money(i.amount, o.currency) }) : null,
-        i.slug ? el('a', { className: 'io-link', href: `#/collections/work/entries/${i.slug}`, textContent: 'Open the piece' }) : el('span', { className: 'io-when', textContent: 'Not a piece on the site any more' }),
+        i.slug && !i.gone ? el('a', { className: 'io-link', href: `#/collections/work/entries/${i.slug}`, textContent: 'Open the piece' }) : el('span', { className: 'io-when', textContent: 'Taken off the site since' }),
       ]),
     ]),
   ])))

@@ -376,7 +376,9 @@ const pieceFor = (name) => work.filter((p) => p.title && String(name || '').star
    deleted never reach the page). The member card, the profile line and their pictures use these. */
 const keptOrders = (orders) => (orders || []).filter((o) => o.kind !== 'support' && o.status !== 'refunded')
 const printsIn = (orders) => keptOrders(orders).reduce((n, o) => n + o.items.reduce((m, i) => m + (i.qty || 1), 0), 0)
-const ownedIn = (orders) => [...new Map(keptOrders(orders).flatMap((o) => o.items.map((i) => pieceFor(i.name))).filter(Boolean).map((p) => [p.slug, p])).values()]
+// a piece taken off the site since keeps the picture its order saved
+const pieceOrSaved = (i) => pieceFor(i.name) || (i.slug && i.src ? { slug: i.slug, title: i.title || i.name, src: i.src, face: { x: 50, y: 22, zoom: 100 }, gone: true } : null)
+const ownedIn = (orders) => [...new Map(keptOrders(orders).flatMap((o) => o.items.map(pieceOrSaved)).filter(Boolean).map((p) => [p.slug, p])).values()]
 const greeting = () => { const h = new Date().getHours(); return h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Up late' }
 const monthYear = (d) => new Date(d).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })
 const initialsOf = (u) => ((u.name || u.email || '?').split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join(''))
@@ -438,7 +440,7 @@ function OrderCard({ o, onRemove }) {
       </header>
       <ul className="acc-items">
         {o.items.map((i, n) => {
-          const p = pieceFor(i.name)
+          const p = pieceOrSaved(i)
           return <li key={n}><span className="acc-item">{p && p.src ? <img src={asset(p.src)} alt="" /> : <i aria-hidden="true" />}<span>{i.qty > 1 ? `${i.qty} × ` : ''}{i.name}</span></span>{i.amount != null && <b>{priced(i.amount, o.currency)}</b>}</li>
         })}
       </ul>
@@ -555,7 +557,7 @@ const readLook = () => { try { return localStorage.getItem(LOOK_KEY) === 'list' 
 
 function OrderRow({ o, open, onToggle }) {
   const support = o.kind === 'support'
-  const pics = o.items.map((i) => pieceFor(i.name)).filter((p) => p && p.src).slice(0, 3)
+  const pics = o.items.map(pieceOrSaved).filter((p) => p && p.src).slice(0, 3)
   const count = o.items.reduce((n, i) => n + (i.qty || 1), 0)
   return (
     <button type="button" className={`acc-orow ${open ? 'is-open' : ''}`} aria-expanded={open} onClick={onToggle}>
@@ -909,6 +911,7 @@ function Rewards({ go, fresh = [] }) {
   const [data, setData] = useState(null)
   const [problem, setProblem] = useState('')
   const [copied, setCopied] = useState('')
+  const [shelfOpen, setShelfOpen] = useState(false) // the archived gifts, folded away
   const toCart = async (code) => {
     setAdding(code)
     const r = await cart.applyCode(code)
@@ -961,11 +964,12 @@ function Rewards({ go, fresh = [] }) {
   ))
 
   // a reward (from Shop → Rewards): earned by its rule, or gifted
-  const rewardCard = (r) => {
+  const rewardCard = (r, tools = null) => {
     const pct = Math.min(100, Math.round((Math.min(have(r), need(r)) / need(r)) * 100))
     return (
       <article key={r.id} className={`acct-reward ${r.earned ? 'is-earned' : ''} is-${r.kind} ${fresh.includes(r.id) ? 'is-new' : ''}`}>
         {fresh.includes(r.id) && <span className="acct-reward-new">New</span>}
+        {tools}
         <div className="acct-reward-art" aria-hidden="true">
           {r.kind === 'picture' && r.picture && <span className="acct-pick-pic"><img src={asset(r.picture)} alt="" loading="lazy" style={faceLook(r)} /></span>}
           {r.kind === 'card' && <span className={`acct-card-mini is-${r.cardLook} ${r.cardArt ? 'has-art' : ''}`} style={designStyle(r)}><b>J</b><i /></span>}
@@ -988,9 +992,10 @@ function Rewards({ go, fresh = [] }) {
   }
 
   // a discount code the admin gave them
-  const codeCard = (g) => (
+  const codeCard = (g, tools = null) => (
     <article key={g.id} className={`acct-reward is-discount ${g.state === 'ready' ? 'is-earned' : 'is-spent'} ${fresh.includes(`code:${g.id}`) ? 'is-new' : ''}`}>
       {fresh.includes(`code:${g.id}`) && <span className="acct-reward-new">New</span>}
+      {tools}
       <div className="acct-reward-art" aria-hidden="true"><span className="acct-reward-off"><b>{g.percent}%</b><small>off</small></span></div>
       <div className="acct-reward-body">
         <span className="acct-reward-kind">Discount code</span>
@@ -1001,7 +1006,30 @@ function Rewards({ go, fresh = [] }) {
     </article>
   )
 
-  const giftCount = gifted.length + giftCodes.length
+  /* Gifts can be put away: archived ones fold into a list below (and can come back), deleted ones
+     are gone from view. A gifted picture or card design stays theirs either way. */
+  const shelf = (id, to) => {
+    setData((d) => {
+      const archived = (d.archived || []).filter((x) => x !== id), deleted = (d.deleted || []).filter((x) => x !== id)
+      if (to === 'archive') archived.push(id); if (to === 'delete') deleted.push(id)
+      return { ...d, archived, deleted }
+    })
+    call('giftShelf', { id, to }).catch(() => {})
+  }
+  const archived = data.archived || [], deleted = data.deleted || []
+  const gifts = [
+    ...giftCodes.map((g) => ({ key: `code:${g.id}`, name: `${g.percent}% off`, note: g.state === 'ready' ? 'Discount code, still works' : g.state === 'used' ? 'Discount code, used' : 'Discount code, ended', works: g.state === 'ready', card: (tools) => codeCard(g, tools) })),
+    ...gifted.map((r) => ({ key: r.id, name: r.name, note: r.kind === 'picture' ? 'Profile picture (still yours)' : r.kind === 'card' ? 'Card design (still yours)' : 'Discount', works: true, card: (tools) => rewardCard(r, tools) })),
+  ].filter((x) => !deleted.includes(x.key))
+  const shown = gifts.filter((x) => !archived.includes(x.key))
+  const putAway = gifts.filter((x) => archived.includes(x.key))
+  const [openShelf, setOpenShelf] = [shelfOpen, setShelfOpen]
+  const archiveBtn = (x) => (
+    <button type="button" className="acct-gift-archive" onClick={() => shelf(x.key, 'archive')} aria-label={`Archive ${x.name}`} title="Archive">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v4H3z M5 9v10h14V9 M10 13h4" /></svg>
+    </button>
+  )
+  const giftCount = shown.length
   return (
     <div className="acct-rewards">
       <div className="acct-progress">
@@ -1016,11 +1044,27 @@ function Rewards({ go, fresh = [] }) {
             <h3>Gifts</h3>
             <p>Given to you by {brand.name}.</p>
           </header>
-          <div className="acct-reward-list">
-            {giftCodes.map(codeCard)}
-            {gifted.map(rewardCard)}
-          </div>
+          <div className="acct-reward-list">{shown.map((x) => x.card(archiveBtn(x)))}</div>
         </section>
+      )}
+      {putAway.length > 0 && (
+        <div className="acct-shelf">
+          <button type="button" className="acct-shelf-toggle" aria-expanded={openShelf} onClick={() => setOpenShelf(!openShelf)}>
+            Archived <small>{putAway.length}</small>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
+          {openShelf && (
+            <ul className="acct-shelf-list">
+              {putAway.map((x) => (
+                <li key={x.key}>
+                  <span><b>{x.name}</b><small>{x.note}</small></span>
+                  <button type="button" className="acc-link" onClick={() => shelf(x.key, 'restore')}>Restore</button>
+                  <button type="button" className="acc-link is-danger" onClick={() => { if (!x.works || window.confirm(`Delete ${x.name}? ${x.key.startsWith('code:') ? 'The code will be gone from your account, so you will not be able to use it.' : 'It stays yours to use under Details.'}`)) shelf(x.key, 'delete') }}>Delete</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
       {earnable.length > 0 && (
         <section className="acct-reward-group">
@@ -1028,7 +1072,7 @@ function Rewards({ go, fresh = [] }) {
             <h3>Rewards</h3>
             <p>Earned by confirming your email, by your orders and the prints you collect. <b>{earnable.filter((r) => r.earned).length}/{earnable.length}</b> unlocked.</p>
           </header>
-          <div className="acct-reward-list">{earnable.map(rewardCard)}</div>
+          <div className="acct-reward-list">{earnable.map((r) => rewardCard(r))}</div>
         </section>
       )}
     </div>

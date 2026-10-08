@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { codeUsed, ours, paidWithOf, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart } from './_orders.js'
+import { codeUsed, ours, paidWithOf, piecesNow, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart, tellAdmin, withPiece } from './_orders.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -66,7 +66,8 @@ export default async function handler(req, res) {
         name: who.name || (ship && ship.name) || '',
         phone: who.phone || '',
         address: ship && ship.address ? shapeAddress(ship.address, ship.name) : null,
-        items: lines && Array.isArray(lines.data) ? lines.data.map((l) => ({ name: l.description, qty: l.quantity || 1, amount: (l.amount_total || 0) / 100 })) : [],
+        // each line at its price before any discount (the discount is its own line), with its piece kept on it
+        items: lines && Array.isArray(lines.data) ? (() => { const pieces = piecesNow(); return lines.data.map((l) => withPiece({ name: l.description, qty: l.quantity || 1, amount: (l.amount_subtotal ?? l.amount_total ?? 0) / 100 }, pieces)) })() : [],
         amount: (o.amount_total || 0) / 100,
         discount: ((o.total_details && o.total_details.amount_discount) || 0) / 100,
         currency: String(o.currency || '').toUpperCase(),
@@ -75,6 +76,8 @@ export default async function handler(req, res) {
         test: !o.livemode,
         createdAt: new Date((o.created || Date.now() / 1000) * 1000),
       })
+      // the admin hears of it by email (once, however often Stripe sends this)
+      await tellAdmin(o.id, process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : ''))
       // paid: what was bought leaves the buyer's saved cart, even if they never come back to the site
       await takeFromCart(userId, readBought(o.metadata && o.metadata.bought))
       // a discount code on it: a reward code shows as used in its owner's account
