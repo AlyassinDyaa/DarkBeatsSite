@@ -1,12 +1,14 @@
 {
   "enabled": true,
   "buttonLabel": "Buy this print",
+  "accounts": "optional",
   "tagPlace": "corner",
+  "payments": "stripe",
   "shipping": true,
   "thanksTitle": "Thank you.",
   "currency": "aud",
   "note": "A3 print, signed.",
-  "signedExtra": 10,
+  "signedExtra": "",
   "countries": [
     "AU",
     "NZ",
@@ -15,9 +17,7 @@
     "GB"
   ],
   "thanksText": "Your order is in. A receipt is on its way to your email.",
-  "signedChoice": true,
-  "pricePlace": "below",
   "cartIcon": "bag",
-  "accounts": "optional",
-  "payments": "stripe"
+  "signedChoice": true,
+  "pricePlace": "below"
 }
