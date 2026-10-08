@@ -78,7 +78,7 @@ const shape = (s) => {
     amount: cents(s.amount_total),
     discount: cents(s.total_details && s.total_details.amount_discount),
     currency: String(s.currency || '').toUpperCase(),
-    paid: s.payment_status === 'paid',
+    paid: s.payment_status === 'paid' || s.payment_status === 'no_payment_required', // a free order (a 100% code) has no payment
     refunded,
     fullyRefunded: Boolean(charge && charge.refunded),
     name: text(who.name || (ship && ship.name)),
@@ -87,7 +87,7 @@ const shape = (s) => {
     address: ship && ship.address ? { name: text(ship.name), ...Object.fromEntries(['line1', 'line2', 'city', 'state', 'postal_code', 'country'].map((k) => [k, text(ship.address[k])])) } : null,
     items,
     receipt: (charge && charge.receipt_url) || '',
-    paidWith: (charge && paidWithOf(charge.payment_method_details)) || 'Card',
+    paidWith: (charge && paidWithOf(charge.payment_method_details)) || (s.amount_total === 0 ? 'Free, with a code' : 'Card'),
     pi: pi ? pi.id : '',
     hidden: meta.jb_hidden === '1',
     stripe: pi ? `https://dashboard.stripe.com/${s.livemode ? '' : 'test/'}payments/${pi.id}` : '',
@@ -140,11 +140,21 @@ export default async function handler(req, res) {
       }
       // each line with its piece: picture, size, signed or not, type, category, universe
       const pieces = piecesNow()
-      // what each order kept of its pieces when it was paid (for pieces taken off the site since)
-      let kept = new Map()
+      // what the database knows of each order: the pieces it kept when it was paid (for pieces taken off
+      // the site since); for a free order (no payment for Stripe to keep details on) its posting, and
+      // whether the admin deleted it
+      let kept = new Map(), rows = new Map(), gone = new Set()
       if (dbReady()) {
-        try { kept = new Map((await (await db()).collection('orders').find({ ref: { $in: orders.map((o) => o.id) } }).toArray()).map((o) => [o.ref, o.items || []])) } catch (e) { console.error('kept lines not read:', e.message) }
+        try {
+          const d = await db()
+          const found = await d.collection('orders').find({ ref: { $in: orders.map((o) => o.id) } }).toArray()
+          rows = new Map(found.map((o) => [o.ref, o]))
+          kept = new Map(found.map((o) => [o.ref, o.items || []]))
+          gone = new Set((await d.collection('hiddenOrders').find({ ref: { $in: orders.map((o) => o.id) } }).toArray()).map((h) => h.ref))
+        } catch (e) { console.error('kept lines not read:', e.message) }
       }
+      for (let i = orders.length - 1; i >= 0; i--) if (gone.has(orders[i].id)) orders.splice(i, 1)
+      for (const o of orders) if (!o.pi && o.provider !== 'paypal' && rows.get(o.id) && rows.get(o.id).track) o.track = { ...o.track, ...rows.get(o.id).track }
       for (const o of orders) {
         const saved = kept.get(o.id) || []
         o.items = o.items.map((i, n) => {
@@ -161,7 +171,7 @@ export default async function handler(req, res) {
       const body = req.body && typeof req.body === 'object' ? req.body : {}
       if (body.action === 'hide') {
         const pis = (Array.isArray(body.pis) ? body.pis : []).map((p) => text(p, 80)).filter((p) => /^pi_[A-Za-z0-9_]+$/.test(p))
-        const refs = (Array.isArray(body.refs) ? body.refs : []).map((r) => text(r, 80)).filter((r) => /^pp_[A-Z0-9]+$/.test(r))
+        const refs = (Array.isArray(body.refs) ? body.refs : []).map((r) => text(r, 80)).filter((r) => /^pp_[A-Z0-9]+$/.test(r) || /^cs_(test|live)_[A-Za-z0-9]+$/.test(r))
         if (!pis.length && !refs.length) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
         if (pis.length + refs.length > 100) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
         const done = []
@@ -174,7 +184,10 @@ export default async function handler(req, res) {
           try { await (await db()).collection('orders').deleteMany({ pi: { $in: done } }) } catch (e) { console.error('not erased from the database:', e.message) }
         }
         if (refs.length && dbReady()) {
-          await (await db()).collection('orders').deleteMany({ ref: { $in: refs } })
+          const d = await db()
+          await d.collection('orders').deleteMany({ ref: { $in: refs } })
+          // a Stripe checkout with no payment (a free order) stays in Stripe's list: remembered as deleted here
+          for (const ref of refs.filter((r) => r.startsWith('cs_'))) await d.collection('hiddenOrders').updateOne({ ref }, { $setOnInsert: { ref, at: new Date() } }, { upsert: true })
           done.push(...refs)
         }
         return res.status(done.length ? 200 : 502).json({ hidden: done, ...(done.length < pis.length + refs.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
@@ -194,7 +207,13 @@ export default async function handler(req, res) {
       const found = await stripe(`checkout/sessions/${id}`)
       if (!found.ok) return res.status(404).json({ message: 'Stripe does not know that order.' })
       const pi = typeof found.said.payment_intent === 'string' ? found.said.payment_intent : found.said.payment_intent && found.said.payment_intent.id
-      if (!pi) return res.status(409).json({ message: 'That order has no payment to keep the details on.' })
+      if (!pi) {
+        // a free order (a 100% code): no payment for Stripe to keep the details on, so the database keeps them
+        if (!dbReady()) return res.status(409).json({ message: 'That order has no payment to keep the details on.' })
+        const track = { status, carrier, number: text(body.number, 80), note: text(body.note, 400), at: new Date().toISOString() }
+        await setTrack({ ref: id }, track)
+        return res.status(200).json({ track })
+      }
       const ask = new URLSearchParams()
       // an empty value takes the detail off again
       ask.set('metadata[ship_status]', status)

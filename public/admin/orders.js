@@ -977,11 +977,11 @@
   // admin; a discount code is switched off and drops out. Nothing is refunded.
   const inChunks = (list, n = 100) => Array.from({ length: Math.ceil(list.length / n) }, (_, i) => list.slice(i * n, i * n + n))
   const dropOrders = async (orders) => {
-    // a Stripe order goes by its payment; a PayPal one (kept in the database) by its own id
-    const keys = orders.map((o) => o.pi || (o.provider === 'paypal' ? o.id : '')).filter(Boolean)
+    // a Stripe order goes by its payment; a PayPal one, or a free one (no payment), by its own id
+    const keys = orders.map((o) => o.pi || o.id).filter(Boolean)
     const gone = new Set()
     for (const chunk of inChunks(keys)) {
-      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', pis: chunk.filter((k) => k.startsWith('pi_')), refs: chunk.filter((k) => k.startsWith('pp_')) }) })
+      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', pis: chunk.filter((k) => k.startsWith('pi_')), refs: chunk.filter((k) => k.startsWith('pp_') || k.startsWith('cs_')) }) })
       ;(said.hidden || []).forEach((p) => gone.add(p))
     }
     state.orders = state.orders.filter((o) => !gone.has(o.pi || o.id))

@@ -139,7 +139,8 @@ function assemble(content) {
   const rw = page('rewards')
   const slug = (t) => String(t || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
   if (rw.rewardText) accountPage.rewardText = rw.rewardText
-  accountPage.rewards = (Array.isArray(rw.rewards) ? rw.rewards : [])
+  // one list per kind (Profile pictures, Membership card designs, Discounts)
+  accountPage.rewards = (Array.isArray(rw.pictures) ? rw.pictures : []).map((r) => ({ ...r, kind: 'picture' })).concat((Array.isArray(rw.cards) ? rw.cards : []).map((r) => ({ ...r, kind: 'card' })), (Array.isArray(rw.discounts) ? rw.discounts : []).map((r) => ({ ...r, kind: 'discount' })), Array.isArray(rw.rewards) ? rw.rewards : [])
     .filter((r) => r && !r.hidden && (r.kind === 'card' ? r.cardLook || r.cardArt : r.kind === 'discount' ? Number(r.percent) > 0 : typeof r.picture === 'string' && r.picture))
     .map((r) => {
       const by = ['verify', 'orders', 'pieces'].includes(r.earnedBy) ? r.earnedBy : 'verify'

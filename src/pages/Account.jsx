@@ -419,19 +419,25 @@ const STATUS_TEXT = { new: 'Being prepared', packed: 'Packed', shipped: 'On its 
 const longDay = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
 const priced = (n, code) => { try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: code || 'AUD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(n) ? 0 : 2 }).format(n) } catch { return money(n) } }
 
-function OrderCard({ o, onRemove }) {
+function OrderCard({ o, onRemove, pick = null }) {
   const at = STEPS.findIndex(([k]) => k === o.status)
   const support = o.kind === 'support'
   return (
     <article className="acc-order">
-      <header className="acc-order-head">
+      <header className={`acc-order-head ${pick ? 'is-picking' : ''}`}>
+        {pick && (
+          <label className="acc-order-pick" title={pick.on ? 'Chosen' : 'Choose it'}>
+            <input type="checkbox" checked={pick.on} onChange={pick.toggle} aria-label={`Choose ${support ? 'this support payment' : `order ${o.number}`}`} />
+            <span aria-hidden="true" />
+          </label>
+        )}
         <div>
           <strong>{support ? 'Support' : `Order ${o.number}`}</strong>
           <small>{longDay(o.createdAt)}{o.paidWith ? ` · ${o.paidWith}` : ''}</small>
         </div>
         <span className="acc-order-right">
           <span className={`acc-pill is-${o.status}`}>{support ? 'Thank you' : STATUS_TEXT[o.status] || 'Paid'}</span>
-          {onRemove && (
+          {onRemove && !pick && (
             <button type="button" className="acc-order-del" onClick={() => onRemove(o)} title="Remove from your account" aria-label={support ? 'Remove this support payment from your account' : `Remove order ${o.number} from your account`}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6" /></svg>
             </button>
@@ -498,10 +504,10 @@ function useOrders(justPaid = false) {
 }
 
 /* Removing an order from the account: only with the password. The shop keeps its own record. */
-function RemoveOrder({ order, onClose, onRemoved }) {
-  const { call } = useAccount()
+function RemoveOrder({ orders = [], onClose, onRemoved }) {
+  const { call, user } = useAccount()
   const f = useForm({ password: '' })
-  const open = Boolean(order)
+  const open = orders.length > 0
   const box = useRef(null)
   useEffect(() => {
     if (!open) return
@@ -512,29 +518,31 @@ function RemoveOrder({ order, onClose, onRemoved }) {
     window.__lenis?.stop?.()
     return () => { removeEventListener('keydown', key); clearTimeout(t); window.__lenis?.start?.(); before?.focus?.() }
   }, [open, onClose])
-  const live = order && !['delivered', 'refunded'].includes(order.status) && order.kind !== 'support'
+  const one = orders.length === 1
+  const onTheWay = orders.filter((o) => !['delivered', 'refunded'].includes(o.status) && o.kind !== 'support').length
   return (
     <AnimatePresence>
       {open && (
         <motion.div className="acc-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onMouseDown={(e) => { if (e.target === e.currentTarget && !f.busy) onClose() }}>
           <motion.form ref={box} className="acc-modal-box" role="alertdialog" aria-modal="true" aria-labelledby="acc-del-title" aria-describedby="acc-del-text" noValidate
             initial={{ opacity: 0, y: 18, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.3, ease: EASE }}
-            onSubmit={(e) => f.run(e, async () => { await call('removeOrder', { number: order.number, password: f.values.password }); f.set('password')(''); onRemoved(order) })}>
+            onSubmit={(e) => f.run(e, async () => { await call('removeOrders', { numbers: orders.map((o) => o.number), password: f.values.password }); f.set('password')(''); onRemoved(orders) })}>
             <button type="button" className="acc-modal-x" onClick={onClose} aria-label="Close" disabled={f.busy}>×</button>
             <span className="acc-modal-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6" /></svg></span>
-            <h2 id="acc-del-title">Remove this order?</h2>
-            <p id="acc-del-text">
-              {order.kind === 'support' ? 'This support payment' : `Order ${order.number}`} leaves your account for good.
-              {live ? ' It has not reached you yet: it is still posted to you, but its tracking will no longer show here.' : ''}
-              {' '}The shop keeps its own record of the sale. Type your password to be sure.
-            </p>
+            <h2 id="acc-del-title">{one ? (orders[0].kind === 'support' ? 'Delete this support payment?' : `Delete order ${orders[0].number}?`) : `Delete ${orders.length} orders?`}</h2>
+            <div id="acc-del-text" className="acc-del-text">
+              <p className="acc-del-warn"><b>This cannot be undone.</b> {one ? 'It leaves' : 'They leave'} your account for good: {one ? 'its' : 'their'} items, tracking and details will no longer show here.</p>
+              {onTheWay > 0 && <p>{one ? 'It has' : onTheWay === orders.length ? 'They have' : `${onTheWay} of them ${onTheWay === 1 ? 'has' : 'have'}`} not reached you yet: still posted to you, but the tracking will only be in the copy.</p>}
+              <p className="acc-del-copy"><span aria-hidden="true">✉</span> First, a copy of {one ? 'it' : 'each'} is emailed to you at <b>{user.email}</b>. If the copy cannot be sent, nothing is deleted.</p>
+              <p>The shop keeps its own record of every sale. Type your password to be sure.</p>
+            </div>
             <div className="acc-modal-field">
               <Field label="Your password" type="password" autoComplete="current-password" value={f.values.password} onChange={f.set('password')} error={errorFor(f.problem, 'password')} />
             </div>
             <Problem text={f.problem.field ? '' : f.problem.text} />
             <div className="acc-modal-actions">
-              <button type="button" className="btn ghost sm" onClick={onClose} disabled={f.busy}>Keep it</button>
-              <button type="submit" className="btn sm acc-modal-yes" disabled={f.busy || !f.values.password}>{f.busy ? 'Removing…' : 'Remove order'}</button>
+              <button type="button" className="btn ghost sm" onClick={onClose} disabled={f.busy}>Keep {one ? 'it' : 'them'}</button>
+              <button type="submit" className="btn sm acc-modal-yes" disabled={f.busy || !f.values.password}>{f.busy ? 'Emailing the copy…' : one ? 'Delete and email me a copy' : `Delete ${orders.length} and email me a copy`}</button>
             </div>
           </motion.form>
         </motion.div>
@@ -555,12 +563,13 @@ const ORDER_SHOWS = [
 const LOOK_KEY = 'jb.ordersLook'
 const readLook = () => { try { return localStorage.getItem(LOOK_KEY) === 'list' ? 'list' : 'cards' } catch { return 'cards' } }
 
-function OrderRow({ o, open, onToggle }) {
+function OrderRow({ o, open, onToggle, pick = null }) {
   const support = o.kind === 'support'
   const pics = o.items.map(pieceOrSaved).filter((p) => p && p.src).slice(0, 3)
   const count = o.items.reduce((n, i) => n + (i.qty || 1), 0)
   return (
-    <button type="button" className={`acc-orow ${open ? 'is-open' : ''}`} aria-expanded={open} onClick={onToggle}>
+    <button type="button" className={`acc-orow ${open ? 'is-open' : ''} ${pick ? 'is-picking' : ''} ${pick && pick.on ? 'is-picked' : ''}`} aria-expanded={pick ? undefined : open} aria-pressed={pick ? pick.on : undefined} onClick={pick ? pick.toggle : onToggle}>
+      {pick && <span className="acc-orow-tick" aria-hidden="true" />}
       <span className="acc-orow-pics" aria-hidden="true">
         {pics.length ? pics.map((p, n) => <img key={n} src={asset(p.src)} alt="" />) : <i />}
       </span>
@@ -577,8 +586,11 @@ function OrderRow({ o, open, onToggle }) {
 
 function Orders({ orders, problem, onRemoved }) {
   const { user } = useAccount()
-  const [removing, setRemoving] = useState(null)
-  const close = useCallback(() => setRemoving(null), [])
+  const [removing, setRemoving] = useState([]) // the orders the delete window is for
+  const close = useCallback(() => setRemoving([]), [])
+  const [picking, setPicking] = useState(false) // choosing orders to delete
+  const [picked, setPicked] = useState(() => new Set())
+  const [done, setDone] = useState('')
   const [show, setShow] = useState('all')
   const [look, setLook] = useState(readLook)
   const [opened, setOpened] = useState(() => new Set())
@@ -597,6 +609,16 @@ function Orders({ orders, problem, onRemoved }) {
   const fits = (ORDER_SHOWS.find(([k]) => k === show) || ORDER_SHOWS[0])[2]
   const shown = orders.filter(fits)
   const keyOf = (o) => `${o.number}${o.createdAt}`
+  const pickOf = (o) => (picking ? { on: picked.has(keyOf(o)), toggle: () => setPicked((s) => { const n = new Set(s); if (n.has(keyOf(o))) n.delete(keyOf(o)); else n.add(keyOf(o)); return n }) } : null)
+  const allPicked = shown.length > 0 && shown.every((o) => picked.has(keyOf(o)))
+  const chosen = orders.filter((o) => picked.has(keyOf(o)))
+  const stopPicking = () => { setPicking(false); setPicked(new Set()) }
+  const removed = (list) => {
+    setRemoving([]); stopPicking()
+    list.forEach((o) => onRemoved(o))
+    setDone(`${list.length === 1 ? 'Deleted.' : `${list.length} orders deleted.`} A copy is on its way to ${user.email}.`)
+    setTimeout(() => setDone(''), 6000)
+  }
   return (
     <>
       <div className="acc-otools">
@@ -605,6 +627,7 @@ function Orders({ orders, problem, onRemoved }) {
             <button key={k} type="button" role="tab" aria-selected={show === k} className={show === k ? 'on' : ''} onClick={() => setShow(k)}>{label}<small>{counts[k]}</small></button>
           ))}
         </div>
+        {onRemoved && !picking && <button type="button" className="acc-oselect" onClick={() => { setPicking(true); setDone('') }}>Select</button>}
         <div className="acc-olook" role="radiogroup" aria-label="How to show them">
           <button type="button" role="radio" aria-checked={look === 'cards'} className={look === 'cards' ? 'on' : ''} onClick={() => chooseLook('cards')} title="In full">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v7H4z M4 14h16v6H4z" /></svg><span>Full</span>
@@ -614,20 +637,34 @@ function Orders({ orders, problem, onRemoved }) {
           </button>
         </div>
       </div>
+      {/* choosing orders to delete: all of them at once, or one by one */}
+      {picking && (
+        <div className="acc-opick" role="region" aria-label="Choose orders to delete">
+          <label className="acc-opick-all">
+            <input type="checkbox" checked={allPicked} onChange={() => setPicked(allPicked ? new Set() : new Set(shown.map(keyOf)))} />
+            <span aria-hidden="true" />
+            Select all <small>{shown.length}</small>
+          </label>
+          <span className="acc-opick-count">{picked.size ? `${picked.size} chosen` : 'Tick the orders to delete'}</span>
+          <button type="button" className="btn sm acc-modal-yes" disabled={!chosen.length} onClick={() => setRemoving(chosen)}>Delete{chosen.length ? ` ${chosen.length}` : ''}…</button>
+          <button type="button" className="btn ghost sm" onClick={stopPicking}>Cancel</button>
+        </div>
+      )}
+      {done && <p className="acc-welcome" role="status">{done}</p>}
       {!shown.length && <p className="acc-wait">None here.</p>}
       {look === 'cards'
-        ? <div className="acc-orders">{shown.map((o) => <OrderCard key={keyOf(o)} o={o} onRemove={onRemoved ? setRemoving : undefined} />)}</div>
+        ? <div className="acc-orders">{shown.map((o) => <OrderCard key={keyOf(o)} o={o} pick={pickOf(o)} onRemove={onRemoved ? (x) => setRemoving([x]) : undefined} />)}</div>
         : (
           <div className="acc-olist">
             {shown.map((o) => (
               <div key={keyOf(o)} className="acc-olist-item">
-                <OrderRow o={o} open={opened.has(keyOf(o))} onToggle={() => toggle(keyOf(o))} />
-                {opened.has(keyOf(o)) && <OrderCard o={o} onRemove={onRemoved ? setRemoving : undefined} />}
+                <OrderRow o={o} open={opened.has(keyOf(o))} onToggle={() => toggle(keyOf(o))} pick={pickOf(o)} />
+                {opened.has(keyOf(o)) && !picking && <OrderCard o={o} onRemove={onRemoved ? (x) => setRemoving([x]) : undefined} />}
               </div>
             ))}
           </div>
         )}
-      <RemoveOrder order={removing} onClose={close} onRemoved={(o) => { setRemoving(null); onRemoved(o) }} />
+      <RemoveOrder orders={removing} onClose={close} onRemoved={removed} />
     </>
   )
 }

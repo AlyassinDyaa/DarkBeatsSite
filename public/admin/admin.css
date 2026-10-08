@@ -1162,3 +1162,29 @@ html[data-ia-orders='discounts'] body:has([class*='AppHeader'], [class*='Toolbar
 .io-gift-grow { flex: 1; }
 .io-gift-tell { display: inline-flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--dim); cursor: pointer; }
 .io-gift-note { margin: 0; font-size: 0.86rem; color: var(--ok); }
+
+/* the membership card preview (Shop → Rewards → Membership card designs), in the site's purple and its Anton lettering */
+@font-face { font-family: 'Anton'; font-style: normal; font-weight: 400; font-display: swap; src: url('anton.woff2') format('woff2'); }
+.ia-cardprev-wrap { padding: 4px 0 2px; }
+.ia-cardprev { position: relative; display: grid; grid-template-rows: auto auto 1fr auto; width: min(100%, 340px); aspect-ratio: 1.586; padding: 16px 18px; overflow: hidden; border-radius: 16px; color: #f4eff8; font-family: 'Anton', Impact, sans-serif; background: radial-gradient(120% 90% at 100% 0%, rgba(167, 71, 224, 0.75), transparent 60%), linear-gradient(140deg, #3a1d52, #0e0b14 70%); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 10px 10px 0 -2px #c565f8, inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.ia-cardprev.is-ink { background: radial-gradient(120% 90% at 100% 0%, rgba(84, 0, 117, 0.6), transparent 60%), linear-gradient(140deg, #1d1a22, #050407 70%); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 10px 10px 0 -2px #c565f8, inset 0 0 0 1px #c565f8; }
+.ia-cardprev.is-gold { color: #0a0710; background: linear-gradient(135deg, #fff1b8 0%, #f2c94c 28%, #b8860b 55%, #f6d77a 78%, #c9971f 100%); }
+.ia-cardprev.is-chrome { color: #0a0710; background: linear-gradient(135deg, #ffffff 0%, #c9ccd2 30%, #8d929b 55%, #eef0f3 78%, #a4a9b1 100%); }
+.ia-cardprev.has-art { color: #f4eff8; background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.8)), var(--card-art) center 25% / cover, #09070d; }
+.ia-cardprev-mark { position: absolute; right: -2%; bottom: -26%; font-size: 10rem; line-height: 1; color: transparent; -webkit-text-stroke: 1.5px rgba(244, 239, 248, 0.16); transform: skewX(-12deg); pointer-events: none; }
+.ia-cardprev.is-gold .ia-cardprev-mark, .ia-cardprev.is-chrome .ia-cardprev-mark { -webkit-text-stroke-color: rgba(10, 7, 16, 0.14); }
+.ia-cardprev-top { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ia-cardprev-top b { font-size: 1.05rem; font-weight: 400; letter-spacing: 0.02em; transform: skewX(-8deg); }
+.ia-cardprev-top b i { font-style: normal; color: #c565f8; }
+.ia-cardprev.is-gold .ia-cardprev-top b i { color: #5b1a00; }
+.ia-cardprev.is-chrome .ia-cardprev-top b i { color: #540075; }
+.ia-cardprev-top em { padding: 4px 9px 3px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 0.56rem; font-style: normal; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; background: #c565f8; color: #0a0710; clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+.ia-cardprev.is-gold .ia-cardprev-top em, .ia-cardprev.is-chrome .ia-cardprev-top em { background: #0a0710; color: #fff; }
+.ia-cardprev-chip { position: relative; width: 38px; height: 28px; margin-top: 12px; border-radius: 6px; background: linear-gradient(135deg, #f0c8ff, #a447e0 60%, #e2b5ff); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); }
+.ia-cardprev.is-gold .ia-cardprev-chip, .ia-cardprev.is-chrome .ia-cardprev-chip { background: rgba(10, 7, 16, 0.25); }
+.ia-cardprev-name { position: relative; align-self: end; font-size: 1.7rem; font-weight: 400; text-transform: uppercase; line-height: 1; transform: skewX(-6deg); transform-origin: left; }
+.ia-cardprev-foot { position: relative; margin-top: 8px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 0.75rem; letter-spacing: 0.06em; }
+.ia-cardprev-foot small { margin-right: 6px; font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.7; }
+.ia-cardprev-note { margin: 12px 0 0; font-size: 0.82rem; color: var(--dim); }
+#nc-root .ia-cardprev, #nc-root .ia-cardprev * { font-family: 'Anton', Impact, sans-serif; }
+#nc-root .ia-cardprev-top em, #nc-root .ia-cardprev-foot, #nc-root .ia-cardprev-foot * { font-family: 'JetBrains Mono', Consolas, monospace; }

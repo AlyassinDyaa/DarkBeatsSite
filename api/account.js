@@ -29,7 +29,8 @@ import {
         { action: 'rewards' }                             every reward, earned or not, and how far they have come
         { action: 'seenGifts' }                           the gifts the admin gave them are no longer new
         { action: 'giftShelf', id, to }                   a gift ("code:<id>" or a reward id) archived, restored or deleted
-        { action: 'removeOrder', number, password }       takes an order out of their account (the shop keeps it)
+        { action: 'removeOrders', numbers, password }     takes orders out of their account (the shop keeps them),
+                                                           after emailing them a copy of each (nothing goes if it cannot be sent)
         { action: 'everywhere' }                          logs out every device
         { action: 'delete', password }                    deletes the account (orders stay, unlinked)
 
@@ -66,8 +67,9 @@ const freePictures = () => {
    customer and listed in the admin's Discounts screen. */
 const slug = (t) => String(t || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
 const rewardsList = () => {
-  const page = readJson('content/pages/rewards.json')
-  const list = page && Array.isArray(page.rewards) ? page.rewards : []
+  const page = readJson('content/pages/rewards.json') || {}
+  // one list per kind on the Rewards screen (pictures, cards, discounts)
+  const list = (Array.isArray(page.pictures) ? page.pictures : []).map((r) => ({ ...r, kind: 'picture' })).concat((Array.isArray(page.cards) ? page.cards : []).map((r) => ({ ...r, kind: 'card' })), (Array.isArray(page.discounts) ? page.discounts : []).map((r) => ({ ...r, kind: 'discount' })), Array.isArray(page.rewards) ? page.rewards : [])
   const kindOf = (r) => (['card', 'discount'].includes(r.kind) ? r.kind : 'picture')
   return list.filter((r) => r && !r.hidden && (kindOf(r) === 'card' ? r.cardLook || r.cardArt : kindOf(r) === 'discount' ? Number(r.percent) > 0 : r.picture))
     .map((r) => {
@@ -412,18 +414,44 @@ export default async function handler(req, res) {
       return say(res, 200, { orders: list.map(forCustomer) })
     }
 
-    if (action === 'removeOrder') {
-      // out of the customer's account, once they type their password. The shop keeps the sale on
-      // record (posting, refunds, tax) and the admin still sees it.
+    if (action === 'removeOrders' || action === 'removeOrder') {
+      // out of the customer's account, once they type their password, after a copy of each is emailed
+      // to them (if it cannot be sent, nothing is taken out). The shop keeps the sales on record
+      // (posting, refunds, tax) and the admin still sees them.
       if (await tooMany(`login:${user.email}`, 8, 15)) return say(res, 429, { message: 'Too many tries. Wait 15 minutes.' })
       if (!(await checkPassword(body.password, user.password))) { await noteTry(`login:${user.email}`); return say(res, 400, { message: 'The password is not right.', field: 'password' }) }
-      const number = String(body.number || '').trim().toUpperCase().slice(0, 20)
+      const wanted = [...new Set((Array.isArray(body.numbers) ? body.numbers : [body.number]).map((n) => String(n || '').trim().toUpperCase().slice(0, 20)).filter(Boolean))].slice(0, 200)
       const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true }, hidden: { $ne: true } }).limit(200).toArray()
-      const order = number && list.find((o) => forCustomer(o).number === number)
-      if (!order) return say(res, 404, { message: 'That order is not in your account any more.' })
-      await d.collection('orders').updateOne({ ref: order.ref }, { $set: { customerRemoved: true, removedAt: new Date() } })
-      return say(res, 200, { removed: number })
+      const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true }, hidden: { $ne: true } }).limit(300).toArray()
+      const going = list.filter((o) => wanted.includes(forCustomer(o).number))
+      if (!going.length) return say(res, 404, { message: wanted.length > 1 ? 'Those orders are not in your account any more.' : 'That order is not in your account any more.' })
+      // the copy: each order as it showed in their account
+      const price = (n, cur) => { try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: cur || 'AUD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2 }).format(Number(n) || 0) } catch { return `${n}` } }
+      const words = { new: 'Being prepared', packed: 'Packed', shipped: 'On its way', delivered: 'Delivered', refunded: 'Refunded', pending: 'Waiting for payment' }
+      const copies = going.map((raw) => {
+        const o = forCustomer(raw)
+        const a = o.address
+        return {
+          title: o.kind === 'support' ? 'Support' : `Order ${o.number}`,
+          sub: [new Date(o.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }), words[o.status] || 'Paid', o.paidWith].filter(Boolean).join(' · '),
+          rows: [...o.items.map((i) => [`${i.qty > 1 ? `${i.qty} × ` : ''}${i.name}`, i.amount != null ? price(i.amount, o.currency) : '']), ...(o.discount > 0 ? [['Discount', `−${price(o.discount, o.currency)}`]] : [])],
+          total: price(o.amount, o.currency),
+          foot: [a ? `Posted to ${[a.name, a.line1, a.line2, [a.city, a.state, a.postal_code].filter(Boolean).join(' '), a.country].filter(Boolean).join(', ')}.` : '', o.tracking ? `Tracking: ${o.carrier ? `${o.carrier} ` : ''}${o.tracking}` : ''].filter(Boolean).join(' '),
+        }
+      })
+      const first = (user.name || '').split(' ')[0]
+      const sent = await sendMail({
+        to: user.email,
+        subject: `Your JBeatsArt order history: a copy of ${going.length === 1 ? '1 order' : `${going.length} orders`}`,
+        kicker: 'Your orders',
+        title: going.length === 1 ? 'A copy of your order' : `A copy of ${going.length} orders`,
+        lines: [`Hi${first ? ` ${first}` : ''},`, `You took ${going.length === 1 ? 'this order' : 'these orders'} out of your account. Here is a copy to keep.`],
+        orders: copies,
+        after: 'Questions about an order? Just reply to this email.',
+      })
+      if (!sent) return say(res, 502, { message: 'The copy could not be emailed just now, so nothing was taken out. Try again in a moment.' })
+      await d.collection('orders').updateMany({ ref: { $in: going.map((o) => o.ref) } }, { $set: { customerRemoved: true, removedAt: new Date() } })
+      return say(res, 200, { removed: going.map((o) => forCustomer(o).number) })
     }
 
     if (action === 'everywhere') {

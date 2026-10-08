@@ -46,7 +46,7 @@ export default async function handler(req, res) {
   try {
     const o = event.data && event.data.object
     // a checkout of another site sharing the Stripe account is none of this site's business
-    if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o && o.payment_status === 'paid' && ours(o)) {
+    if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o && (o.payment_status === 'paid' || o.payment_status === 'no_payment_required') && ours(o)) { // a 100% code: nothing to pay, still an order
       const lines = await stripe(`checkout/sessions/${o.id}/line_items?limit=100`)
       const ship = (o.collected_information && o.collected_information.shipping_details) || o.shipping_details || null
       const who = o.customer_details || {}
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
         provider: 'stripe',
         kind: o.metadata && o.metadata.order ? 'shop' : o.payment_link ? 'support' : 'other',
         pi: piId,
-        paidWith: (charge && paidWithOf(charge.payment_method_details)) || 'Card',
+        paidWith: (charge && paidWithOf(charge.payment_method_details)) || (o.amount_total === 0 ? 'Free, with a code' : 'Card'),
         userId,
         email: String(who.email || '').toLowerCase(),
         name: who.name || (ship && ship.name) || '',

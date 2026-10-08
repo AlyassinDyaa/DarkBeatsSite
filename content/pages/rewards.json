@@ -1,43 +1,41 @@
 {
   "rewardText": "Confirm your email to unlock rewards: a profile picture and a membership card design only confirmed members get.",
-  "rewards": [
+  "pictures": [
     {
       "name": "Confirmed",
-      "kind": "picture",
       "earnedBy": "verify",
       "picture": "/avatars/confirmed.svg"
-    },
+    }
+  ],
+  "cards": [
     {
       "name": "Ink card",
-      "kind": "card",
       "earnedBy": "verify",
       "cardLook": "ink"
     },
     {
-      "name": "3 orders: 10% off",
-      "kind": "discount",
-      "earnedBy": "orders",
-      "count": 3,
-      "percent": 10,
-      "days": 60
-    },
-    {
       "name": "Gold card",
-      "kind": "card",
       "earnedBy": "orders",
       "count": 6,
       "cardLook": "gold"
     },
     {
       "name": "Chrome card",
-      "kind": "card",
       "earnedBy": "pieces",
       "count": 10,
       "cardLook": "chrome"
+    }
+  ],
+  "discounts": [
+    {
+      "name": "3 orders: 10% off",
+      "earnedBy": "orders",
+      "count": 3,
+      "percent": 10,
+      "days": 60
     },
     {
       "name": "10 orders: 15% off",
-      "kind": "discount",
       "earnedBy": "orders",
       "count": 10,
       "percent": 15,

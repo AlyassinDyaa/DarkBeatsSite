@@ -18,8 +18,8 @@ const readJson = (path) => { try { return JSON.parse(readFileSync(join(process.c
 const slug = (t) => String(t || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
 // the rewards on offer, with the same ids the account pages use
 const rewardsOnOffer = () => {
-  const page = readJson('content/pages/rewards.json')
-  return (page && Array.isArray(page.rewards) ? page.rewards : [])
+  const page = readJson('content/pages/rewards.json') || {}
+  return (Array.isArray(page.pictures) ? page.pictures : []).map((r) => ({ ...r, kind: 'picture' })).concat((Array.isArray(page.cards) ? page.cards : []).map((r) => ({ ...r, kind: 'card' })), (Array.isArray(page.discounts) ? page.discounts : []).map((r) => ({ ...r, kind: 'discount' })), Array.isArray(page.rewards) ? page.rewards : [])
     .filter((r) => r && !r.hidden && (r.kind === 'card' ? r.cardLook || r.cardArt : r.kind === 'discount' ? Number(r.percent) > 0 : r.picture))
     .map((r) => ({ id: slug(r.name) || slug(r.picture), name: String(r.name || ''), kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', percent: Number(r.percent) || 0, picture: r.picture || '', face: String(r.face || ''), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '' }))
 }
@@ -29,7 +29,7 @@ const pictureOf = (avatar) => {
   if (!avatar) return null
   if (avatar.startsWith('icon:')) {
     const src = avatar.slice(5)
-    const listed = [...(((readJson('content/pages/account.json') || {}).icons) || []), ...(((readJson('content/pages/rewards.json') || {}).rewards) || [])].find((i) => i && i.picture === src)
+    const listed = [...(((readJson('content/pages/account.json') || {}).icons) || []), ...((readJson('content/pages/rewards.json') || {}).pictures || []), ...(((readJson('content/pages/rewards.json') || {}).rewards) || [])].find((i) => i && i.picture === src)
     return { src, face: String((listed && listed.face) || '') }
   }
   if (!/^[a-z0-9-]{1,80}$/.test(avatar)) return null

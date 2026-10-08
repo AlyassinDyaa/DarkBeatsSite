@@ -1590,3 +1590,29 @@ a.buy-btn { text-decoration: none; }
 .acct-shelf-list b { font-family: var(--display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--fg); }
 .acct-shelf-list small { font-size: 0.82rem; color: var(--fg-mute); }
 .acc-link.is-danger { color: #ff8a9b; }
+
+/* deleting orders from the history: a Select mode with tick boxes, and the warning window */
+.acc-oselect { padding: 8px 14px 7px; border: 1px solid var(--line); font-family: var(--mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); cursor: pointer; }
+.acc-oselect:hover { color: var(--fg); border-color: var(--line-strong); }
+.acc-otools { align-items: center; }
+.acc-opick { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 16px; padding: 12px 14px; border: 1px solid rgba(255, 107, 127, 0.45); background: rgba(255, 107, 127, 0.06); }
+.acc-opick-all, .acc-order-pick { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg); }
+.acc-opick-all small { padding: 1px 6px; background: var(--line); }
+.acc-opick-all input, .acc-order-pick input { position: absolute; opacity: 0; width: 22px; height: 22px; margin: 0; cursor: pointer; }
+.acc-opick-all > span, .acc-order-pick > span, .acc-orow-tick { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border: 1.5px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); }
+.acc-opick-all input:checked + span, .acc-order-pick input:checked + span, .acc-orow.is-picked .acc-orow-tick { border-color: #ff6b7f; background: #ff6b7f; }
+.acc-opick-all input:checked + span::after, .acc-order-pick input:checked + span::after, .acc-orow.is-picked .acc-orow-tick::after { content: '✓'; font-size: 0.8rem; font-weight: 700; color: #1a0710; }
+.acc-opick-all input:focus-visible + span, .acc-order-pick input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-opick-count { flex: 1; font-size: 0.9rem; color: var(--fg-dim); }
+.acc-order-pick { margin-right: 4px; }
+.acc-order-head { align-items: center; }
+.acc-orow.is-picking { grid-template-columns: auto auto minmax(0, 1fr) auto auto 20px; }
+.acc-orow.is-picked { border-color: rgba(255, 107, 127, 0.6); background: rgba(255, 107, 127, 0.06); }
+.acc-del-text p { margin: 10px 0 0; color: var(--fg-dim); line-height: 1.55; }
+.acc-del-warn b { color: #ff8a9b; }
+.acc-del-copy { padding: 10px 12px; border: 1px dashed rgba(255, 211, 77, 0.55); background: rgba(255, 211, 77, 0.06); }
+.acc-del-copy span { margin-right: 6px; color: #ffd34d; }
+.acc-del-copy b { color: var(--fg); overflow-wrap: anywhere; }
+@media (max-width: 599px) { .acc-orow.is-picking { grid-template-columns: auto auto minmax(0, 1fr) auto; } .acc-opick .btn { flex: 1 1 auto; justify-content: center; } }
+.acc-order-head.is-picking { justify-content: flex-start; gap: 14px; }
+.acc-order-head.is-picking .acc-order-right { margin-left: auto; }
