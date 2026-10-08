@@ -46,7 +46,8 @@
     },
     {
       "piece": "venom",
-      "column": "any"
+      "column": "any",
+      "picture": "/uploads/venom.webp"
     },
     {
       "piece": "neon-rain",
