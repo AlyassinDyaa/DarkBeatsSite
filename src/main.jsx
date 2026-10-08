@@ -12,6 +12,14 @@ import { showLatest } from './data/site'
 import './styles/global.css'
 import './styles/components.css'
 
+/* The artwork stays on the site: no "Save image" / "Copy image" menu on a picture (right-click on a
+   computer, a long press on Android), and pictures cannot be dragged out to the desktop. iPhones
+   are covered in global.css (-webkit-touch-callout). A screenshot still works (no site can stop
+   that): this takes away the easy ways. The admin is its own page, so none of this reaches it. */
+const isArt = (t) => t instanceof Element && Boolean(t.closest('img, picture, video, svg image'))
+addEventListener('contextmenu', (e) => { if (isArt(e.target)) e.preventDefault() })
+addEventListener('dragstart', (e) => { if (isArt(e.target)) e.preventDefault() })
+
 const start = () => createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Router basename={import.meta.env.VITE_ROUTER === 'hash' ? '/' : import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
