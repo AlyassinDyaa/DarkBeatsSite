@@ -85,6 +85,108 @@ export const withPiece = (item, pieces = piecesNow()) => {
   return d.slug ? { ...item, slug: d.slug, title: d.title, src: d.src, size: d.size, signed: d.signed, type: d.type } : item
 }
 
+/* ---------- order numbers
+   A member's orders are numbered with their member number and how many orders they have placed:
+   JB-0007-03 is member #0007's third order. A guest's order is JB-G- and six letters of its payment.
+   The number is given once, when the order is paid, and kept: deleting an order never renumbers
+   the others. Orders from before numbers get theirs the first time they are read. */
+const refCode = (ref) => String(ref || '').replace(/^(cs_(test|live)_|pp_)/, '').toUpperCase()
+export const orderNoOf = (o) => o.orderNo || refCode(o.ref).slice(-8)
+const pad = (n, w) => String(Number(n) || 0).padStart(w, '0')
+const PAID = ['paid', 'refunded']
+const ownerOf = async (d, o) => {
+  const users = d.collection('users')
+  return (o.userId && (await users.findOne({ _id: o.userId }))) || (o.email && (await users.findOne({ email: o.email, verified: true }))) || null
+}
+// every order of this member without a number gets the next ones, oldest first
+export const numberMember = async (d, user) => {
+  if (!user || !user.memberNo) return
+  const col = d.collection('orders')
+  const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
+  const list = (await col.find({ ...match, status: { $in: PAID }, orderNo: { $exists: false } }).limit(500).toArray())
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  for (const o of list) {
+    const got = await d.collection('users').findOneAndUpdate({ _id: user._id }, { $inc: { orderSeq: 1 } }, { returnDocument: 'after' })
+    const u = got && got.value !== undefined && got.ok !== undefined ? got.value : got // older drivers wrap the document
+    if (!u) return
+    await col.updateOne({ ref: o.ref, orderNo: { $exists: false } }, { $set: { orderNo: `JB-${pad(user.memberNo, 4)}-${pad(u.orderSeq, 2)}` } })
+  }
+}
+// one paid order's number (given now if it has none yet)
+export const numberOrder = async (ref) => {
+  if (!dbReady()) return ''
+  const d = await db()
+  const col = d.collection('orders')
+  const o = await col.findOne({ ref })
+  if (!o || o.orderNo || !PAID.includes(o.status)) return o ? orderNoOf(o) : ''
+  const owner = await ownerOf(d, o)
+  if (owner && owner.memberNo) await numberMember(d, owner)
+  else await col.updateOne({ ref, orderNo: { $exists: false } }, { $set: { orderNo: `JB-G-${refCode(ref).slice(-6)}` } })
+  const now = await col.findOne({ ref })
+  return now ? orderNoOf(now) : ''
+}
+
+/* An order as a framed block in an email (what emailHtml's `orders` draws): its number, the date,
+   where it stands and how it was paid; each line and its price; the total; where it goes. */
+const STAND = { new: 'Being prepared', packed: 'Packed', shipped: 'On its way', delivered: 'Delivered', refunded: 'Refunded', pending: 'Waiting for payment' }
+export const priceOf = (n, cur) => { try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: cur || 'AUD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2 }).format(Number(n) || 0) } catch { return `${n}` } }
+export const orderCopy = (raw) => {
+  const o = forCustomer(raw)
+  const a = o.address
+  return {
+    title: o.kind === 'support' ? 'Support' : `Order ${o.number}`,
+    sub: [new Date(o.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }), STAND[o.status] || 'Paid', o.paidWith].filter(Boolean).join(' · '),
+    rows: [...o.items.map((i) => [`${i.qty > 1 ? `${i.qty} × ` : ''}${i.name}`, i.amount != null ? priceOf(i.amount, o.currency) : '']), ...(o.discount > 0 ? [['Discount', `−${priceOf(o.discount, o.currency)}`]] : [])],
+    total: priceOf(o.amount, o.currency),
+    foot: [a ? `Posted to ${[a.name, a.line1, a.line2, [a.city, a.state, a.postal_code].filter(Boolean).join(' '), a.country].filter(Boolean).join(', ')}.` : '', o.tracking ? `Tracking: ${o.carrier ? `${o.carrier} ` : ''}${o.tracking}` : ''].filter(Boolean).join(' '),
+  }
+}
+
+/* The buyer's confirmation, once per paid order: their order number, what they bought, the total,
+   and (for members) a link to the order in their account. Replies go to the shop. */
+export const tellBuyer = async (ref, siteUrl) => {
+  if (!dbReady()) return
+  const d = await db()
+  const col = d.collection('orders')
+  const got = await col.findOneAndUpdate({ ref, status: 'paid', buyerTold: { $ne: true }, email: { $nin: ['', null] } }, { $set: { buyerTold: true } })
+  const order = got && got.value !== undefined && got.ok !== undefined ? got.value : got
+  if (!order) return
+  let brand = {}
+  try { brand = JSON.parse(readFileSync(join(process.cwd(), 'content/site/brand.json'), 'utf8')) || {} } catch { /* no brand file */ }
+  const owner = await ownerOf(d, order)
+  const no = orderNoOf(order)
+  const support = order.kind === 'support'
+  const first = String(order.name || (owner && owner.name) || '').split(' ')[0]
+  const site = String(siteUrl || '').replace(/\/$/, '')
+  try {
+    const sent = await sendMail({
+      to: order.email,
+      subject: support ? 'Thank you for supporting JBeatsArt' : `Your JBeatsArt order ${no}`,
+      kicker: support ? 'Thank you' : 'Order confirmed',
+      title: support ? 'Thank you for your support' : `Order ${no}`,
+      lines: [
+        `Hi${first ? ` ${first}` : ''},`,
+        support
+          ? 'Your support means a lot. Here is your receipt.'
+          : `Thank you for your order. Your order number is ${no}${owner && owner.memberNo ? ` (member #${pad(owner.memberNo, 4)})` : ''}: keep it for any question about this order.`,
+        ...(!support ? [owner ? 'Each step shows in your account as it happens: packed, posted, and the tracking number once it is on its way.' : 'We will be in touch once it is posted. Questions? Just reply to this email.'] : []),
+      ],
+      orders: [orderCopy(order)],
+      ...(owner && site ? { button: { label: support ? 'Open your account' : 'See your order', url: `${site}/account` } } : {}),
+      after: 'Questions about your order? Just reply to this email.',
+      replyTo: brand.email || process.env.CONTACT_TO || undefined,
+    })
+    if (!sent) await col.updateOne({ ref }, { $unset: { buyerTold: '' } }) // try again the next time Stripe or PayPal says so
+  } catch (e) { console.error('buyer email not sent:', e.message); await col.updateOne({ ref }, { $unset: { buyerTold: '' } }) }
+}
+
+// a paid order: numbered, then the admin and the buyer each hear of it (once)
+export const paidOrder = async (ref, siteUrl) => {
+  try { await numberOrder(ref) } catch (e) { console.error('order not numbered:', e.message) }
+  await tellAdmin(ref, siteUrl)
+  await tellBuyer(ref, siteUrl)
+}
+
 /* A paid order, told to the admin by email, once: what was bought, by whom, where it goes. Sent to
    ORDER_EMAIL_TO, else CONTACT_TO, else the email in Site → Brand & contact. */
 export const tellAdmin = async (ref, siteUrl) => {
@@ -106,8 +208,8 @@ export const tellAdmin = async (ref, siteUrl) => {
   try {
     await sendMail({
       to,
-      subject: `${support ? 'New support' : 'New order'}: ${price(order.amount)}${order.name ? ` from ${order.name}` : ''}${order.test ? ' (test)' : ''}`,
-      kicker: support ? 'New support' : 'New order',
+      subject: `${support ? 'New support' : `New order ${orderNoOf(order)}`}: ${price(order.amount)}${order.name ? ` from ${order.name}` : ''}${order.test ? ' (test)' : ''}`,
+      kicker: support ? 'New support' : `New order ${orderNoOf(order)}`,
       title: `${price(order.amount)} ${support ? 'from a fan' : 'paid'}`,
       lines: [
         `${order.name || 'Someone'}${order.email ? ` (${order.email})` : ''} paid ${price(order.amount)} by ${order.paidWith || (order.provider === 'paypal' ? 'PayPal' : 'card')}${order.test ? ', with test money' : ''}.`,
@@ -154,7 +256,7 @@ export const forCustomer = (o) => {
   const t = o.track || {}
   const c = CARRIERS[t.carrier]
   return {
-    number: String(o.ref || '').replace(/^(cs_(test|live)_|pp_)/, '').slice(-8).toUpperCase(),
+    number: orderNoOf(o),
     createdAt: o.createdAt,
     kind: o.kind || 'shop',
     provider: o.provider,

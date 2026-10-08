@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { codeUsesHere, forCustomer, stripeCodes } from './_orders.js'
+import { codeUsesHere, forCustomer, numberMember, orderCopy, stripeCodes } from './_orders.js'
 import {
   EMAIL, checkPassword, clean, cleanCart, cleanSlugs, clientIp, currentUser, endSession, forgetCookie, forgetTries, fromThisSite, hashPassword,
   makeToken, mergeCarts, newId, noteTry, passwordProblem, publicUser, sendMail, siteUrl, startSession, tidyEmail, tooMany, spendToken,
@@ -410,6 +410,7 @@ export default async function handler(req, res) {
     if (action === 'orders') {
       // orders placed while logged in, and (once the address is confirmed) any placed with it as a guest
       const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
+      try { await numberMember(d, await withMemberNo(d, user)) } catch (e) { console.error('orders not numbered:', e.message) }
       const list = await d.collection('orders').find({ ...match, status: { $in: ['paid', 'refunded'] }, customerRemoved: { $ne: true }, hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(100).toArray()
       return say(res, 200, { orders: list.map(forCustomer) })
     }
@@ -426,19 +427,7 @@ export default async function handler(req, res) {
       const going = list.filter((o) => wanted.includes(forCustomer(o).number))
       if (!going.length) return say(res, 404, { message: wanted.length > 1 ? 'Those orders are not in your account any more.' : 'That order is not in your account any more.' })
       // the copy: each order as it showed in their account
-      const price = (n, cur) => { try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: cur || 'AUD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: Number.isInteger(Number(n)) ? 0 : 2 }).format(Number(n) || 0) } catch { return `${n}` } }
-      const words = { new: 'Being prepared', packed: 'Packed', shipped: 'On its way', delivered: 'Delivered', refunded: 'Refunded', pending: 'Waiting for payment' }
-      const copies = going.map((raw) => {
-        const o = forCustomer(raw)
-        const a = o.address
-        return {
-          title: o.kind === 'support' ? 'Support' : `Order ${o.number}`,
-          sub: [new Date(o.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }), words[o.status] || 'Paid', o.paidWith].filter(Boolean).join(' · '),
-          rows: [...o.items.map((i) => [`${i.qty > 1 ? `${i.qty} × ` : ''}${i.name}`, i.amount != null ? price(i.amount, o.currency) : '']), ...(o.discount > 0 ? [['Discount', `−${price(o.discount, o.currency)}`]] : [])],
-          total: price(o.amount, o.currency),
-          foot: [a ? `Posted to ${[a.name, a.line1, a.line2, [a.city, a.state, a.postal_code].filter(Boolean).join(' '), a.country].filter(Boolean).join(', ')}.` : '', o.tracking ? `Tracking: ${o.carrier ? `${o.carrier} ` : ''}${o.tracking}` : ''].filter(Boolean).join(' '),
-        }
-      })
+      const copies = going.map(orderCopy)
       const first = (user.name || '').split(' ')[0]
       const sent = await sendMail({
         to: user.email,

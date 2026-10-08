@@ -1,6 +1,6 @@
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
-import { describeItem, ours, paidWithOf, piecesNow, setTrack } from './_orders.js'
+import { describeItem, numberOrder, ours, paidWithOf, piecesNow, setTrack } from './_orders.js'
 
 /* The admin's Orders screen. Everything paid through Stripe (prints from the Shop, and support
    through the payment links) is read here, straight from Stripe, for the logged-in admin only.
@@ -39,6 +39,7 @@ const text = (v, max = 200) => String(v ?? '').trim().slice(0, max)
 /* A PayPal order from the database, in the same shape as a Stripe one. */
 const shapeSaved = (o) => ({
   id: o.ref,
+  orderNo: o.orderNo || '',
   created: Math.floor(new Date(o.createdAt).getTime() / 1000),
   kind: o.kind || 'shop',
   amount: Number(o.amount) || 0,
@@ -154,6 +155,12 @@ export default async function handler(req, res) {
         } catch (e) { console.error('kept lines not read:', e.message) }
       }
       for (let i = orders.length - 1; i >= 0; i--) if (gone.has(orders[i].id)) orders.splice(i, 1)
+      // each order's number (older ones are given theirs now)
+      for (const o of orders) {
+        const r = rows.get(o.id)
+        if (!r) continue
+        try { o.orderNo = r.orderNo || (await numberOrder(o.id)) } catch { o.orderNo = '' }
+      }
       for (const o of orders) if (!o.pi && o.provider !== 'paypal' && rows.get(o.id) && rows.get(o.id).track) o.track = { ...o.track, ...rows.get(o.id).track }
       for (const o of orders) {
         const saved = kept.get(o.id) || []

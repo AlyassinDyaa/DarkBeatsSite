@@ -220,7 +220,7 @@
   const matches = (o) => {
     const q = state.q.trim().toLowerCase()
     if (!q) return true
-    return [o.name, o.email, o.phone, o.id, o.track.number, ...o.items.map((i) => i.name), ...addressLines(o.address)].join(' ').toLowerCase().includes(q)
+    return [o.name, o.email, o.phone, o.id, o.orderNo, o.track.number, ...o.items.map((i) => i.name), ...addressLines(o.address)].join(' ').toLowerCase().includes(q)
   }
 
   // ---------- pages: a long list shows 10, 15, 20 or 50 at a time (the choice is remembered here)
@@ -275,7 +275,7 @@
   const download = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Download CSV', title: 'The orders showing now, as a spreadsheet' })
   download.addEventListener('click', () => csv(`orders-${new Date().toISOString().slice(0, 10)}.csv`, [
     ['Date', 'Order', 'Kind', 'Name', 'Email', 'Phone', 'Items', 'Paid', 'Refunded', 'Currency', 'Status', 'Carrier', 'Tracking number', 'Address'],
-    ...visible().map((o) => [new Date(o.created * 1000).toISOString().slice(0, 10), o.id, o.kind, o.name, o.email, o.phone, o.items.map((i) => (i.qty ? `${i.qty} x ${i.name}` : i.name)).join('; '), o.amount, o.refunded, o.currency, label(o)[1], CARRIERS[o.track.carrier] ? CARRIERS[o.track.carrier][0] : '', o.track.number, addressLines(o.address).join(', ')]),
+    ...visible().map((o) => [new Date(o.created * 1000).toISOString().slice(0, 10), o.orderNo || o.id, o.kind, o.name, o.email, o.phone, o.items.map((i) => (i.qty ? `${i.qty} x ${i.name}` : i.name)).join('; '), o.amount, o.refunded, o.currency, label(o)[1], CARRIERS[o.track.carrier] ? CARRIERS[o.track.carrier][0] : '', o.track.number, addressLines(o.address).join(', ')]),
   ]))
   const refresh = el('button', { type: 'button', className: 'ia-btn ghost io-refresh', textContent: 'Refresh' })
   refresh.addEventListener('click', () => load(true))
@@ -362,7 +362,7 @@
     const what = o.items.length > 1 ? `${first} + ${o.items.length - 1} more` : first
     const head = el('button', { type: 'button', className: 'io-head', ariaExpanded: String(open) }, [
       el('span', { className: 'io-date', textContent: when(o.created) }),
-      el('span', { className: 'io-who' }, [el('strong', { textContent: o.name || o.email || 'No name given' }), el('small', {}, [o.paidWith ? `${what} · ${o.paidWith}` : what, waiting(o) >= 2 ? el('span', { className: 'io-age', textContent: `waiting ${waiting(o)} days` }) : null])]),
+      el('span', { className: 'io-who' }, [el('strong', { textContent: o.name || o.email || 'No name given' }), el('small', {}, [[o.orderNo, what, o.paidWith].filter(Boolean).join(' · '), waiting(o) >= 2 ? el('span', { className: 'io-age', textContent: `waiting ${waiting(o)} days` }) : null])]),
       el('span', { className: 'io-amount', textContent: money(o.amount, o.currency) }),
       el('span', { className: `io-pill is-${kind}`, textContent: text }),
       svg('M6 9l6 6 6-6'),

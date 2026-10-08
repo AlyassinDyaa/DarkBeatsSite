@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { currentUser } from './_users.js'
-import { SITE, boughtOf, checkCode, codeUsed, dbReady, discountCents, readBought, recordOrder, shapeAddress, takeFromCart, tellAdmin } from './_orders.js'
+import { SITE, boughtOf, checkCode, codeUsed, dbReady, discountCents, paidOrder, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
@@ -70,7 +70,7 @@ const savePaypal = async (id, said, siteBase = '') => {
   // paid: what was bought leaves the buyer's saved cart
   if (before && before.userId) await takeFromCart(before.userId, readBought(before.bought))
   if (before && before.code) await codeUsed({ code: before.code, promoId: before.promoId, viaPaypal: true, userId: before.userId, ref: `pp_${id}` })
-  await tellAdmin(`pp_${id}`, siteBase)
+  await paidOrder(`pp_${id}`, siteBase)
 }
 
 export default async function handler(req, res) {

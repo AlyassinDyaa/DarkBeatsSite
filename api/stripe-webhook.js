@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { codeUsed, ours, paidWithOf, piecesNow, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart, tellAdmin, withPiece } from './_orders.js'
+import { codeUsed, ours, paidOrder, paidWithOf, piecesNow, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart, withPiece } from './_orders.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -76,8 +76,8 @@ export default async function handler(req, res) {
         test: !o.livemode,
         createdAt: new Date((o.created || Date.now() / 1000) * 1000),
       })
-      // the admin hears of it by email (once, however often Stripe sends this)
-      await tellAdmin(o.id, process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : ''))
+      // numbered; the admin and the buyer hear of it by email (once, however often Stripe sends this)
+      await paidOrder(o.id, process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : ''))
       // paid: what was bought leaves the buyer's saved cart, even if they never come back to the site
       await takeFromCart(userId, readBought(o.metadata && o.metadata.bought))
       // a discount code on it: a reward code shows as used in its owner's account
