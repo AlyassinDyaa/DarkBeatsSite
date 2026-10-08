@@ -17,5 +17,7 @@
   "thanksText": "Your order is in. A receipt is on its way to your email.",
   "signedChoice": true,
   "pricePlace": "below",
-  "cartIcon": "bag"
+  "cartIcon": "bag",
+  "accounts": "optional",
+  "payments": "stripe"
 }
