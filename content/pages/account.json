@@ -38,7 +38,8 @@
       "name": "Eye"
     },
     {
-      "picture": "/uploads/cc20.webp"
+      "picture": "/uploads/leon-s-kennedy.webp",
+      "face": "0,0,128"
     }
   ]
 }

@@ -20,6 +20,6 @@
     "redraws": false
   },
   "admin": {
-    "samples": true
+    "samples": false
   }
 }
