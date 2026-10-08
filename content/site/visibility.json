@@ -1,7 +1,7 @@
 {
   "pages": {
     "work": true,
-    "gallery": true,
+    "gallery": false,
     "commissions": false,
     "about": true,
     "contact": true,
@@ -10,7 +10,7 @@
   "home": {
     "ticker": true,
     "latest": true,
-    "gallery": true,
+    "gallery": false,
     "redraws": false,
     "commissions": false,
     "events": true,
