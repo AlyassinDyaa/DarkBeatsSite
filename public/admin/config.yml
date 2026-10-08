@@ -59,6 +59,7 @@ collections:
       - { name: universe, label: Universe, widget: relation, collection: site, file: categories, value_field: 'universes.*.name', search_fields: ['universes.*.name'], display_fields: ['universes.*.name'], required: false, hint: 'Optional: DC, Marvel, Star Wars... Kept under Shop categories.' }
       - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, hint: 'Newest pieces come first.' }
       - { name: link, label: Link to the post, widget: string, required: false, hint: 'The Instagram post, if there is one.' }
+      - { name: price, label: Price, widget: number, value_type: float, min: 0, required: false, hint: 'A number, in the currency set under "Shop & payments". Only shown, with its Buy button, while online purchases are switched on there. Leave empty for a piece that is not for sale. Sold in sizes? Add them under "Sizes and prices" at the bottom instead.' }
       - name: status
         label: Status
         widget: select
@@ -70,8 +71,7 @@ collections:
           - { label: 'On sale (shows the old and the new price)', value: sale }
           - { label: 'Sold out (no Buy button)', value: soldout }
         hint: 'The Sale and Sold out tags show while online purchases are switched on; New always shows.'
-      - { name: salePrice, label: Sale price, widget: number, value_type: float, min: 0, required: false, hint: 'Only used while the status is "On sale", and only when it is lower than the price.' }
-      - { name: price, label: Price, widget: number, value_type: float, min: 0, required: false, hint: 'A number, in the currency set under "Shop & payments". Only shown, with its Buy button, while online purchases are switched on there. Leave empty for a piece that is not for sale. Sold in sizes? Add them under "Sizes and prices" at the bottom instead.' }
+      - { name: salePrice, label: Sale price (only while On sale), widget: number, value_type: float, min: 0, required: false, hint: 'Not the normal price: it is used only while the Status above is "On sale", and only when it is lower than the Price. Leave empty otherwise.' }
       - { name: src, label: Picture, widget: image, choose_url: false, required: false, hint: 'Portrait, about 5:7 (for example 1500×2100px).' }
       - { name: hover, label: Second picture (on hover), widget: image, choose_url: false, required: false, hint: 'Optional: the print in a frame, on a wall, a close-up... On the Shop page it fades in when someone points at the piece. Same shape as the first.' }
       - { name: face, label: As a profile picture, widget: facecrop, required: false, hint: 'A buyer of this print can use it as their profile picture. Drag the picture inside the circle to put the face in place, and zoom in.' }

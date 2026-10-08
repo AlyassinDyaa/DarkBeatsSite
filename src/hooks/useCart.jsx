@@ -14,6 +14,8 @@ import { useAccount } from './useAccount'
    later (the server takes them out of the saved cart too, once the payment is confirmed). */
 const KEY = 'jb.cart'
 const PAYING = 'jb.paying'
+const CODE = 'jb.code' // the discount code in the cart: { code, percent, label }
+const loadCode = () => { try { const c = JSON.parse(sessionStorage.getItem(CODE) || 'null'); return c && c.code && c.percent > 0 ? c : null } catch { return null } }
 export const notePaying = (lines) => {
   try { sessionStorage.setItem(PAYING, JSON.stringify(lines.map((l) => [l.slug, l.size || '', l.signed ? 1 : 0]))) } catch { /* then the whole cart empties after paying */ }
 }
@@ -82,11 +84,29 @@ export function CartProvider({ children }) {
     const gone = Array.isArray(list) ? (l) => list.some(([slug, size, signed]) => l.slug === slug && (l.size || '') === size && Boolean(l.signed) === Boolean(signed)) : () => true
     if (!owner.current) bought.current = gone
     setRaw((r) => r.filter((l) => !gone(l)))
+    setDiscount(null) // the code went with the order
   }, [])
 
   const count = lines.reduce((n, l) => n + l.qty, 0)
-  const total = lines.reduce((n, l) => n + l.qty * l.each, 0)
-  const value = { lines, count, total, add, setQty, remove, clear, settle, open, setOpen, max: MAX_QTY, stored: raw }
+  const subtotal = lines.reduce((n, l) => n + l.qty * l.each, 0)
+
+  /* A discount code typed into the cart: checked by the site (api/checkout.js), then the
+     percentage comes off the whole order, rounded the way Stripe rounds it, so the cart shows
+     exactly what the payment page charges. Kept for this visit; it goes once the order is paid. */
+  const [discount, setDiscount] = useState(loadCode)
+  useEffect(() => { try { if (discount) sessionStorage.setItem(CODE, JSON.stringify(discount)); else sessionStorage.removeItem(CODE) } catch { /* only for this page */ } }, [discount])
+  const applyCode = useCallback(async (typed) => {
+    try {
+      const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ check: String(typed || '') }) })
+      const said = await answer.json().catch(() => ({}))
+      if (answer.ok && said.ok) { setDiscount({ code: said.code, percent: said.percent, label: said.label }); return { ok: true } }
+      return { ok: false, message: said.message || 'That code could not be checked. Try again.' }
+    } catch { return { ok: false, message: 'Could not reach the site. Check the connection and try again.' } }
+  }, [])
+  const dropCode = useCallback(() => setDiscount(null), [])
+  const off = discount ? Math.round(Math.round(subtotal * 100) * discount.percent / 100) / 100 : 0
+  const total = Math.round((subtotal - off) * 100) / 100
+  const value = { lines, count, subtotal, off, total, discount, applyCode, dropCode, add, setQty, remove, clear, settle, open, setOpen, max: MAX_QTY, stored: raw }
   return <Cart.Provider value={value}>{children}</Cart.Provider>
 }
 

@@ -45,7 +45,7 @@
   ]
   const PERIODS = [['all', 'Any time'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['year', 'This year']]
   const SORTS = [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Highest amount'], ['low', 'Lowest amount'], ['name', 'Name A–Z']]
-  const CVIEWS = [['all', 'Everyone'], ['buyers', 'Buyers'], ['repeat', 'Bought more than once'], ['supporters', 'Supporters'], ['waiting', 'Waiting for a parcel']]
+  const CVIEWS = [['all', 'Everyone'], ['members', 'Members'], ['buyers', 'Buyers'], ['repeat', 'Bought more than once'], ['supporters', 'Supporters'], ['waiting', 'Waiting for a parcel']]
   const CSORTS = [['recent', 'Most recent'], ['spent', 'Spent the most'], ['orders', 'Most orders'], ['name', 'Name A–Z'], ['first', 'Customer the longest']]
   const DAY = 864e5
   const TAG = 'M3 12V4h8l10 10-8 8z M7.500 8.500h.01'
@@ -136,6 +136,7 @@
     const body = init.body ? JSON.parse(init.body) : {}
     const done = (said) => ({ ok: true, status: 200, said })
     const ts = Math.floor(Date.now() / 1000)
+    if (url.startsWith('/api/members')) return done({ members: [], rewards: [] })
     if (url.startsWith('/api/orders')) {
       if (!init.method || init.method === 'GET') return done({ orders: samples.orders.filter((o) => !o.hidden).map((o) => ({ ...o, track: { ...o.track } })), more: false, next: null })
       if (body.action === 'hide') { samples.orders.forEach((o) => { if ((body.pis || []).includes(o.pi)) o.hidden = true }); return done({ hidden: body.pis || [] }) }
@@ -146,6 +147,7 @@
     if (url.startsWith('/api/discounts')) {
       if (!init.method || init.method === 'GET') return done({ discounts: samples.codes.filter((d) => !d.hidden).map((d) => ({ ...d })) })
       if (body.action === 'delete') { samples.codes.forEach((d) => { if (body.ids.includes(d.id)) { d.hidden = true; d.active = false } }); return done({ deleted: body.ids }) }
+      if (body.action === 'email') { const d = samples.codes.find((x) => x.id === body.id); d.sent = new Date().toISOString(); return done({ discount: { ...d } }) }
       if (body.action === 'stop') { const d = samples.codes.find((x) => x.id === body.id); d.active = false; return done({ discount: { ...d } }) }
       if (body.action === 'create') {
         const tail = () => Array.from({ length: 4 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('')
@@ -509,6 +511,19 @@
 
   // ---------- Customers: the orders gathered by buyer (by email, or by name when there is none)
   const who = (o) => String(o.email || o.name || o.id).trim().toLowerCase()
+  /* Customer accounts (api/members.js): who has one, their member number, and the rewards gifted to
+     them. Account holders who have not ordered yet are customers too. */
+  const memb = { byEmail: new Map(), rewards: [], loaded: false, loading: false, problem: '' }
+  const loadMembers = async () => {
+    memb.loading = true
+    try {
+      const { ok, said } = await ask('/api/members')
+      if (ok) { memb.byEmail = new Map((said.members || []).map((m) => [String(m.email).toLowerCase(), m])); memb.rewards = said.rewards || []; memb.problem = '' }
+      else memb.problem = said.message || 'The accounts could not be loaded.'
+    } catch { memb.problem = 'Could not reach the site.' }
+    memb.loaded = true; memb.loading = false
+  }
+  const memberNo = (n) => (n ? `#${String(n).padStart(4, '0')}` : '')
   const everyone = () => {
     const map = new Map()
     for (const o of [...state.orders].sort((a, b) => b.created - a.created)) {
@@ -520,9 +535,16 @@
       p.first = Math.min(p.first, o.created); p.last = Math.max(p.last, o.created)
       map.set(key, p)
     }
+    for (const p of map.values()) p.member = p.email ? memb.byEmail.get(p.email.toLowerCase()) || null : null
+    for (const [email, m] of memb.byEmail) {
+      if (map.has(email) || [...map.values()].some((p) => p.member === m)) continue
+      const at = Math.floor(new Date(m.createdAt).getTime() / 1000) || Math.floor(Date.now() / 1000)
+      map.set(email, { key: email, name: m.name, email: m.email, phone: '', address: null, orders: [], spent: 0, given: 0, bought: 0, supported: 0, first: at, last: at, currency: 'AUD', member: m })
+    }
     return [...map.values()]
   }
   const personIn = (p, view) => view === 'all'
+    || (view === 'members' && Boolean(p.member))
     || (view === 'buyers' && p.bought > 0)
     || (view === 'repeat' && p.bought > 1)
     || (view === 'supporters' && p.supported > 0)
@@ -607,15 +629,15 @@
     if (!shown.length) cpager.replaceChildren()
     clist.replaceChildren(...(shown.length ? paged('people', shown, [people.view, people.q, people.sort].join('|'), cpager, paintPeople).map(personRow) : [el('div', { className: 'io-empty' }, [
       el('strong', { textContent: all.length ? 'Nobody here' : 'No customers yet' }),
-      el('span', { textContent: all.length ? 'Try another filter, or clear the search.' : 'Customers show here after their first order.' }),
+      el('span', { textContent: all.length ? 'Try another filter, or clear the search.' : 'Customers show here when they make an account or place their first order.' }),
     ])]))
   }
 
   const personRow = (p) => {
     const open = people.open.has(p.key)
-    const tags = [p.bought > 1 ? ['repeat', 'Came back'] : null, p.supported ? ['support', 'Supporter'] : null, p.orders.some((o) => inView(o, 'topost')) ? ['new', 'Waiting'] : null].filter(Boolean)
+    const tags = [p.member ? ['member', `Member ${memberNo(p.member.memberNo)}`] : null, p.bought > 1 ? ['repeat', 'Came back'] : null, p.supported ? ['support', 'Supporter'] : null, p.orders.some((o) => inView(o, 'topost')) ? ['new', 'Waiting'] : null].filter(Boolean)
     const head = el('button', { type: 'button', className: 'io-head io-person', ariaExpanded: String(open) }, [
-      el('span', { className: 'io-avatar', textContent: initials(p), ariaHidden: 'true' }),
+      avatarOf(p),
       el('span', { className: 'io-who' }, [el('strong', { textContent: p.name || p.email || 'No name given' }), el('small', { textContent: [p.bought ? many(p.bought, 'order') : '', p.supported ? `supported ${p.supported === 1 ? 'once' : `${p.supported} times`}` : '', `last ${when(p.last)}`].filter(Boolean).join(' · ') })]),
       el('span', { className: 'io-amount', textContent: money(p.spent + p.given, p.currency) }),
       el('span', { className: 'io-tags' }, tags.map(([k, t]) => el('span', { className: `io-pill is-${k}`, textContent: t }))),
@@ -637,7 +659,7 @@
       el('ul', { className: 'io-items' }, [
         el('li', {}, [el('span', { textContent: 'Spent in the Shop' }), el('b', { textContent: money(p.spent, p.currency) })]),
         p.given ? el('li', {}, [el('span', { textContent: 'Support given' }), el('b', { textContent: money(p.given, p.currency) })]) : null,
-        el('li', {}, [el('span', { textContent: 'First order' }), el('b', { textContent: new Date(p.first * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) })]),
+        el('li', {}, [el('span', { textContent: p.orders.length ? 'First order' : 'Member since' }), el('b', { textContent: new Date(p.first * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) })]),
       ]),
     ])
     const right = el('div', { className: 'io-col' }, [
@@ -675,10 +697,23 @@
     for (const e of typedEmails()) if (!list.some((p) => p.email.toLowerCase() === e)) list.push({ email: e, name: '' })
     return list
   }
-  const mailFor = (d) => {
-    const first = (d.name || '').split(' ')[0] || 'there'
-    const end = d.until ? ` It works until ${dayText(d.until)}.` : ''
-    return `mailto:${d.email}?subject=${encodeURIComponent(`${d.percent}% off at JBeatsArt`)}&body=${encodeURIComponent(`Hi ${first},\n\nHere is ${d.percent}% off anything in the shop: ${d.code}\nType it in the discount code box when you pay.${end}\n\n${location.origin}/shop\n\nThank you for the support!`)}`
+  // send a personal code to its person by email, through the site (api/discounts.js), after asking
+  const emailCode = (d) => sure({
+    title: `Email ${d.code}?`,
+    lines: [`To ${d.name ? `${d.name} (${d.email})` : d.email}: ${d.percent}% off${d.until ? `, until ${dayText(d.until)}` : ''}.`, 'They get an email in the site\'s style with the code, how to use it in their cart, and a link to the shop.'],
+    ok: 'Send it',
+    run: async () => {
+      const { ok, said } = await ask('/api/discounts', { method: 'POST', body: JSON.stringify({ action: 'email', id: d.id }) })
+      if (!ok) throw new Error(said.message || 'Not sent. Try again.')
+      d.sent = said.discount && said.discount.sent
+      const inList = disc.list.find((x) => x.id === d.id); if (inList) inList.sent = d.sent
+      paintDiscounts()
+    },
+  })
+  const emailBtn = (d) => {
+    const b = el('button', { type: 'button', className: 'io-link', textContent: d.sent ? 'Email again' : 'Email it', title: d.sent ? `Emailed ${dayText(Math.floor(new Date(d.sent).getTime() / 1000))}` : 'Send it to them by email' })
+    b.addEventListener('click', () => emailCode(d))
+    return b
   }
   const discountFor = (keys) => {
     draft.mode = 'people'; draft.picked = new Set(keys); disc.result = null
@@ -797,12 +832,12 @@
     // what was just made: the codes, ready to copy or send
     dresult.replaceChildren(...(disc.result ? [el('section', { className: 'io-panel io-made' }, [
       el('h2', { className: 'io-h2 io-panel-head', textContent: `Made ${many(disc.result.length, 'code')}` }),
-      el('p', { className: 'io-hint', textContent: 'Send each person their code. The email button writes the message for you in your own email app.' }),
+      el('p', { className: 'io-hint', textContent: 'Send each person their code: "Email it" sends it from the site, in its own design.' }),
       el('div', { className: 'io-mini' }, disc.result.map((d) => el('div', { className: 'io-made-row' }, [
         el('code', { textContent: d.code }),
         el('span', { className: 'io-mini-what', textContent: d.email ? (d.name ? `${d.name} · ${d.email}` : d.email) : 'Anyone with the code' }),
         copyBtn(d.code, 'code'),
-        d.email ? el('a', { className: 'io-link', href: mailFor(d), textContent: 'Email it' }) : null,
+        d.email ? emailBtn(d) : null,
       ]))),
       disc.result.length > 1 ? copyBtn(disc.result.map((d) => `${d.code}${d.email ? `  ${d.email}` : ''}`).join('\n'), 'all') : null,
     ])] : []))
@@ -843,9 +878,9 @@
       el('div', { className: 'io-disc-row' }, [
         el('span', { className: 'io-pct', textContent: `${d.percent}%` }),
         el('span', { className: 'io-who' }, [el('code', { className: 'io-code-text', textContent: d.code }), el('small', { textContent: d.email ? (d.name ? `${d.name} · ${d.email}` : d.email) : 'Anyone with the code' })]),
-        el('span', { className: 'io-disc-meta' }, [el('span', { textContent: d.until ? `${d.until < now() ? 'Ended' : 'Until'} ${dayText(d.until)}` : 'No end date' }), el('small', { textContent: `used ${d.used}${d.uses ? ` of ${d.uses}` : ' times'}` })]),
+        el('span', { className: 'io-disc-meta' }, [el('span', { textContent: d.until ? `${d.until < now() ? 'Ended' : 'Until'} ${dayText(d.until)}` : 'No end date' }), el('small', { textContent: `used ${d.used}${d.uses ? ` of ${d.uses}` : ' times'}${d.sent ? ` · emailed ${dayText(Math.floor(new Date(d.sent).getTime() / 1000))}` : ''}` })]),
         el('span', { className: `io-pill is-${kind === 'active' ? 'delivered' : kind === 'off' ? 'cancelled' : 'packed'}`, textContent: text }),
-        el('span', { className: 'io-disc-actions' }, [copyBtn(d.code, 'code'), d.email && kind === 'active' ? el('a', { className: 'io-link', href: mailFor(d), textContent: 'Email it' }) : null, d.active ? stop : null]),
+        el('span', { className: 'io-disc-actions' }, [copyBtn(d.code, 'code'), d.email && kind === 'active' ? emailBtn(d) : null, d.active ? stop : null]),
         rowTools(d.email ? () => personModal(d.email.toLowerCase(), d) : null, () => deleteCode(d), 'code'),
       ]),
     ])
@@ -1007,8 +1042,86 @@
   }
 
   // ---------- one customer, everything at once: contact, every address, what they bought, their codes
+  /* A customer's picture as their account shows it (with its crop), or their initials. */
+  const faceStyle = (face) => {
+    const [x, y, z] = String(face || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n)))
+    const fx = Number.isFinite(x) ? x : 50, fy = Number.isFinite(y) ? y : 22, zoom = Number.isFinite(z) && z >= 100 ? z : 100
+    return `object-position:${fx}% ${fy}%;transform:scale(${zoom / 100});transform-origin:${fx}% ${fy}%`
+  }
+  const avatarOf = (p, size = '') => {
+    const pic = p.member && p.member.picture
+    return el('span', { className: `io-avatar ${size ? `is-${size}` : ''} ${pic ? 'has-pic' : ''}`, ariaHidden: 'true' }, [
+      pic ? el('img', { src: pic.src, alt: '', loading: 'lazy', style: faceStyle(pic.face) }) : initials(p),
+    ])
+  }
+
+  /* Rewards for one customer: what they have been gifted (each can be taken back), and one button
+     to gift another, which opens a small picker. A gift counts as earned on their account. */
+  const KIND = { picture: 'Picture', card: 'Card', discount: 'Discount' }
+  const rewardThumb = (r) => {
+    if (r.kind === 'picture' && r.picture) return el('span', { className: 'io-rthumb is-pic' }, [el('img', { src: r.picture, alt: '', loading: 'lazy', style: faceStyle(r.face) })])
+    if (r.kind === 'card') return el('span', { className: `io-rthumb is-design is-${r.cardLook}`, style: r.cardArt ? `background-image:url("${r.cardArt}")` : '' })
+    return el('span', { className: 'io-rthumb is-off', textContent: `${r.percent}%` })
+  }
+  const giftsFor = (p) => {
+    const box = el('div', { className: 'io-gifts' })
+    let picking = false, chosen = '', tell = true, busy = false, note = ''
+    const send = async (action, r) => {
+      const m = memb.byEmail.get(p.email.toLowerCase())
+      busy = true; note = ''; draw()
+      try {
+        const { ok, said } = await ask('/api/members', { method: 'POST', body: JSON.stringify({ action, email: m.email, reward: r.id, tell }) })
+        if (ok && said.member) {
+          memb.byEmail.set(String(m.email).toLowerCase(), said.member); p.member = said.member
+          note = action === 'gift' ? `${r.name} gifted${said.told ? ' · they have been emailed' : ''}` : `${r.name} taken back`
+          picking = false; chosen = ''
+        } else note = said.message || 'Not saved. Try again.'
+      } catch { note = 'Could not reach the site. Try again.' }
+      busy = false; draw()
+    }
+    const draw = () => {
+      const m = p.email ? memb.byEmail.get(p.email.toLowerCase()) : null
+      if (!memb.loaded) return box.replaceChildren(el('p', { className: 'io-dim-line', textContent: 'Fetching their account…' }))
+      if (memb.problem) return box.replaceChildren(el('p', { className: 'io-dim-line', textContent: memb.problem }))
+      if (!m) return box.replaceChildren(el('p', { className: 'io-dim-line', textContent: 'No account with this email yet, so nothing can be gifted.' }))
+      const byId = new Map(memb.rewards.map((r) => [r.id, r]))
+      const gifted = (m.gifts || []).map((id) => byId.get(id)).filter(Boolean)
+      const open = memb.rewards.filter((r) => !(m.gifts || []).includes(r.id))
+      // what they have: chips, each with a cross to take it back
+      const chips = gifted.length
+        ? el('div', { className: 'io-gift-chips' }, gifted.map((r) => {
+          const x = el('button', { type: 'button', className: 'io-gift-x', ariaLabel: `Take back ${r.name}`, title: 'Take back', disabled: busy, textContent: '×' })
+          x.addEventListener('click', () => send('ungift', r))
+          return el('span', { className: 'io-gift-chip' }, [rewardThumb(r), el('span', { textContent: r.name }), x])
+        }))
+        : el('p', { className: 'io-dim-line', textContent: 'Nothing gifted yet.' })
+      const add = el('button', { type: 'button', className: 'ia-btn ghost io-gift-add', disabled: busy || !open.length, textContent: open.length ? '+ Gift a reward' : 'Every reward gifted' })
+      add.addEventListener('click', () => { picking = true; chosen = ''; note = ''; draw() })
+      const kids = [chips]
+      if (picking) {
+        const tiles = el('div', { className: 'io-rpick', role: 'radiogroup', ariaLabel: 'Reward to gift' }, open.map((r) => {
+          const t = el('button', { type: 'button', role: 'radio', ariaChecked: String(chosen === r.id), className: `io-rtile ${chosen === r.id ? 'on' : ''}` }, [rewardThumb(r), el('strong', { textContent: r.name }), el('small', { textContent: r.kind === 'discount' ? `${r.percent}% off` : KIND[r.kind] })])
+          t.addEventListener('click', () => { chosen = r.id; draw() })
+          return t
+        }))
+        const tellBox = el('input', { type: 'checkbox', checked: tell })
+        tellBox.addEventListener('change', () => { tell = tellBox.checked })
+        const cancel = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Cancel', disabled: busy })
+        cancel.addEventListener('click', () => { picking = false; chosen = ''; draw() })
+        const give = el('button', { type: 'button', className: 'ia-btn', disabled: busy || !chosen, textContent: busy ? 'Gifting…' : 'Gift it' })
+        give.addEventListener('click', () => send('gift', byId.get(chosen)))
+        kids.push(el('div', { className: 'io-gift-picker' }, [tiles, el('div', { className: 'io-gift-foot' }, [el('label', { className: 'io-gift-tell' }, [tellBox, el('span', { textContent: 'Email them about it' })]), el('span', { className: 'io-gift-grow' }), cancel, give])]))
+      } else kids.push(add)
+      if (note) kids.push(el('p', { className: 'io-gift-note', role: 'status', textContent: note }))
+      box.replaceChildren(...kids)
+    }
+    draw()
+    if (!memb.loaded && !memb.loading) loadMembers().then(draw)
+    return box
+  }
   const personModal = async (key, fromCode) => {
     if (!disc.loaded && !disc.loading) await loadDiscounts()
+    if (!memb.loaded && !memb.loading) await loadMembers()
     const p = everyone().find((x) => x.key === key) || (fromCode ? { key, name: fromCode.name, email: fromCode.email, phone: '', orders: [], spent: 0, given: 0, bought: 0, supported: 0, currency: 'AUD' } : null)
     if (!p) return
     const addresses = [...new Map(p.orders.filter((o) => o.address).map((o) => { const lines = addressLines(o.address); return [lines.join('|'), lines] })).values()]
@@ -1032,9 +1145,21 @@
       return b
     })
     closeIt = modal({
-      title: p.name || p.email || 'Customer',
+      title: 'Customer',
       wide: true,
       content: [
+        el('header', { className: 'io-profile' }, [
+          avatarOf(p, 'lg'),
+          el('div', { className: 'io-profile-who' }, [
+            el('strong', { textContent: p.name || p.email || 'No name given' }),
+            p.email ? el('span', { textContent: p.email }) : null,
+            el('span', { className: 'io-profile-tags' }, [
+              p.member ? el('span', { className: 'io-pill is-member', textContent: `Member ${memberNo(p.member.memberNo)}` }) : el('span', { className: 'io-pill', textContent: 'No account' }),
+              p.member ? el('span', { className: `io-pill ${p.member.verified ? 'is-delivered' : ''}`, textContent: p.member.verified ? 'Email confirmed' : 'Email not confirmed' }) : null,
+            ]),
+          ]),
+        ]),
+        block('Rewards gifted', [giftsFor(p)]),
         el('div', { className: 'io-mgrid' }, [
           block('Contact', [el('p', { className: 'io-lines' }, [p.name || '—', p.email ? el('br') : null, p.email ? el('a', { href: `mailto:${p.email}`, textContent: p.email }) : null, p.phone ? el('br') : null, p.phone || null])]),
           block(addresses.length > 1 ? `Addresses (${addresses.length})` : 'Address', addresses.length ? addresses.map((a) => el('div', { className: 'io-maddress' }, [el('p', { className: 'io-lines' }, a.flatMap((l, i) => (i ? [el('br'), l] : [l]))), copyBtn(a.join('\n'), 'address')])) : [el('p', { className: 'io-lines io-dim', textContent: 'No postal address (support, or nothing posted yet).' })]),
@@ -1097,6 +1222,7 @@
       checkSamples().then(() => {
         if (!state.loaded && !state.loading) load(true)
         if (at === 'discounts' && !disc.loaded && !disc.loading) loadDiscounts()
+        if (at === 'customers' && !memb.loaded && !memb.loading) loadMembers().then(() => { if (location.hash === CROUTE) paintPeople() })
       })
       ;(at === 'orders' ? screen : at === 'customers' ? cscreen : dscreen).scrollTop = 0
     }

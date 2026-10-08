@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { ours, paidWithOf, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { codeUsed, ours, paidWithOf, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart } from './_orders.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -77,6 +77,13 @@ export default async function handler(req, res) {
       })
       // paid: what was bought leaves the buyer's saved cart, even if they never come back to the site
       await takeFromCart(userId, readBought(o.metadata && o.metadata.bought))
+      // a discount code on it: a reward code shows as used in its owner's account
+      try {
+        let usedCode = (o.metadata && o.metadata.code) || ''
+        const promo = Array.isArray(o.discounts) && o.discounts.find((x) => x && x.promotion_code)
+        if (!usedCode && promo) { const p = await stripeCodes(`promotion_codes/${typeof promo.promotion_code === 'string' ? promo.promotion_code : promo.promotion_code.id}`); usedCode = p.ok ? p.said.code : '' }
+        if (usedCode) await codeUsed({ code: String(usedCode).toUpperCase(), viaPaypal: false, userId, ref: o.id })
+      } catch (e) { console.error('code use not noted:', e.message) }
     }
     if (event.type === 'charge.refunded' && o && o.payment_intent && o.refunded) {
       await (await db()).collection('orders').updateOne({ pi: o.payment_intent }, { $set: { status: 'refunded', updatedAt: new Date() } })

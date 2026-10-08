@@ -1,5 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { configured, goodPass } from './_session.js'
+import { db, dbReady } from './_db.js'
+import { mailReady, sendMail, siteUrl } from './_users.js'
 
 /* The admin's Discounts screen. A discount is a percentage off, for a while, given either to
    chosen customers (each gets a code of their own) or to anyone who has the code. They are made
@@ -10,6 +12,7 @@ import { configured, goodPass } from './_session.js'
    GET  /api/discounts                       every discount made here, newest first
    POST /api/discounts { action: 'create', percent, until, label, uses, people: [{ email, name }] | code }
    POST /api/discounts { action: 'stop', id }   switches one code off
+   POST /api/discounts { action: 'email', id }  emails a personal code to the person it is for
    POST /api/discounts { action: 'delete', ids }  switches codes off and takes them out of the list
         (Stripe keeps a code once made; it is marked jb_hidden and never listed again)
 
@@ -54,8 +57,23 @@ const shape = (p) => {
     label: text(c.name, 40),
     batch: text(meta.batch, 40),
     created: p.created,
+    sent: text(meta.jb_sent, 40), // when it was last emailed from the admin
     test: !p.livemode,
   }
+}
+
+/* A personal code goes into its person's account too (when they have one), as a gift: listed under
+   Rewards → Gifts, and new to them until they have seen it. */
+const giveToMember = async (d) => {
+  if (!dbReady() || !d.email) return false
+  const users = (await db()).collection('users')
+  const u = await users.findOne({ email: String(d.email).toLowerCase() })
+  if (!u) return false
+  const list = (Array.isArray(u.giftCodes) ? u.giftCodes : []).filter((g) => g.id !== d.id)
+  list.push({ id: d.id, code: d.code, percent: d.percent, until: d.until ? d.until * 1000 : null, label: d.label, at: new Date().toISOString() })
+  const fresh = (Array.isArray(u.newGifts) ? u.newGifts : []).filter((g) => g !== `code:${d.id}`).concat(`code:${d.id}`)
+  await users.updateOne({ _id: u._id }, { $set: { giftCodes: list, newGifts: fresh } })
+  return true
 }
 
 export default async function handler(req, res) {
@@ -78,7 +96,15 @@ export default async function handler(req, res) {
         if (!got.said.has_more || !data.length) break
         after = data[data.length - 1].id
       }
-      return res.status(200).json({ discounts: all.filter((p) => p.metadata && p.metadata.jb === '1' && p.metadata.jb_hidden !== '1').map(shape) })
+      const list = all.filter((p) => p.metadata && p.metadata.jb === '1' && p.metadata.jb_hidden !== '1').map(shape)
+      // uses through PayPal are counted by the site (Stripe only counts its own)
+      if (dbReady() && list.length) {
+        try {
+          const uses = await (await db()).collection('codeUses').find({ code: { $in: list.map((d) => String(d.code).toUpperCase()) } }).toArray()
+          for (const d of list) d.used += uses.filter((u) => u.code === String(d.code).toUpperCase()).length
+        } catch (e) { console.error('paypal code uses not read:', e.message) }
+      }
+      return res.status(200).json({ discounts: list })
     }
 
     if (req.method !== 'POST') return res.status(405).json({ message: 'Read discounts with GET, change them with POST.' })
@@ -93,6 +119,36 @@ export default async function handler(req, res) {
         if (got.ok) done.push(id)
       }
       return res.status(done.length ? 200 : 502).json({ deleted: done, ...(done.length < ids.length ? { message: 'Some could not be deleted. Try again in a moment.' } : {}) })
+    }
+
+    if (body.action === 'email') {
+      const id = text(body.id, 80)
+      if (!/^promo_[A-Za-z0-9]+$/.test(id)) return res.status(400).json({ message: 'That is not a discount code.' })
+      if (!mailReady()) return res.status(503).json({ message: 'The site cannot send email yet (the SMTP_* or Resend settings).' })
+      const got = await stripe(`promotion_codes/${id}`)
+      if (!got.ok) return res.status(404).json({ message: 'Stripe does not know that code.' })
+      const d = shape(got.said)
+      if (!d.email) return res.status(400).json({ message: 'This code is not for one person, so there is nobody to email it to.' })
+      if (!d.active) return res.status(409).json({ message: 'This code is switched off.' })
+      const member = await giveToMember(d)
+      const first = (d.name || '').split(' ')[0]
+      const until = d.until ? new Date(d.until * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
+      const shop = `${siteUrl(req)}/shop`
+      const sent = await sendMail({
+        to: d.email,
+        subject: 'Your JBeatsArt discount code',
+        kicker: 'Just for you',
+        title: `${d.percent}% off your next order`,
+        lines: [`Hi${first ? ` ${first}` : ''},`, `Here is a code for ${d.percent}% off at the JBeatsArt shop. Add a print or two to your cart, then type the code into the discount box: the price drops before you pay.`, ...(member ? ['It is waiting in your account too, under Rewards, where one tap puts it in your cart.'] : [])],
+        code: { label: `${d.percent}% off`, text: d.code, note: [until ? `Until ${until}` : '', d.uses === 1 ? 'one use' : d.uses ? `${d.uses} uses` : ''].filter(Boolean).join(' · ') },
+        // a member opens their account (logging in first if need be); anyone else the shop
+        button: member ? { label: 'See your gift', url: `${siteUrl(req)}/account?tab=rewards` } : { label: 'Visit the shop', url: shop },
+        after: 'Questions about a print? Just reply to this email.',
+      })
+      if (!sent) return res.status(502).json({ message: 'The email could not be sent just now. Try again in a moment.' })
+      const at = new Date().toISOString()
+      await stripe(`promotion_codes/${id}`, { method: 'POST', body: form({ 'metadata[jb_sent]': at }) })
+      return res.status(200).json({ discount: { ...d, sent: at } })
     }
 
     if (body.action === 'stop') {
@@ -148,7 +204,11 @@ export default async function handler(req, res) {
         got = await stripe('promotion_codes', { method: 'POST', body: form({ coupon: coupon.said.id, code, expires_at: until, max_redemptions: uses, 'metadata[jb]': '1', 'metadata[batch]': batch, 'metadata[email]': person.email, 'metadata[name]': person.name }) })
         if (got.ok) break
       }
-      if (got && got.ok) made.push(shape({ ...got.said, coupon: coupon.said }))
+      if (got && got.ok) {
+        const d = shape({ ...got.said, coupon: coupon.said })
+        made.push(d)
+        try { await giveToMember(d) } catch (e) { console.error('code not put in their account:', e.message) }
+      }
       else failed.push(person.email || shared)
     }
     // nothing made: the discount behind the codes goes too, so it does not linger in Stripe

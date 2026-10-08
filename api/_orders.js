@@ -126,3 +126,66 @@ export const forCustomer = (o) => {
     shippedAt: t.status === 'shipped' || t.status === 'delivered' ? t.at || '' : '',
   }
 }
+
+/* ---------- discount codes at the checkout
+   Codes are made in Stripe (the admin's Discounts screen, and rewards), so Stripe knows each one:
+   its percentage, its end date, how many uses it allows and how many it has had. A buyer types a
+   code into the cart: it is checked here, the cart shows the new total, and the payment is taken
+   for exactly that (Stripe applies the code to its own page; PayPal is sent the discount). Stripe
+   counts its own uses; a use through PayPal is counted in the database (codeUses), and a code that
+   has had all its uses is switched off in Stripe. A reward code can only be used by the customer
+   it was made for, and once used it shows as used in their account. */
+const STRIPE_VERSION = '2024-06-20' // the version api/discounts.js reads promotion codes with
+export const stripeCodes = async (path, init = {}) => {
+  const answer = await fetch(`https://api.stripe.com/v1/${path}`, { ...init, headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Stripe-Version': STRIPE_VERSION, ...(init.body ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}) } })
+  const said = await answer.json().catch(() => ({}))
+  return { ok: answer.ok, said }
+}
+export const tidyCode = (v) => String(v || '').trim().toUpperCase().replace(/\s+/g, '').slice(0, 40)
+export const codeUsesHere = async (code) => usesHere(code)
+const usesHere = async (code) => (dbReady() ? (await db()).collection('codeUses').countDocuments({ code }) : 0)
+// the discount a percentage takes off a total in cents, rounded as Stripe rounds it
+export const discountCents = (totalCents, percent) => Math.round((totalCents * percent) / 100)
+/* Whether a code can be used now, by this buyer: { ok, code, percent, label, promoId, reward } or
+   { ok: false, message }. Only codes this site made (metadata jb) count. */
+export const checkCode = async (raw, user) => {
+  const code = tidyCode(raw)
+  if (!/^[A-Z0-9-]{3,40}$/.test(code)) return { ok: false, message: 'That does not look like a discount code.' }
+  if (!process.env.STRIPE_SECRET_KEY) return { ok: false, message: 'Discount codes cannot be checked right now.' }
+  const got = await stripeCodes(`promotion_codes?code=${encodeURIComponent(code)}&limit=5`)
+  const p = got.ok && Array.isArray(got.said.data) ? got.said.data.find((x) => x.code.toUpperCase() === code && x.metadata && x.metadata.jb === '1') : null
+  const nope = { ok: false, message: 'That code is not valid.' }
+  if (!p || p.metadata.jb_hidden === '1') return nope
+  const coupon = p.coupon || {}
+  const now = Math.floor(Date.now() / 1000)
+  if (!p.active || coupon.valid === false) return { ok: false, message: 'That code has been used up or switched off.' }
+  if ((p.expires_at && p.expires_at < now) || (coupon.redeem_by && coupon.redeem_by < now)) return { ok: false, message: 'That code has run out.' }
+  if (!(coupon.percent_off > 0)) return nope
+  if (p.max_redemptions && (p.times_redeemed || 0) + (await usesHere(code)) >= p.max_redemptions) return { ok: false, message: 'That code has been used up.' }
+  // a reward is the customer's own: they need to be logged in to that account
+  if (p.metadata.reward && p.metadata.email && (!user || user.email !== p.metadata.email)) return { ok: false, message: 'That code is a reward for another account. Log in to the account it was given to.' }
+  return { ok: true, code, percent: coupon.percent_off, label: coupon.name || `${coupon.percent_off}% off`, promoId: p.id, max: p.max_redemptions || null, reward: p.metadata.reward || '' }
+}
+/* A code was used on a paid order. Through PayPal it is counted here (Stripe counts its own), and
+   switched off once it has had all its uses. A reward code is marked used in its owner's account. */
+export const codeUsed = async ({ code, promoId, viaPaypal, userId, ref }) => {
+  if (!code || !dbReady()) return
+  const d = await db()
+  if (viaPaypal) {
+    await d.collection('codeUses').updateOne({ ref }, { $setOnInsert: { ref, code, at: new Date() } }, { upsert: true })
+    if (promoId && process.env.STRIPE_SECRET_KEY) {
+      const got = await stripeCodes(`promotion_codes/${promoId}`)
+      const max = got.ok ? got.said.max_redemptions : null
+      if (max && (got.said.times_redeemed || 0) + (await usesHere(code)) >= max) await stripeCodes(`promotion_codes/${promoId}`, { method: 'POST', body: 'active=false' })
+    }
+  }
+  if (userId) {
+    const u = await d.collection('users').findOne({ _id: userId })
+    const entry = u && u.rewardCodes && Object.entries(u.rewardCodes).find(([, v]) => v && v.code === code)
+    if (entry && !entry[1].usedAt) await d.collection('users').updateOne({ _id: userId }, { $set: { [`rewardCodes.${entry[0]}.usedAt`]: new Date().toISOString() } })
+    // a code the admin gave them (Discounts): marked used in their Gifts
+    if (u && Array.isArray(u.giftCodes) && u.giftCodes.some((g) => g.code === code && !g.usedAt)) {
+      await d.collection('users').updateOne({ _id: userId }, { $set: { giftCodes: u.giftCodes.map((g) => (g.code === code && !g.usedAt ? { ...g, usedAt: new Date().toISOString() } : g)) } })
+    }
+  }
+}

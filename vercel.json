@@ -35,6 +35,9 @@
     },
     "api/contact.js": {
       "includeFiles": "content/site/**"
+    },
+    "api/members.js": {
+      "includeFiles": "content/{pages,site}/**"
     }
   }
 }

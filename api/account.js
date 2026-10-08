@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { db, dbReady } from './_db.js'
-import { forCustomer } from './_orders.js'
+import { codeUsesHere, forCustomer, stripeCodes } from './_orders.js'
 import {
   EMAIL, checkPassword, clean, cleanCart, cleanSlugs, clientIp, currentUser, endSession, forgetCookie, forgetTries, fromThisSite, hashPassword,
   makeToken, mergeCarts, newId, noteTry, passwordProblem, publicUser, sendMail, siteUrl, startSession, tidyEmail, tooMany, spendToken,
@@ -27,6 +27,7 @@ import {
         { action: 'cart', cart }                          keeps the cart with the account
         { action: 'orders' }                              this customer's orders, newest first
         { action: 'rewards' }                             every reward, earned or not, and how far they have come
+        { action: 'seenGifts' }                           the gifts the admin gave them are no longer new
         { action: 'removeOrder', number, password }       takes an order out of their account (the shop keeps it)
         { action: 'everywhere' }                          logs out every device
         { action: 'delete', password }                    deletes the account (orders stay, unlinked)
@@ -81,9 +82,10 @@ const rewardsList = () => {
 const progressOf = async (d, user) => {
   const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
   const orders = (await d.collection('orders').find({ ...match, status: 'paid', hidden: { $ne: true } }).limit(500).toArray()).filter((o) => (o.kind || 'shop') === 'shop')
-  return { verified: Boolean(user.verified), orders: orders.length, pieces: orders.reduce((n, o) => n + (o.items || []).reduce((m, i) => m + (Number(i.qty) || 1), 0), 0) }
+  return { verified: Boolean(user.verified), orders: orders.length, pieces: orders.reduce((n, o) => n + (o.items || []).reduce((m, i) => m + (Number(i.qty) || 1), 0), 0), gifts: Array.isArray(user.gifts) ? user.gifts : [] }
 }
-const earns = (r, p) => (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count)
+// earned by its own rule, or gifted by the admin (api/members.js)
+const earns = (r, p) => (p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count)
 // Stripe, at the version the admin's Discounts screen uses (api/discounts.js)
 const stripe = async (path, fields) => {
   const answer = await fetch(`https://api.stripe.com/v1/${path}`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Stripe-Version': '2024-06-20', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.entries(fields).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString() })
@@ -95,7 +97,7 @@ const stripe = async (path, fields) => {
 // The reward is claimed in the database first, so two requests at once (two tabs) never make two codes.
 const rewardCode = async (d, user, r) => {
   const had = user.rewardCodes && user.rewardCodes[r.id]
-  if (had && had.code) return had
+  if (had && had.code) return had // (with usedAt once it has been used on an order)
   if (!process.env.STRIPE_SECRET_KEY) return null // discounts live in Stripe: none without its key
   const users = d.collection('users')
   const key = `rewardCodes.${r.id}`
@@ -295,9 +297,52 @@ export default async function handler(req, res) {
         const earned = earns(r, p)
         let code = null
         if (earned && r.kind === 'discount') { try { code = await rewardCode(d, user, r) } catch (e) { console.error('reward code not made:', e.message) } }
-        list.push({ id: r.id, name: r.name, kind: r.kind, earnedBy: r.earnedBy, count: r.count, percent: r.kind === 'discount' ? r.percent : undefined, days: r.kind === 'discount' ? r.days : undefined, earned, code })
+        list.push({ id: r.id, name: r.name, kind: r.kind, earnedBy: r.earnedBy, count: r.count, percent: r.kind === 'discount' ? r.percent : undefined, days: r.kind === 'discount' ? r.days : undefined, earned, gifted: p.gifts.includes(r.id), code })
       }
-      return say(res, 200, { progress: p, rewards: list })
+      // the discount codes the admin gave them (the Discounts screen): ready, used, or ended. Those kept
+      // with the account, and any other code made for their email in Stripe (codes from before the
+      // account kept them, or made before they had an account); reward codes are listed with their reward
+      const giftCodes = []
+      const given = Array.isArray(user.giftCodes) ? [...user.giftCodes] : []
+      if (process.env.STRIPE_SECRET_KEY) {
+        try {
+          let after = ''
+          for (let page = 0; page < 3; page++) {
+            const got = await stripeCodes(`promotion_codes?limit=100${after ? `&starting_after=${after}` : ''}`)
+            const data = got.ok && Array.isArray(got.said.data) ? got.said.data : []
+            for (const pc of data) {
+              const m = pc.metadata || {}
+              if (m.jb !== '1' || m.jb_hidden === '1' || m.reward || String(m.email || '').toLowerCase() !== user.email) continue
+              if (given.some((g) => g.id === pc.id)) continue
+              given.push({ id: pc.id, code: pc.code, percent: (pc.coupon && pc.coupon.percent_off) || 0, until: (pc.expires_at || (pc.coupon && pc.coupon.redeem_by)) ? (pc.expires_at || pc.coupon.redeem_by) * 1000 : null, at: new Date(pc.created * 1000).toISOString() })
+            }
+            if (!got.ok || !got.said.has_more || !data.length) break
+            after = data[data.length - 1].id
+          }
+        } catch (e) { console.error('codes for their email not read:', e.message) }
+      }
+      given.sort((x, y) => String(y.at || '').localeCompare(String(x.at || '')))
+      for (const g of given) {
+        let state = g.usedAt ? 'used' : 'ready'
+        if (state === 'ready' && process.env.STRIPE_SECRET_KEY) {
+          try {
+            const got = await stripeCodes(`promotion_codes/${g.id}`)
+            if (got.ok) {
+              const pc = got.said
+              if (pc.max_redemptions && (pc.times_redeemed || 0) + (await codeUsesHere(g.code)) >= pc.max_redemptions) state = 'used'
+              else if (!pc.active || (pc.expires_at && pc.expires_at * 1000 < Date.now())) state = 'ended'
+            }
+          } catch (e) { console.error('gift code not checked:', e.message) }
+        }
+        if (state === 'ready' && g.until && g.until < Date.now()) state = 'ended'
+        giftCodes.push({ id: g.id, code: g.code, percent: g.percent, until: g.until || null, at: g.at || '', usedAt: g.usedAt || '', state })
+      }
+      return say(res, 200, { progress: { verified: p.verified, orders: p.orders, pieces: p.pieces }, rewards: list, giftCodes })
+    }
+
+    if (action === 'seenGifts') {
+      await users.updateOne({ _id: user._id }, { $set: { newGifts: [] } })
+      return say(res, 200, { user: publicUser({ ...user, newGifts: [] }) })
     }
 
     if (action === 'resend') {

@@ -9,11 +9,12 @@ const EASE = [0.16, 1, 0.3, 1]
 
 /* Open the checkout for everything in the cart: the site's checkout function makes one Stripe
    payment page with a line per print, and sends the visitor there. */
-async function checkout(items, provider) {
+async function checkout(items, provider, code, dropCode) {
   try {
-    const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, provider }) })
+    const answer = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, provider, ...(code ? { code } : {}) }) })
     const said = await answer.json().catch(() => ({}))
     if (answer.ok && said.url) { notePaying(items); window.location.href = said.url; return null }
+    if (said.code) dropCode() // the code ran out meanwhile: it leaves the cart, which shows the full price again
     return said.message || 'The checkout did not answer. Try again in a moment.'
   } catch {
     return 'Could not reach the checkout. Check the connection and try again.'
@@ -28,6 +29,18 @@ export default function CartDrawer() {
   const mustLogIn = account.required && !account.user
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState('')
+  const [codeOpen, setCodeOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [codeNote, setCodeNote] = useState('')
+  const [checking, setChecking] = useState(false)
+  const apply = async (e) => {
+    e.preventDefault()
+    if (checking || !typed.trim()) return
+    setChecking(true); setCodeNote('')
+    const r = await cart.applyCode(typed)
+    setChecking(false)
+    if (r.ok) { setTyped(''); setCodeOpen(false) } else setCodeNote(r.message)
+  }
   const { open, lines } = cart
   const setOpen = (v) => { if (!v) setNote(''); cart.setOpen(v) }
 
@@ -45,7 +58,7 @@ export default function CartDrawer() {
   const pay = async (way) => {
     if (busy || !lines.length) return
     setBusy(way); setNote('')
-    const problem = await checkout(lines.map((l) => ({ slug: l.slug, size: l.size, signed: l.signed, qty: l.qty })), way)
+    const problem = await checkout(lines.map((l) => ({ slug: l.slug, size: l.size, signed: l.signed, qty: l.qty })), way, cart.discount && cart.discount.code, cart.dropCode)
     if (problem) { setNote(problem); setBusy(false) }
   }
 
@@ -93,6 +106,24 @@ export default function CartDrawer() {
                 </ul>
 
                 <footer className="cart-foot">
+                  {/* a discount code: a link that opens the box; once applied, a line with what it takes off */}
+                  {cart.discount ? (
+                    <div className="cart-discount">
+                      <span className="cart-discount-tag"><b>{cart.discount.code}</b><small>{cart.discount.percent}% off</small></span>
+                      <button type="button" className="cart-discount-x" onClick={cart.dropCode} aria-label={`Remove the code ${cart.discount.code}`}>×</button>
+                      <span className="cart-discount-off">−{money(cart.off)}</span>
+                    </div>
+                  ) : codeOpen ? (
+                    <form className="cart-code" onSubmit={apply}>
+                      <label className="sr-only" htmlFor="cart-code">Discount code</label>
+                      <input id="cart-code" type="text" value={typed} onChange={(e) => { setTyped(e.target.value.toUpperCase()); setCodeNote('') }} placeholder="Discount code" autoComplete="off" autoCapitalize="characters" spellCheck="false" maxLength={40} autoFocus />
+                      <button type="submit" className="btn sm" disabled={checking || !typed.trim()}>{checking ? 'Checking…' : 'Apply'}</button>
+                      {codeNote && <p className="cart-code-note" role="alert">{codeNote}</p>}
+                    </form>
+                  ) : (
+                    <button type="button" className="cart-code-open" onClick={() => setCodeOpen(true)}>Have a discount code?</button>
+                  )}
+                  {cart.discount && <div className="cart-total is-sub"><span>Before the discount</span><s>{money(cart.subtotal)}</s></div>}
                   <div className="cart-total"><span>Total</span><strong>{money(cart.total)}</strong></div>
                   {shop.shipping !== false && <p className="cart-small">You enter your delivery address on the next page.</p>}
                   {mustLogIn ? (

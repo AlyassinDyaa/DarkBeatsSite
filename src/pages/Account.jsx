@@ -70,7 +70,7 @@ const PERKS = [
 ]
 /* Rewards: how each is earned, whether this customer has, and the card design they chose. */
 const earnText = (r) => (r.earnedBy === 'verify' ? 'Confirm your email' : r.earnedBy === 'orders' ? (r.count === 1 ? 'Place your first order' : `Place ${r.count} orders`) : `Collect ${r.count} prints`)
-const hasEarned = (r, p) => Boolean(p) && (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count)
+const hasEarned = (r, p) => Boolean(p) && ((p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count))
 const cardDesigns = () => accountPage.rewards.filter((r) => r.kind === 'card')
 const designOf = (id) => cardDesigns().find((r) => r.id === id) || null
 const designStyle = (d) => (d && d.cardArt ? { '--card-art': `url("${asset(d.cardArt)}")` } : undefined)
@@ -280,6 +280,58 @@ function Verify() {
         <Link className="btn ghost sm" to={user ? '/account' : '/account/login'}>{user ? 'Go to your account' : 'Log in'} <span className="arrow">→</span></Link>
       </div>
     </Shell>
+  )
+}
+
+/* ---------- a gift from the admin, not seen yet: a window over the account page with each reward
+   (its picture, card design or discount), a way to see them under Rewards, and a close button.
+   Closing it in any way (the cross, Escape, a click outside) marks the gifts seen. */
+function GiftPopup({ gifts, onSee, onClose }) {
+  const open = gifts.length > 0
+  const seeBtn = useRef(null)
+  useEffect(() => {
+    if (!open) return
+    const before = document.activeElement
+    const key = (e) => { if (e.key === 'Escape') onClose() }
+    addEventListener('keydown', key)
+    const t = setTimeout(() => seeBtn.current?.focus(), 80)
+    window.__lenis?.stop?.()
+    return () => { removeEventListener('keydown', key); clearTimeout(t); window.__lenis?.start?.(); before?.focus?.() }
+  }, [open, onClose])
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="acc-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+          <motion.div className="acc-modal-box acct-gift-pop" role="dialog" aria-modal="true" aria-labelledby="acct-gift-title" initial={{ opacity: 0, y: 24, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.4, ease: EASE }}>
+            <button type="button" className="acc-modal-x" onClick={onClose} aria-label="Close">×</button>
+            <span className="acct-gift-pop-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h16v4H4z M5 13h14v8H5z M12 9v12 M12 9c-2-4-6-4-6-1.500S9 9 12 9z M12 9c2-4 6-4 6-1.500S15 9 12 9z" /></svg></span>
+            <span className="label accent">From {brand.name}</span>
+            <h2 id="acct-gift-title">{gifts.length === 1 ? 'A gift for you' : `${gifts.length} gifts for you`}</h2>
+            <p>{gifts.length === 1 ? 'This is now yours, in your account.' : 'These are now yours, in your account.'}</p>
+            <ul className="acct-gift-pop-list">
+              {gifts.map((r) => (
+                <li key={r.id}>
+                  <span className="acct-reward-art" aria-hidden="true">
+                    {r.kind === 'picture' && r.picture && <span className="acct-pick-pic"><img src={asset(r.picture)} alt="" style={faceLook(r)} /></span>}
+                    {r.kind === 'card' && <span className={`acct-card-mini is-${r.cardLook} ${r.cardArt ? 'has-art' : ''}`} style={designStyle(r)}><b>J</b><i /></span>}
+                    {r.kind === 'discount' && <span className="acct-reward-off"><b>{r.percent}%</b><small>off</small></span>}
+                  </span>
+                  <span className="acct-gift-pop-what">
+                    <small>{r.kind === 'picture' ? 'Profile picture' : r.kind === 'card' ? 'Card design' : r.code ? 'Discount code' : 'Discount'}</small>
+                    <strong>{r.name}</strong>
+                    <span>{r.kind === 'picture' ? 'Choose it under Details.' : r.kind === 'card' ? 'Put it on your card under Details.' : r.code ? 'A discount code: it is under Rewards, ready for your cart.' : 'Your code is under Rewards.'}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="acc-modal-actions">
+              <button type="button" className="btn ghost sm" onClick={onClose}>Close</button>
+              <button ref={seeBtn} type="button" className="btn sm" onClick={onSee}>See my rewards <span className="arrow">→</span></button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -581,7 +633,7 @@ function Orders({ orders, problem, onRemoved }) {
 function Details({ owned = [], progress = null, onPreview = () => {} }) {
   const { user, call } = useAccount()
   const f = useForm({ name: user.name, phone: user.phone, marketing: user.marketing, avatar: user.avatar || '', card: user.card || '' })
-  const prog = progress || { verified: Boolean(user.verified), orders: 0, pieces: 0 }
+  const prog = { verified: Boolean(user.verified), orders: 0, pieces: 0, ...(progress || {}), gifts: user.gifts || [] }
   const rewardPics = accountPage.rewards.filter((r) => r.kind === 'picture')
   const designs = cardDesigns()
   const [saved, setSaved] = useState(false)
@@ -849,11 +901,20 @@ function Overview({ orders, go }) {
 /* The rewards: every one the shop offers, each with how it is earned and how close they are, the
    ones they have open, and the codes of the discounts they have earned. */
 const untilDay = (t) => new Date(t).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
-function Rewards({ go }) {
+const shortDay = (t) => new Date(t).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+function Rewards({ go, fresh = [] }) {
   const { call } = useAccount()
+  const cart = useCart()
+  const [adding, setAdding] = useState('')
   const [data, setData] = useState(null)
   const [problem, setProblem] = useState('')
   const [copied, setCopied] = useState('')
+  const toCart = async (code) => {
+    setAdding(code)
+    const r = await cart.applyCode(code)
+    setAdding('')
+    if (r.ok) cart.setOpen(true); else setCopied(`!${r.message}`)
+  }
   useEffect(() => {
     let stale = false
     let later = null
@@ -871,51 +932,105 @@ function Rewards({ go }) {
   const p = data.progress
   const local = Object.fromEntries(accountPage.rewards.map((r) => [r.id, r]))
   const list = data.rewards.map((r) => ({ ...local[r.id], ...r }))
-  if (!list.length) return <div className="acc-empty"><strong>No rewards yet</strong><p>Rewards for members are on their way.</p></div>
+  const giftCodes = data.giftCodes || []
+  const gifted = list.filter((r) => r.gifted)
+  const earnable = list.filter((r) => !r.gifted)
+  if (!list.length && !giftCodes.length) return <div className="acc-empty"><strong>No rewards yet</strong><p>Rewards for members are on their way.</p></div>
   const have = (r) => (r.earnedBy === 'orders' ? p.orders : r.earnedBy === 'pieces' ? p.pieces : p.verified ? 1 : 0)
   const need = (r) => (r.earnedBy === 'verify' ? 1 : r.count)
   const unit = (r) => (r.earnedBy === 'pieces' ? 'prints' : 'orders')
   const copy = async (code) => { try { await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(''), 1600) } catch { /* the code is on screen to copy by hand */ } }
+
+  // a code: the chip with its copy icon and "Add to my cart", or crossed out once it no longer works
+  const codeBox = (code, state, usedAt) => (state !== 'ready' ? (
+    <div className="acct-code is-used">
+      <code>{code}</code>
+      <small>{state === 'used' ? (usedAt ? `Used on ${untilDay(usedAt)}. Thank you!` : 'Used. Thank you!') : 'This code has ended.'}</small>
+    </div>
+  ) : (
+    <div className="acct-code">
+      <span className="acct-code-row">
+        <code>{code}</code>
+        <button type="button" className={`acct-code-copy ${copied === code ? 'is-done' : ''}`} onClick={() => copy(code)} aria-label={copied === code ? 'Copied' : 'Copy the code'} title={copied === code ? 'Copied' : 'Copy the code'}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d={copied === code ? 'M5 12.5l4.500 4.500L19 7' : 'M9 9h10v11H9z M5 15V4h10'} /></svg>
+        </button>
+      </span>
+      <button type="button" className="acc-link acct-code-add" onClick={() => toCart(code)} disabled={adding === code}>{adding === code ? 'Adding…' : 'Add to my cart →'}</button>
+      {copied.startsWith('!') && <small className="acct-code-problem">{copied.slice(1)}</small>}
+    </div>
+  ))
+
+  // a reward (from Shop → Rewards): earned by its rule, or gifted
+  const rewardCard = (r) => {
+    const pct = Math.min(100, Math.round((Math.min(have(r), need(r)) / need(r)) * 100))
+    return (
+      <article key={r.id} className={`acct-reward ${r.earned ? 'is-earned' : ''} is-${r.kind} ${fresh.includes(r.id) ? 'is-new' : ''}`}>
+        {fresh.includes(r.id) && <span className="acct-reward-new">New</span>}
+        <div className="acct-reward-art" aria-hidden="true">
+          {r.kind === 'picture' && r.picture && <span className="acct-pick-pic"><img src={asset(r.picture)} alt="" loading="lazy" style={faceLook(r)} /></span>}
+          {r.kind === 'card' && <span className={`acct-card-mini is-${r.cardLook} ${r.cardArt ? 'has-art' : ''}`} style={designStyle(r)}><b>J</b><i /></span>}
+          {r.kind === 'discount' && <span className="acct-reward-off"><b>{r.percent}%</b><small>off</small></span>}
+        </div>
+        <div className="acct-reward-body">
+          <span className="acct-reward-kind">{r.kind === 'picture' ? 'Profile picture' : r.kind === 'card' ? 'Card design' : 'Discount'}</span>
+          <strong>{r.name}</strong>
+          <span className="acct-reward-how">{r.gifted ? `A gift from ${brand.name}` : r.earned ? 'Unlocked' : `${earnText(r)} to unlock it`}{r.earned && r.code && r.code.code && !r.code.usedAt ? ` · until ${shortDay(r.code.until)}` : ''}</span>
+          {!r.earned && r.earnedBy !== 'verify' && (
+            <div className="acct-meter" role="progressbar" aria-valuemin={0} aria-valuemax={need(r)} aria-valuenow={Math.min(have(r), need(r))} aria-label={`${Math.min(have(r), need(r))} of ${need(r)}`}>
+              <i style={{ width: `${pct}%` }} /><small>{Math.min(have(r), need(r))} / {need(r)} {unit(r)}</small>
+            </div>
+          )}
+          {r.earned && r.kind === 'discount' && (r.code ? codeBox(r.code.code, r.code.usedAt ? 'used' : 'ready', r.code.usedAt) : <small className="acct-reward-wait">Your code is being made. Look again in a moment.</small>)}
+          {r.earned && r.kind !== 'discount' && <button type="button" className="acc-link" onClick={() => go('details')}>{r.kind === 'picture' ? 'Use it as your picture' : 'Use it on your card'} →</button>}
+        </div>
+      </article>
+    )
+  }
+
+  // a discount code the admin gave them
+  const codeCard = (g) => (
+    <article key={g.id} className={`acct-reward is-discount ${g.state === 'ready' ? 'is-earned' : 'is-spent'} ${fresh.includes(`code:${g.id}`) ? 'is-new' : ''}`}>
+      {fresh.includes(`code:${g.id}`) && <span className="acct-reward-new">New</span>}
+      <div className="acct-reward-art" aria-hidden="true"><span className="acct-reward-off"><b>{g.percent}%</b><small>off</small></span></div>
+      <div className="acct-reward-body">
+        <span className="acct-reward-kind">Discount code</span>
+        <strong>{g.percent}% off</strong>
+        <span className="acct-reward-how">{g.state === 'ready' ? `A gift from ${brand.name}${g.until ? ` · until ${shortDay(g.until)}` : ''}` : g.state === 'used' ? 'Used' : 'Ended'}</span>
+        {codeBox(g.code, g.state, g.usedAt)}
+      </div>
+    </article>
+  )
+
+  const giftCount = gifted.length + giftCodes.length
   return (
     <div className="acct-rewards">
       <div className="acct-progress">
         <span><b>{p.orders}</b> {p.orders === 1 ? 'order' : 'orders'}</span>
         <span><b>{p.pieces}</b> {p.pieces === 1 ? 'print' : 'prints'}</span>
         <span><b>{p.verified ? '✓' : '–'}</b> email {p.verified ? 'confirmed' : 'not confirmed'}</span>
-        <span><b>{list.filter((r) => r.earned).length}/{list.length}</b> unlocked</span>
+        {giftCount > 0 && <span><b>{giftCount}</b> {giftCount === 1 ? 'gift' : 'gifts'}</span>}
       </div>
-      <div className="acct-reward-list">
-        {list.map((r) => {
-          const pct = Math.min(100, Math.round((Math.min(have(r), need(r)) / need(r)) * 100))
-          return (
-            <article key={r.id} className={`acct-reward ${r.earned ? 'is-earned' : ''} is-${r.kind}`}>
-              <div className="acct-reward-art" aria-hidden="true">
-                {r.kind === 'picture' && r.picture && <span className="acct-pick-pic"><img src={asset(r.picture)} alt="" loading="lazy" style={faceLook(r)} /></span>}
-                {r.kind === 'card' && <span className={`acct-card-mini is-${r.cardLook} ${r.cardArt ? 'has-art' : ''}`} style={designStyle(r)}><b>J</b><i /></span>}
-                {r.kind === 'discount' && <span className="acct-reward-off"><b>{r.percent}%</b><small>off</small></span>}
-              </div>
-              <div className="acct-reward-body">
-                <span className="acct-reward-kind">{r.kind === 'picture' ? 'Profile picture' : r.kind === 'card' ? 'Card design' : 'Discount'}</span>
-                <strong>{r.name}</strong>
-                <span className="acct-reward-how">{r.earned ? 'Unlocked' : `${earnText(r)} to unlock it`}</span>
-                {!r.earned && r.earnedBy !== 'verify' && (
-                  <div className="acct-meter" role="progressbar" aria-valuemin={0} aria-valuemax={need(r)} aria-valuenow={Math.min(have(r), need(r))} aria-label={`${Math.min(have(r), need(r))} of ${need(r)}`}>
-                    <i style={{ width: `${pct}%` }} /><small>{Math.min(have(r), need(r))} / {need(r)} {unit(r)}</small>
-                  </div>
-                )}
-                {r.earned && r.kind === 'discount' && (r.code ? (
-                  <div className="acct-code">
-                    <code>{r.code.code}</code>
-                    <button type="button" className="btn ghost sm" onClick={() => copy(r.code.code)}>{copied === r.code.code ? 'Copied' : 'Copy'}</button>
-                    <small>{r.code.percent}% off one order, until {untilDay(r.code.until)}. Type it on the payment page, in the promotion code box.</small>
-                  </div>
-                ) : <small className="acct-reward-wait">Your code is being made. Look again in a moment.</small>)}
-                {r.earned && r.kind !== 'discount' && <button type="button" className="acc-link" onClick={() => go('details')}>{r.kind === 'picture' ? 'Use it as your picture' : 'Use it on your card'} →</button>}
-              </div>
-            </article>
-          )
-        })}
-      </div>
+      {giftCount > 0 && (
+        <section className="acct-reward-group">
+          <header className="acct-group-head">
+            <h3>Gifts</h3>
+            <p>Given to you by {brand.name}.</p>
+          </header>
+          <div className="acct-reward-list">
+            {giftCodes.map(codeCard)}
+            {gifted.map(rewardCard)}
+          </div>
+        </section>
+      )}
+      {earnable.length > 0 && (
+        <section className="acct-reward-group">
+          <header className="acct-group-head">
+            <h3>Rewards</h3>
+            <p>Earned by confirming your email, by your orders and the prints you collect. <b>{earnable.filter((r) => r.earned).length}/{earnable.length}</b> unlocked.</p>
+          </header>
+          <div className="acct-reward-list">{earnable.map(rewardCard)}</div>
+        </section>
+      )}
     </div>
   )
 }
@@ -956,11 +1071,26 @@ function Home() {
   useEffect(() => { if (paid) settle() }, [paid, settle])
   const [leaving, setLeaving] = useState(false) // the 'log out?' window
   const [preview, setPreview] = useState(null) // a picture or card being tried on under Details, not saved yet
+  // gifts from the admin they have not seen yet: a banner here, and "New" on them under Rewards. Once
+  // they open Rewards (or close the banner) they are seen; this visit still marks them new there.
+  const [freshGifts, setFreshGifts] = useState([])
+  const newGifts = user ? user.newGifts || [] : []
+  useEffect(() => { if (newGifts.length) setFreshGifts((f) => [...new Set([...f, ...newGifts])]) }, [newGifts.join(',')]) // eslint-disable-line react-hooks/exhaustive-deps
+  // a gift is a reward from Shop → Rewards, or a discount code ("code:<id>") from the Discounts screen
+  const giftOf = (id) => {
+    if (!id.startsWith('code:')) return accountPage.rewards.find((r) => r.id === id) || null
+    const g = (user ? user.giftCodes || [] : []).find((x) => `code:${x.id}` === id)
+    return g ? { id, kind: 'discount', name: `${g.percent}% off`, percent: g.percent, code: true } : null
+  }
+  const [popClosed, setPopClosed] = useState(false) // the gift window, closed for this visit
+  const popGifts = popClosed ? [] : freshGifts.map(giftOf).filter(Boolean)
+  // opening Rewards is seeing them (the window and the "New" marks stay for this visit)
+  useEffect(() => { if (tab === 'rewards' && newGifts.length) call('seenGifts').catch(() => {}) }, [tab, newGifts.length]) // eslint-disable-line react-hooks/exhaustive-deps
   const owned = ownedIn(orders)
   const grid = useRef(null)
   // the browser tab's title follows the section, without the page's own scroll-to-top on a new title
   useEffect(() => { const name = TABS.find(([k]) => k === tab)[1]; document.title = `${tab === 'overview' ? 'Your account' : name} — ${brand.name}` }, [tab])
-  if (!user) return <Navigate to="/account/login?next=/account" replace />
+  if (!user) return <Navigate to={`/account/login?next=${encodeURIComponent(`/account${params.toString() ? `?${params}` : ''}`)}`} replace />
   const first = (user.name || '').split(' ')[0]
   const confirmed = params.get('confirmed')
   const note = paid ? `${shop.thanksTitle} ${shop.thanksText}` : confirmed ? `Your email is confirmed. Every order placed with it now shows here.${confirmed === 'reward' ? ' You unlocked rewards: see them under Rewards, and pick your picture and card under Details.' : ''}` : params.get('welcome') ? `Welcome${first ? `, ${first}` : ''}. Your account is ready.` : params.get('reset') ? 'Your new password is saved, and you are logged in.' : ''
@@ -976,7 +1106,7 @@ function Home() {
     if (window.__lenis) window.__lenis.scrollTo(y, { duration: 0.6 }); else window.scrollTo({ top: y, behavior: 'smooth' })
   }
   const shopOrders = (orders || []).filter((o) => o.kind !== 'support')
-  const counts = { orders: shopOrders.length, saved: (user.saved || []).length }
+  const counts = { orders: shopOrders.length, saved: (user.saved || []).length, rewards: newGifts.length }
   const prints = printsIn(orders)
   // the banner: a strip of panels. Their own art first (the print they picked as their picture,
   // the prints they own, the ones they saved), then the newest work, so it is never empty
@@ -993,6 +1123,7 @@ function Home() {
   const logout = async () => { await call('logout').catch(() => {}); setLeaving(false); navigate('/', { replace: true }) }
   return (
     <Page title="Your account">
+      <GiftPopup gifts={popGifts} onClose={() => setPopClosed(true)} onSee={() => { setPopClosed(true); go('rewards') }} />
       <Confirm open={leaving} title="Log out?" text={`You can log back in any time with ${user.email}. Your cart and saved pieces stay with your account.`} yes="Log out" onYes={logout} onClose={() => setLeaving(false)} />
       <div className="container acct2">
         {/* the profile: a banner of their own art, their picture over its edge, their name */}
@@ -1038,7 +1169,7 @@ function Home() {
             <button key={k} type="button" className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => go(k)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[k]} /></svg>
               <span>{label}</span>
-              {counts[k] > 0 && <small>{counts[k]}</small>}
+              {counts[k] > 0 && <small className={k === 'rewards' ? 'is-alert' : ''} aria-label={k === 'rewards' ? `${counts[k]} new` : undefined}>{counts[k]}</small>}
             </button>
           ))}
         </nav>
@@ -1065,7 +1196,7 @@ function Home() {
             )}
             {tab === 'overview' && <Overview orders={orders} go={go} />}
             {tab === 'orders' && <Orders orders={orders} problem={problem} onRemoved={drop} />}
-            {tab === 'rewards' && <Rewards go={go} />}
+            {tab === 'rewards' && <Rewards go={go} fresh={freshGifts} />}
             {tab === 'saved' && <Saved />}
             {tab === 'details' && <Details onPreview={setPreview} owned={owned} progress={orders ? { verified: Boolean(user.verified), orders: keptOrders(orders).length, pieces: printsIn(orders) } : null} />}
             {tab === 'security' && <Security />}

@@ -161,7 +161,7 @@ const C = { page: '#09070d', panel: '#15101c', line: '#2c2236', accent: '#c565f8
 const paint = (c) => `background-color:${c};background-image:linear-gradient(${c},${c});`
 // light words that must stay light in Gmail's dark mode
 const keep = (html, tag = 'div') => `<${tag} class="gmail-screen"><${tag} class="gmail-dif">${html}</${tag}></${tag}>`
-export const emailHtml = ({ subject, kicker, title, lines = [], button, picture, after }) => {
+export const emailHtml = ({ subject, kicker, title, lines = [], button, picture, after, code }) => {
   const b = brandInfo()
   const name = String(b.name || 'JBeatsArt').trim()
   // "JBeatsArt" reads JBEATS + ART, as the site's wordmark does
@@ -181,7 +181,6 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
   a { text-decoration:none; }
 </style></head>
 <body class="body" style="margin:0;padding:0;${paint(C.page)}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page};">${esc(lines[1] || lines[0] || '')}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${paint(C.page)}"><tr><td align="center" style="padding:28px 12px 36px;${paint(C.page)}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
   <tr><td style="background-color:#3d0a57;background-image:linear-gradient(120deg,#540075,#2a0a3d 70%);border:1px solid ${C.line};border-bottom:3px solid ${C.accent};padding:16px 22px;">
@@ -194,6 +193,11 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
     ${kicker ? `<span style="display:inline-block;padding:5px 11px 4px;${paint(C.button)}font-family:${MONO};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;">${keep(esc(kicker), 'span')}</span>` : ''}
     <h1 style="margin:16px 0 18px;font-family:${DISPLAY};font-size:36px;line-height:1.02;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:#f4eff8;">${keep(esc(title || subject))}</h1>
     ${lines.map(para).join('\n    ')}
+    ${code ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 20px;"><tr><td style="${paint('#1e1628')}border:2px dashed ${C.gold};padding:14px 22px;">
+      <span style="display:block;font-family:${MONO};font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${C.gold};">${keep(esc(code.label || 'Your code'), 'span')}</span>
+      <span style="display:block;margin-top:6px;font-family:${MONO};font-size:26px;font-weight:700;letter-spacing:3px;color:#ffffff;">${keep(esc(code.text), 'span')}</span>
+      ${code.note ? `<span style="display:block;margin-top:6px;font-family:${BODY};font-size:13px;color:${C.soft};">${esc(code.note)}</span>` : ''}
+    </td></tr></table>` : ''}
     ${picture ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 22px;"><tr>
       <td style="vertical-align:middle;"><img src="${esc(pictureUrl(picture.src))}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;border-radius:50%;border:3px solid ${C.gold};"></td>
       <td style="vertical-align:middle;padding-left:14px;font-family:${BODY};font-size:14px;line-height:1.55;color:${C.text};"><strong style="display:block;margin-bottom:2px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:${C.gold};">${esc(picture.title)}</strong>${keep(esc(picture.text), 'span')}</td>
@@ -215,7 +219,7 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
 export const sendMail = async (mail) => {
   const { to, subject, lines = [], button, after } = mail
   const brand = process.env.MAIL_BRAND || brandInfo().name || 'JBeatsArt'
-  const text = [mail.title || subject, '', ...lines, mail.picture ? `\n${mail.picture.title}: ${mail.picture.text}` : '', button ? `\n${button.label}: ${button.url}` : '', after ? `\n${after}` : '', '', `— ${brand}`].join('\n')
+  const text = [mail.title || subject, '', ...lines, mail.code ? `\n${mail.code.label || 'Your code'}: ${mail.code.text}${mail.code.note ? ` (${mail.code.note})` : ''}` : '', mail.picture ? `\n${mail.picture.title}: ${mail.picture.text}` : '', button ? `\n${button.label}: ${button.url}` : '', after ? `\n${after}` : '', '', `— ${brand}`].join('\n')
   if (!mailReady()) {
     // on this computer the link is printed instead, so the whole journey can be tried without email
     if (!process.env.VERCEL) console.log(`\n[email to ${to}] ${subject}\n${text}\n`)
@@ -249,6 +253,9 @@ export const publicUser = (u) => (u ? {
   lastVisit: u.prevLogin || u.createdAt, // for "new since your last visit"
   avatar: typeof u.avatar === 'string' ? u.avatar : '',
   card: typeof u.card === 'string' ? u.card : '', // the membership card design they chose (a reward)
+  gifts: Array.isArray(u.gifts) ? u.gifts : [], // rewards the admin gifted them (they count as earned)
+  newGifts: Array.isArray(u.newGifts) ? u.newGifts : [], // gifted and not seen yet: the account page says so ("code:<id>" for a code)
+  giftCodes: Array.isArray(u.giftCodes) ? u.giftCodes.map((g) => ({ id: g.id, code: g.code, percent: g.percent, until: g.until || null, usedAt: g.usedAt || '' })) : [], // discount codes the admin gave them
   memberNo: Number(u.memberNo) || null, // the order they signed up in: the first customer is 1
   saved: Array.isArray(u.saved) ? u.saved : [],
   cart: Array.isArray(u.cart) ? u.cart : [],

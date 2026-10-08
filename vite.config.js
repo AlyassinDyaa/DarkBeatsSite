@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { spawn } from 'node:child_process'
@@ -140,7 +140,7 @@ const adminBundle = () => ({
     // The admin's Orders and Discounts screens read the Stripe sandbox (and the test database) too.
     // On Vercel they need the admin's login; this copy has no login (the admin here saves straight
     // to the files on this computer), so they answer only to this computer, with a pass made here.
-    const ADMIN = ['orders', 'discounts']
+    const ADMIN = ['orders', 'discounts', 'members']
     if (!process.env.ADMIN_PASSCODE) process.env.ADMIN_PASSCODE = randomBytes(24).toString('hex')
     if (!process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = randomBytes(24).toString('hex')
     for (const name of ['checkout', 'account', 'stripe-webhook', 'contact', ...ADMIN]) {
@@ -194,10 +194,128 @@ const adminBundle = () => ({
   },
 })
 
+/* The artwork, as the built site sends it: never the full-size file. Every uploaded picture is
+   brought down to ART_MAX pixels on its long side (sharp on any screen, too small for a good
+   print: A3 wants about 3500), and the pictures of the Shop, the Work page and the before-and-afters
+   carry the artist's logo inside the picture itself: clearly in a corner, and faintly and large in
+   the middle, so cropping the corner off does not remove it. The files in public/uploads (what the
+   admin uploads, and what this computer's dev server shows) stay as they are: only the copies in
+   dist, which are what visitors get, are changed. The logo and the site icon are left alone. */
+const ART_MAX = 1400
+const ART_FOLDERS = ['work', 'gallery-sections', 'redraws'] // whose pictures get the watermark
+const readBrand = () => { try { return JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')) } catch { return {} } }
+// every /uploads picture named in the Shop, Work and before-and-after content
+const artPictures = () => {
+  const art = new Set()
+  for (const folder of ART_FOLDERS) {
+    const at = resolve('content', folder)
+    if (!existsSync(at)) continue
+    for (const f of readdirSync(at)) {
+      if (!f.endsWith('.json')) continue
+      for (const m of readFileSync(resolve(at, f), 'utf8').matchAll(/"(\/uploads\/[^"]+)"/g)) art.add(m[1])
+    }
+  }
+  return art
+}
+/* One picture as visitors get it: at most ART_MAX pixels on its long side, and for the artwork the
+   logo inside the picture, clearly in a corner and faintly and large in the middle (cropping the
+   corner off does not remove it). Answers null when the picture needs nothing. */
+const artCopy = async (sharp, source, url, art, brand) => {
+  const keep = new Set([brand.logo, brand.icon].filter(Boolean)) // the logo and the icon stay as uploaded
+  if (keep.has(url)) return null
+  const logoFile = brand.logo && existsSync(resolve(`public${brand.logo}`)) ? resolve(`public${brand.logo}`) : null
+  const meta = await sharp(source).metadata()
+  const big = Math.max(meta.width || 0, meta.height || 0) > ART_MAX
+  const isArt = art.has(url) && Boolean(logoFile)
+  if (!big && !isArt) return null
+  let img = sharp(source)
+  let w = meta.width, h = meta.height
+  if (big) {
+    img = img.resize({ width: ART_MAX, height: ART_MAX, fit: 'inside', withoutEnlargement: true })
+    const r = Math.min(ART_MAX / w, ART_MAX / h); w = Math.round(w * r); h = Math.round(h * r)
+  }
+  if (isArt) {
+    // the logo at a width, in white at a strength, with a soft dark shadow so it reads on light art too
+    const mark = async (width, strength) => {
+      const logo = await sharp(logoFile).resize({ width: Math.max(16, Math.round(width)) }).ensureAlpha().png().toBuffer()
+      const lm = await sharp(logo).metadata()
+      const fade = (buf, a) => sharp(buf).ensureAlpha().linear([1, 1, 1, a], [0, 0, 0, 0]).png().toBuffer()
+      const shadow = await sharp(await sharp(logo).ensureAlpha().linear([0, 0, 0, 1], [0, 0, 0, 0]).png().toBuffer()).blur(Math.max(1, width / 60)).png().toBuffer()
+      const pad = Math.ceil(width / 30)
+      return sharp({ create: { width: lm.width + pad * 2, height: lm.height + pad * 2, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite([
+        { input: await fade(shadow, strength * 0.7), left: pad + Math.round(pad / 3), top: pad + Math.round(pad / 3) },
+        { input: await fade(logo, strength), left: pad, top: pad },
+      ]).png().toBuffer()
+    }
+    const short = Math.min(w, h)
+    const corner = await mark(short * 0.17, 0.62)
+    const middle = await mark(short * 0.62, 0.11)
+    const c = await sharp(corner).metadata(), m = await sharp(middle).metadata()
+    img = sharp(await img.toBuffer()).composite([
+      { input: middle, left: Math.round((w - m.width) / 2), top: Math.round((h - m.height) / 2) },
+      { input: corner, left: Math.max(0, Math.round(w - c.width - short * 0.025)), top: Math.max(0, Math.round(h - c.height - short * 0.025)) },
+    ])
+  }
+  const ext = url.split('.').pop().toLowerCase()
+  const out = ext === 'png' ? img.png({ compressionLevel: 9 }) : ext === 'webp' ? img.webp({ quality: 82 }) : img.jpeg({ quality: 82, mozjpeg: true })
+  return { buffer: await out.toBuffer(), shrunk: big, marked: isArt }
+}
+
+/* The artwork as visitors get it: never the full-size file. When the site is built, every uploaded
+   picture in dist is replaced by its copy (artCopy). The files in public/uploads (what the admin
+   uploads) stay as they are. On this computer the dev server hands out the same copies, so what
+   is seen here is what visitors will see. */
+const protectArt = () => ({
+  name: 'protect-art',
+  configureServer(server) {
+    const made = new Map() // url -> { at, buffer }: made once per change of the file
+    server.middlewares.use(async (req, res, next) => {
+      const url = decodeURIComponent((req.url || '').split('?')[0])
+      if (!/^\/uploads\/[^/]+\.(webp|png|jpe?g)$/i.test(url)) return next()
+      const file = resolve(`public${url}`)
+      if (!existsSync(file)) return next()
+      try {
+        const { default: sharp } = await import('sharp')
+        sharp.cache(false)
+        const at = statSync(file).mtimeMs
+        let hit = made.get(url)
+        if (!hit || hit.at !== at) {
+          const copy = await artCopy(sharp, readFileSync(file), url, artPictures(), readBrand())
+          hit = { at, buffer: copy && copy.buffer }
+          made.set(url, hit)
+        }
+        if (!hit.buffer) return next()
+        res.setHeader('Content-Type', `image/${/\.jpe?g$/i.test(url) ? 'jpeg' : url.split('.').pop().toLowerCase()}`)
+        res.setHeader('Cache-Control', 'no-cache')
+        res.end(hit.buffer)
+      } catch { next() }
+    })
+  },
+  async closeBundle() {
+    if (!building) return
+    const dir = resolve('dist/uploads')
+    if (!existsSync(dir)) return
+    const { default: sharp } = await import('sharp')
+    sharp.cache(false)
+    const art = artPictures(), brand = readBrand()
+    let shrunk = 0, marked = 0
+    for (const name of readdirSync(dir)) {
+      if (!/\.(webp|png|jpe?g)$/i.test(name)) continue
+      const file = resolve(dir, name)
+      const copy = await artCopy(sharp, readFileSync(file), `/uploads/${name}`, art, brand) // read into memory: Windows keeps an opened file locked
+      if (!copy) continue
+      writeFileSync(file, copy.buffer)
+      if (copy.shrunk) shrunk++
+      if (copy.marked) marked++
+    }
+    console.log(`  artwork: ${shrunk} pictures brought down to ${ART_MAX}px, ${marked} marked with the logo`)
+  },
+})
+
 export default defineConfig({
   // Set VITE_BASE=/repo-name/ when deploying under a sub-path (GitHub project pages).
   base: process.env.VITE_BASE || '/',
-  plugins: [react(), spaFallback(), brandIcon(), adminBundle()],
+  plugins: [react(), spaFallback(), brandIcon(), protectArt(), adminBundle()],
   // PORT lets a preview tool pick a free port; 5174 keeps clear of other sites' dev servers.
   server: { port: Number(process.env.PORT) || 5174 },
 })

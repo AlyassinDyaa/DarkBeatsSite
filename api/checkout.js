@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { currentUser } from './_users.js'
-import { SITE, boughtOf, dbReady, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { SITE, boughtOf, checkCode, codeUsed, dbReady, discountCents, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
 import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
@@ -69,6 +69,7 @@ const savePaypal = async (id, said) => {
   })
   // paid: what was bought leaves the buyer's saved cart
   if (before && before.userId) await takeFromCart(before.userId, readBought(before.bought))
+  if (before && before.code) await codeUsed({ code: before.code, promoId: before.promoId, viaPaypal: true, userId: before.userId, ref: `pp_${id}` })
 }
 
 export default async function handler(req, res) {
@@ -82,6 +83,12 @@ export default async function handler(req, res) {
   // the logged-in customer, so the order lands in their account (never stops a sale if it fails)
   let user = null
   if (accounts !== 'off') { try { user = await currentUser(req) } catch (e) { console.error('account lookup:', e.message) } }
+
+  // ---- a discount code typed into the cart: is it good, and how much off
+  if (body.check !== undefined) {
+    const c = await checkCode(body.check, user)
+    return res.status(c.ok ? 200 : 400).json(c.ok ? { ok: true, code: c.code, percent: c.percent, label: c.label } : { message: c.message })
+  }
 
   // ---- PayPal, step two: the buyer approved on PayPal and is back; collect the payment
   if (body.capture) {
@@ -113,6 +120,11 @@ export default async function handler(req, res) {
   if (way === 'paypal' && (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET)) return res.status(503).json({ message: 'PayPal is not set up yet. Get in touch to buy a print.' })
   if (accounts === 'required' && !user) return res.status(401).json({ login: true, message: 'Log in, or make an account, to buy.' })
 
+  let discount = null
+  if (body.code) {
+    discount = await checkCode(body.code, user)
+    if (!discount.ok) return res.status(409).json({ message: `${discount.message} Remove it from the cart to pay the full price.`, code: true })
+  }
   const asked = Array.isArray(body.items) ? body.items : [{ slug: body.slug, size: body.size, signed: body.signed, qty: 1 }]
   if (!asked.length) return res.status(400).json({ message: 'The cart is empty.' })
   if (asked.length > MAX_LINES) return res.status(400).json({ message: `At most ${MAX_LINES} different prints in one order.` })
@@ -160,13 +172,14 @@ export default async function handler(req, res) {
   // ---- PayPal, step one: an order on PayPal, and the page where the buyer approves it
   if (way === 'paypal') {
     const total = lines.reduce((t, l) => t + l.cents * l.qty, 0)
+    const off = discount ? discountCents(total, discount.percent) : 0
     const code = currency.toUpperCase()
     const order = {
       intent: 'CAPTURE',
       purchase_units: [{
         description: `${brand.slice(0, 60)} order`,
         custom_id: summary.slice(0, 127),
-        amount: { currency_code: code, value: twoPlaces(total), breakdown: { item_total: { currency_code: code, value: twoPlaces(total) } } },
+        amount: { currency_code: code, value: twoPlaces(total - off), breakdown: { item_total: { currency_code: code, value: twoPlaces(total) }, ...(off ? { discount: { currency_code: code, value: twoPlaces(off) } } : {}) } },
         items: lines.map((l) => ({ name: nameOf(l, 90).slice(0, 127), quantity: String(l.qty), unit_amount: { currency_code: code, value: twoPlaces(l.cents) }, category: 'PHYSICAL_GOODS', ...(whatOf(l) ? { description: String(whatOf(l)).slice(0, 127) } : {}) })),
       }],
       payment_source: { paypal: { experience_context: {
@@ -188,7 +201,7 @@ export default async function handler(req, res) {
       }
       // kept as waiting until the buyer comes back and the payment is taken
       try {
-        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100 })), bought: boughtOf(lines), amount: total / 100, discount: 0, currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
+        await recordOrder({ ref: `pp_${said.id}`, provider: 'paypal', paypalId: said.id, kind: 'shop', userId: user ? user._id : null, email: user ? user.email : '', name: user ? user.name || '' : '', items: lines.map((l) => ({ name: nameOf(l, 200), qty: l.qty, amount: (l.cents * l.qty) / 100 })), bought: boughtOf(lines), amount: (total - off) / 100, discount: off / 100, ...(discount ? { code: discount.code, promoId: discount.promoId } : {}), currency: code, summary, status: 'pending', test: process.env.PAYPAL_MODE !== 'live' })
       } catch (e) { console.error('paypal order not saved:', e.message) }
       return res.status(200).json({ url: link.href })
     } catch (e) {
@@ -203,8 +216,10 @@ export default async function handler(req, res) {
   // paid: a logged-in buyer goes to the orders in their account; anyone else back to the shop
   ask.set('success_url', user ? `${origin}/account?tab=orders&thanks=1` : `${origin}/shop?thanks=1`)
   ask.set('cancel_url', `${origin}/shop`)
-  // a box for a discount code, made in the admin's Discounts screen (Stripe checks the code)
-  ask.set('allow_promotion_codes', 'true')
+  // the code from the cart, applied to Stripe's page (so it charges what the cart showed); without
+  // one, Stripe's page has its own box for a code (Stripe allows one or the other)
+  if (discount) { ask.set('discounts[0][promotion_code]', discount.promoId); ask.set('metadata[code]', discount.code) }
+  else ask.set('allow_promotion_codes', 'true')
   lines.forEach((l, i) => {
     const at = `line_items[${i}]`
     ask.set(`${at}[quantity]`, String(l.qty))
