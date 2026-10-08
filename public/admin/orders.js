@@ -263,7 +263,6 @@
   const stats = el('div', { className: 'io-stats' })
   const chips = el('div', { className: 'io-chips', role: 'tablist', ariaLabel: 'Show' })
   const foot = el('div', { className: 'io-foot' })
-  const testNote = el('span', { className: 'io-test', textContent: 'Test mode', hidden: true })
   const search = el('input', { type: 'search', className: 'io-search', placeholder: 'Search name, email, piece, tracking…', ariaLabel: 'Search orders' })
   search.addEventListener('input', () => { state.q = search.value; paint() })
   const period = el('select', { className: 'io-select', ariaLabel: 'When' }, PERIODS.map(([v, t]) => el('option', { value: v, textContent: t })))
@@ -282,7 +281,7 @@
     el('div', { className: 'ia-home-inner' }, [
       el('div', { className: 'io-top' }, [
         el('div', {}, [
-          el('div', { className: 'ia-kicker' }, ['Orders ', testNote]),
+          el('div', { className: 'ia-kicker', textContent: 'Orders' }),
           el('h1', { textContent: 'Orders' }),
           el('p', { className: 'ia-lead', textContent: 'Everything paid by card (Stripe) or PayPal: prints from the Shop and support. Mark each order as you pack and post it; the buyer sees each step and the tracking number in their account.' }),
         ]),
@@ -303,7 +302,6 @@
 
   const paint = () => {
     const all = state.orders
-    testNote.hidden = !all.some((o) => o.test)
     // the numbers along the top
     const month = new Date(); month.setDate(1); month.setHours(0, 0, 0, 0)
     const thisMonth = all.filter((o) => o.created * 1000 >= month.getTime())

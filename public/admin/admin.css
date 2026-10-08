@@ -767,8 +767,6 @@ html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::afte
 .ia-orders h1 { margin: 12px 0 0; font-family: var(--display); font-weight: 800; font-size: clamp(1.8rem, 2.8vw, 2.5rem); letter-spacing: -0.03em; line-height: 1.1; color: var(--fg); }
 .io-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .io-refresh { flex: 0 0 auto; margin-top: 18px; }
-.io-test { margin-left: 8px; padding: 3px 8px; border-radius: 999px; background: rgba(255, 196, 87, 0.16); color: #ffc457; letter-spacing: 0.12em; }
-.io-test[hidden] { display: none; }
 .io-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
 .io-stat { display: grid; gap: 2px; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); }
 .io-stat strong { font-family: var(--display); font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; color: var(--fg); }
