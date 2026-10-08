@@ -49,7 +49,17 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const list = await users.find({}).sort({ memberNo: 1 }).limit(2000).toArray()
-      return res.status(200).json({ members: list.map(shape), rewards: rewardsOnOffer() })
+      const members = list.map(shape)
+      // a print taken off the site since: the picture its order kept
+      const lost = [...new Set(list.filter((u, n) => !members[n].picture && /^[a-z0-9-]{1,80}$/.test(String(u.avatar || ''))).map((u) => u.avatar))]
+      if (lost.length) {
+        try {
+          const kept = new Map()
+          for (const o of await (await db()).collection('orders').find({ 'items.slug': { $in: lost } }).limit(500).toArray()) for (const i of o.items || []) if (lost.includes(i.slug) && i.src && !kept.has(i.slug)) kept.set(i.slug, i.src)
+          list.forEach((u, n) => { if (!members[n].picture && kept.has(u.avatar)) members[n].picture = { src: kept.get(u.avatar), face: '' } })
+        } catch (e) { console.error('kept pictures not read:', e.message) }
+      }
+      return res.status(200).json({ members, rewards: rewardsOnOffer() })
     }
     if (req.method !== 'POST') return res.status(405).json({ message: 'Read with GET, gift with POST.' })
     const body = req.body && typeof req.body === 'object' ? req.body : {}

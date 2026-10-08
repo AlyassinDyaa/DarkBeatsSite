@@ -1616,3 +1616,10 @@ a.buy-btn { text-decoration: none; }
 @media (max-width: 599px) { .acc-orow.is-picking { grid-template-columns: auto auto minmax(0, 1fr) auto; } .acc-opick .btn { flex: 1 1 auto; justify-content: center; } }
 .acc-order-head.is-picking { justify-content: flex-start; gap: 14px; }
 .acc-order-head.is-picking .acc-order-right { margin-left: auto; }
+
+/* deleting archived gifts: "Delete all" beside Archived, and the list in the confirmation window */
+.acct-shelf-all { margin-left: 16px; font-size: 0.85rem; }
+.acc-del-list { display: grid; gap: 4px; max-height: 220px; margin: 12px 0 0; padding: 0; overflow-y: auto; list-style: none; overscroll-behavior: contain; }
+.acc-del-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02); }
+.acc-del-list b { font-family: var(--display); font-weight: 400; font-size: 1rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--fg); }
+.acc-del-list small { font-size: 0.8rem; color: var(--fg-mute); }

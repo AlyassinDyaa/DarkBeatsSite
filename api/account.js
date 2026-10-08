@@ -82,9 +82,15 @@ const rewardsList = () => {
     })
 }
 // how far a customer has come: email confirmed, orders, prints (refunded and deleted orders do not count)
-const progressOf = async (d, user) => {
+/* The orders that count, the same everywhere (rewards here; the member card, the header and the
+   Overview on the account page): paid (not refunded), not support, and still in their account
+   (an order the admin deleted, or they deleted from their history, no longer counts). */
+const countedOrders = async (d, user) => {
   const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-  const orders = (await d.collection('orders').find({ ...match, status: 'paid', hidden: { $ne: true } }).limit(500).toArray()).filter((o) => (o.kind || 'shop') === 'shop')
+  return (await d.collection('orders').find({ ...match, status: 'paid', hidden: { $ne: true }, customerRemoved: { $ne: true } }).sort({ createdAt: -1 }).limit(500).toArray()).filter((o) => (o.kind || 'shop') !== 'support')
+}
+const progressOf = async (d, user) => {
+  const orders = await countedOrders(d, user)
   return { verified: Boolean(user.verified), orders: orders.length, pieces: orders.reduce((n, o) => n + (o.items || []).reduce((m, i) => m + (Number(i.qty) || 1), 0), 0), gifts: Array.isArray(user.gifts) ? user.gifts : [] }
 }
 // earned by its own rule, or gifted by the admin (api/members.js)
@@ -143,11 +149,11 @@ const pieces = () => {
 }
 // the prints this customer has bought (an order line "The Rider · A2 (signed)" is The Rider)
 const ownedSlugs = async (d, user) => {
-  const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
-  const orders = await d.collection('orders').find({ ...match, status: 'paid', hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(200).toArray()
+  const orders = await countedOrders(d, user)
   const all = pieces().sort((a, b) => b.title.length - a.title.length)
   const owned = new Set()
-  for (const o of orders) for (const i of o.items || []) { const p = all.find((x) => String(i.name || '').startsWith(x.title)); if (p) owned.add(p.slug) }
+  // a piece taken off the site since is still theirs: its order kept its slug and picture
+  for (const o of orders) for (const i of o.items || []) { const p = all.find((x) => String(i.name || '').startsWith(x.title)); if (p) owned.add(p.slug); else if (i.slug && i.src) owned.add(i.slug) }
   return owned
 }
 const pictureAllowed = async (d, user, avatar) => {
@@ -344,13 +350,14 @@ export default async function handler(req, res) {
     }
 
     if (action === 'giftShelf') {
-      // only tidies their list: a gifted picture or card design stays theirs, a code still works until deleted from view
-      const id = clean(body.id, 120)
-      if (!/^(code:promo_[A-Za-z0-9]+|[a-z0-9-]{1,60})$/.test(id)) return say(res, 400, { message: 'That is not one of your gifts.' })
-      const archived = (Array.isArray(user.archivedGifts) ? user.archivedGifts : []).filter((g) => g !== id)
-      const deleted = (Array.isArray(user.deletedGifts) ? user.deletedGifts : []).filter((g) => g !== id)
-      if (body.to === 'archive') archived.push(id)
-      else if (body.to === 'delete') deleted.push(id)
+      // only tidies their list: a gifted picture or card design stays theirs, a code still works until deleted from view.
+      // One gift (id) or several at once (ids: deleting everything archived)
+      const ids = [...new Set((Array.isArray(body.ids) ? body.ids : [body.id]).map((x) => clean(x, 120)))].slice(0, 200)
+      if (!ids.length || !ids.every((id) => /^(code:promo_[A-Za-z0-9]+|[a-z0-9-]{1,60})$/.test(id))) return say(res, 400, { message: 'That is not one of your gifts.' })
+      const archived = (Array.isArray(user.archivedGifts) ? user.archivedGifts : []).filter((g) => !ids.includes(g))
+      const deleted = (Array.isArray(user.deletedGifts) ? user.deletedGifts : []).filter((g) => !ids.includes(g))
+      if (body.to === 'archive') archived.push(...ids)
+      else if (body.to === 'delete') deleted.push(...ids)
       else if (body.to !== 'restore') return say(res, 400, { message: 'Nothing to do.' })
       await users.updateOne({ _id: user._id }, { $set: { archivedGifts: archived.slice(-200), deletedGifts: deleted.slice(-200) } })
       return say(res, 200, { archived, deleted })
