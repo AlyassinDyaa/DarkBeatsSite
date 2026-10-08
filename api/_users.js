@@ -147,13 +147,20 @@ const pictureUrl = (path) => (/^https?:\/\//.test(path) ? path : `${assetHost()}
 
 /* Every email in the site's own look: a dark purple band with the logo and the name (the last
    part in the brand purple), a dark panel with a small slanted tag, a big tall heading, the words,
-   a picture when there is one, a purple button with a hard offset shadow, the link written out
-   under it, and a quiet footer. Built from tables with the styles on each piece, the way email
-   apps need it. */
+   a picture when there is one, a purple button, the link written out under it, and a quiet footer.
+   Built from tables with the styles on each piece, the way email apps need it.
+   Staying dark everywhere: the page says it is a dark email (color-scheme), so Apple Mail and
+   Outlook leave it alone. Gmail's phone app in dark mode turns light emails dark and dark ones light
+   whatever they say, so every dark background is also painted as a background image (which it never
+   changes), and the light words sit in two blend layers that turn its flip back (the gmail-* classes,
+   which only Gmail ever matches: it puts a <u> before the body). */
 const DISPLAY = "Anton, Impact, 'Arial Narrow Bold', 'Helvetica Neue', Arial, sans-serif"
 const BODY = "'Helvetica Neue', Helvetica, Arial, sans-serif"
 const MONO = "'JetBrains Mono', Consolas, 'Courier New', monospace"
-const C = { page: '#09070d', panel: '#15101c', band: '#3d0a57', line: '#2c2236', accent: '#c565f8', ink: '#0a0710', text: '#ddd6e4', soft: '#9b90a6', gold: '#ffd34d' }
+const C = { page: '#09070d', panel: '#15101c', line: '#2c2236', accent: '#c565f8', button: '#a447e0', text: '#e4dcec', soft: '#a397ae', gold: '#ffd34d' }
+const paint = (c) => `background-color:${c};background-image:linear-gradient(${c},${c});`
+// light words that must stay light in Gmail's dark mode
+const keep = (html, tag = 'div') => `<${tag} class="gmail-screen"><${tag} class="gmail-dif">${html}</${tag}></${tag}>`
 export const emailHtml = ({ subject, kicker, title, lines = [], button, picture, after }) => {
   const b = brandInfo()
   const name = String(b.name || 'JBeatsArt').trim()
@@ -161,35 +168,43 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
   const cut = /^(.*?)(Art|ART|art)$/.exec(name)
   const [first, second] = cut && cut[1] ? [cut[1], cut[2]] : [name, '']
   const insta = (Array.isArray(b.social) ? b.social : []).find((x) => /instagram/i.test(x.label || ''))
-  const home = String(process.env.SITE_URL || assetHost()).replace(/\/$/, '')
-  const para = (t) => `<p style="margin:0 0 14px;font-family:${BODY};font-size:16px;line-height:1.65;color:${C.text};">${esc(t)}</p>`
+  // the footer always names the real site, never this computer
+  const home = assetHost()
+  const para = (t) => `<p style="margin:0 0 14px;font-family:${BODY};font-size:16px;line-height:1.65;color:${C.text};">${keep(esc(t), 'span')}</p>`
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"><title>${esc(subject)}</title></head>
-<body style="margin:0;padding:0;background:${C.page};">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"><title>${esc(subject)}</title>
+<style>
+  :root { color-scheme: dark; supported-color-schemes: dark; }
+  u + .body .gmail-screen { background:#000; mix-blend-mode:screen; display:inline; }
+  u + .body .gmail-dif { background:#000; mix-blend-mode:difference; display:inline; }
+  u + .body div.gmail-screen, u + .body div.gmail-dif { display:block; }
+  a { text-decoration:none; }
+</style></head>
+<body class="body" style="margin:0;padding:0;${paint(C.page)}">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page};">${esc(lines[1] || lines[0] || '')}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.page};"><tr><td align="center" style="padding:28px 12px 36px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${paint(C.page)}"><tr><td align="center" style="padding:28px 12px 36px;${paint(C.page)}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
-  <tr><td style="background:${C.band};background-image:linear-gradient(120deg,#540075,#2a0a3d 70%);border:1px solid ${C.line};border-bottom:3px solid ${C.accent};padding:16px 22px;">
+  <tr><td style="background-color:#3d0a57;background-image:linear-gradient(120deg,#540075,#2a0a3d 70%);border:1px solid ${C.line};border-bottom:3px solid ${C.accent};padding:16px 22px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td style="vertical-align:middle;"><img src="${esc(pictureUrl('/email/logo.png'))}" width="44" height="44" alt="" style="display:block;width:44px;height:44px;border-radius:50%;border:2px solid ${C.accent};background:${C.page};"></td>
-      <td style="vertical-align:middle;padding-left:12px;font-family:${DISPLAY};font-size:24px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#ffffff;line-height:1;">${esc(first)}${second ? `<span style="color:${C.accent};">${esc(second)}</span>` : ''}</td>
+      <td style="vertical-align:middle;"><img src="${esc(pictureUrl('/email/logo.png'))}" width="44" height="44" alt="" style="display:block;width:44px;height:44px;border-radius:50%;border:2px solid ${C.accent};${paint(C.page)}"></td>
+      <td style="vertical-align:middle;padding-left:12px;font-family:${DISPLAY};font-size:24px;font-weight:400;letter-spacing:1px;text-transform:uppercase;line-height:1;"><span style="color:#ffffff;">${keep(esc(first), 'span')}</span>${second ? `<span style="color:${C.accent};">${esc(second)}</span>` : ''}</td>
     </tr></table>
   </td></tr>
-  <tr><td style="background:${C.panel};border:1px solid ${C.line};border-top:0;padding:30px 26px 30px;">
-    ${kicker ? `<span style="display:inline-block;padding:5px 11px 4px;background:${C.accent};font-family:${MONO};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${C.ink};">${esc(kicker)}</span>` : ''}
-    <h1 style="margin:16px 0 18px;font-family:${DISPLAY};font-size:36px;line-height:1.02;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:#f4eff8;">${esc(title || subject)}</h1>
+  <tr><td style="${paint(C.panel)}border:1px solid ${C.line};border-top:0;padding:30px 26px 30px;">
+    ${kicker ? `<span style="display:inline-block;padding:5px 11px 4px;${paint(C.button)}font-family:${MONO};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffffff;">${keep(esc(kicker), 'span')}</span>` : ''}
+    <h1 style="margin:16px 0 18px;font-family:${DISPLAY};font-size:36px;line-height:1.02;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:#f4eff8;">${keep(esc(title || subject))}</h1>
     ${lines.map(para).join('\n    ')}
     ${picture ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 22px;"><tr>
       <td style="vertical-align:middle;"><img src="${esc(pictureUrl(picture.src))}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;border-radius:50%;border:3px solid ${C.gold};"></td>
-      <td style="vertical-align:middle;padding-left:14px;font-family:${BODY};font-size:14px;line-height:1.55;color:${C.text};"><strong style="display:block;margin-bottom:2px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:${C.gold};">${esc(picture.title)}</strong>${esc(picture.text)}</td>
+      <td style="vertical-align:middle;padding-left:14px;font-family:${BODY};font-size:14px;line-height:1.55;color:${C.text};"><strong style="display:block;margin-bottom:2px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:${C.gold};">${esc(picture.title)}</strong>${keep(esc(picture.text), 'span')}</td>
     </tr></table>` : ''}
-    ${button ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 6px;"><tr><td style="background:${C.accent};border-right:6px solid #540075;border-bottom:6px solid #540075;">
-      <a href="${esc(button.url)}" style="display:inline-block;padding:14px 26px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:${C.ink};text-decoration:none;">${esc(button.label)} &rarr;</a>
+    ${button ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 6px;"><tr><td style="${paint(C.button)}border-right:6px solid #540075;border-bottom:6px solid #540075;">
+      <a href="${esc(button.url)}" style="display:inline-block;padding:14px 26px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#ffffff;text-decoration:none;">${keep(`${esc(button.label)} &rarr;`, 'span')}</a>
     </td></tr></table>
-    <p style="margin:18px 0 0;font-family:${BODY};font-size:12px;line-height:1.6;color:${C.soft};">Button not working? Paste this into your browser:<br><a href="${esc(button.url)}" style="color:${C.accent};word-break:break-all;">${esc(button.url)}</a></p>` : ''}
+    <p style="margin:18px 0 0;font-family:${BODY};font-size:12px;line-height:1.6;color:${C.soft};">Button not working? Paste this into your browser:<br><a href="${esc(button.url)}" style="color:${C.accent};word-break:break-all;text-decoration:underline;">${esc(button.url)}</a></p>` : ''}
     ${after ? `<p style="margin:22px 0 0;padding-top:16px;border-top:1px dashed ${C.line};font-family:${BODY};font-size:13px;line-height:1.6;color:${C.soft};">${esc(after)}</p>` : ''}
   </td></tr>
-  <tr><td align="center" style="padding:20px 10px 0;font-family:${BODY};font-size:12px;line-height:1.7;color:#6f6578;">
+  <tr><td align="center" style="padding:20px 10px 0;font-family:${BODY};font-size:12px;line-height:1.7;color:#7d7288;${paint(C.page)}">
     ${b.tagline ? `${esc(b.tagline)}${b.location ? ` &middot; ${esc(b.location)}` : ''}<br>` : ''}<a href="${esc(home)}" style="color:${C.soft};text-decoration:underline;">${esc(home.replace(/^https?:\/\//, ''))}</a>${insta ? ` &middot; <a href="${esc(insta.url)}" style="color:${C.soft};text-decoration:underline;">Instagram</a>` : ''}
   </td></tr>
 </table>
