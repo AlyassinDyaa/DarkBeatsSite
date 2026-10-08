@@ -43,7 +43,7 @@ body {
   font-size: 17px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip; /* hidden would make the body its own scroll box, and sticky parts (the account tabs, the "keep it?" bar) would stop sticking */
 }
 img, svg, video { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
