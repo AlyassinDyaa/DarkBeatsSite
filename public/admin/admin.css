@@ -602,9 +602,20 @@ html[data-ia-view='gallery'] [class*='GridCardLink'][data-ia-thumb='none']::afte
 .chrome-picker span, .sketch-picker span, .sketch-picker label { color: var(--dim) !important; }
 .chrome-picker svg { fill: var(--fg) !important; background: transparent !important; }
 
-/* date: the field plus its Now / Clear helpers */
-[class*='DateTimeControl'] { display: flex; align-items: center; gap: 8px; padding: 0 10px 0 4px; min-height: 48px; }
-[class*='DateTimeControl'] input { background: transparent !important; border: 0 !important; box-shadow: none !important; height: 46px !important; }
+/* date: the day, then Today / Clear. Every date field in the admin is a day (no time), so the
+   "UTC" note is left out. The row wraps in a narrow column, so the buttons never spill out; an
+   empty field says what to do (an empty date box draws blank on an iPad); the picker is dark. */
+[class*='DateTimeControl'] { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; padding: 0 6px 0 0 !important; min-height: 48px; }
+[class*='DateTimeControl'] > span { display: none !important; }
+[class*='DateTimeControl'] input[type='date'], [class*='DateTimeControl'] input { flex: 1 1 110px; min-width: 0; width: auto !important; height: 46px !important; padding: 0 12px !important; background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--fg) !important; font: inherit; font-size: 1rem !important; color-scheme: dark; -webkit-appearance: none; appearance: none; text-align: left; }
+[class*='DateTimeControl'] input::-webkit-date-and-time-value { text-align: left; min-height: 1.3em; }
+[class*='DateTimeControl'] input::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; opacity: 0.8; }
+[class*='DateTimeControl'].ia-date-empty input { color: transparent !important; }
+[class*='DateTimeControl'].ia-date-empty::before { content: 'Choose a day'; position: absolute; left: 16px; top: 0; height: 48px; display: flex; align-items: center; color: var(--dim); pointer-events: none; font-size: 1rem; }
+[class*='DateTimeControl'] > div { display: flex; gap: 4px; margin-left: auto; padding: 4px 0 4px 8px; }
+[class*='DateTimeControl'] [class*='button-widget'] { height: 30px; padding: 0 10px !important; }
+[class*='DateTimeControl'] [data-testid='now-button'] { font-size: 0 !important; }
+[class*='DateTimeControl'] [data-testid='now-button']::after { content: 'Today'; font-size: 0.82rem; }
 [class*='button-widget'] { background: rgba(232, 230, 224, 0.08) !important; color: var(--fg) !important; border: 0 !important; border-radius: 999px !important; font-weight: 700 !important; height: 30px; padding: 0 12px !important; }
 [class*='button-widget']:hover { background: rgba(232, 230, 224, 0.16) !important; }
 .rdtPicker { background: var(--panel-2) !important; color: var(--fg) !important; border: 1px solid var(--line-strong) !important; border-radius: 12px !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important; }

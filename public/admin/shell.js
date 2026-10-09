@@ -1018,4 +1018,12 @@
       }
     })
   }, 400)
+
+  /* ---------- date fields: an empty one says "Choose a day" (admin.css) ---------- */
+  setInterval(() => {
+    document.querySelectorAll('[class*="DateTimeControl"]').forEach((box) => {
+      const input = box.querySelector('input')
+      if (input) box.classList.toggle('ia-date-empty', !input.value)
+    })
+  }, 300)
 })()
