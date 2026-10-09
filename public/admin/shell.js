@@ -931,10 +931,13 @@
 
   /* ---------- a membership card design, as customers will see it ----------
      Under each card design (Shop → Rewards): the card in its look, with its picture, redrawn as they
-     change. It keeps nothing itself: it reads the look and the picture of the same design. */
+     change. With a picture across the card, it is placed here as a profile picture is: drag it on the
+     card, or use the sliders (zoom, left to right, up and down). Kept as "x,y,zoom" (cardCrop); the
+     member card on the site draws the picture from it. */
   if (window.CMS && window.createClass && window.h) {
     const h = window.h
     const LOOKS = [['ink', /^ink/i], ['gold', /^gold/i], ['chrome', /^chrome/i], ['art', /picture/i]]
+    const clamp = (n, lo, hi) => Math.round(Math.min(hi, Math.max(lo, n)))
     window.CMS.registerWidget('cardpreview', window.createClass({
       getInitialState() { return { look: 'ink', art: '', name: '' } },
       componentDidMount() { this.read(); this.timer = setInterval(() => this.read(), 400) },
@@ -949,16 +952,48 @@
         const next = { look: found ? found[0] : 'ink', art: img ? img.getAttribute('src') || '' : '', name }
         if (next.look !== this.state.look || next.art !== this.state.art || next.name !== this.state.name) this.setState(next)
       },
+      // where the picture sits: x and y in % (50, 25: the middle, a little above), zoom in % (100 = fills the card)
+      parts() {
+        const [x, y, z] = String(this.props.value || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n)))
+        return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 25, z: Number.isFinite(z) && z >= 100 ? z : 100 }
+      },
+      put(p) { this.props.onChange(clamp(p.x, 0, 100) + ',' + clamp(p.y, 0, 100) + ',' + clamp(p.z, 100, 400)) },
+      drag(e) {
+        if (!this.state.art) return
+        e.preventDefault()
+        const box = e.currentTarget.getBoundingClientRect()
+        const from = { mx: e.clientX, my: e.clientY, ...this.parts() }
+        const per = 200 / (box.width * (from.z / 100)) // how far one pixel of dragging moves the picture
+        const move = (m) => this.put({ x: from.x - (m.clientX - from.mx) * per, y: from.y - (m.clientY - from.my) * per * 1.586, z: from.z })
+        const stop = () => { removeEventListener('pointermove', move); removeEventListener('pointerup', stop) }
+        addEventListener('pointermove', move)
+        addEventListener('pointerup', stop)
+      },
       render() {
         const { look, art, name } = this.state
+        const now = this.parts()
+        const style = art ? { '--card-art': 'url("' + art + '")', '--art-x': now.x + '%', '--art-y': now.y + '%', '--art-z': String(now.z / 100) } : {}
+        const slider = (label, key, min, max) => h('label', { className: 'ia-face-slider' },
+          h('span', {}, label),
+          h('input', { type: 'range', min, max, step: 1, value: now[key], onChange: (e) => this.put({ ...now, [key]: Number(e.target.value) }) }),
+          h('b', {}, now[key] + '%'))
         return h('div', { className: 'ia-cardprev-wrap', ref: (el) => { this.root = el } },
-          h('div', { className: `ia-cardprev is-${look} ${art ? 'has-art' : ''}`, style: art ? { '--card-art': `url("${art}")` } : {} },
-            h('span', { className: 'ia-cardprev-mark' }, 'J'),
-            h('span', { className: 'ia-cardprev-top' }, h('b', {}, 'JBEATS', h('i', {}, 'ART')), h('em', {}, 'Collector')),
-            h('span', { className: 'ia-cardprev-chip' }),
-            h('strong', { className: 'ia-cardprev-name' }, 'Your name here'),
-            h('span', { className: 'ia-cardprev-foot' }, h('small', {}, 'Member no.'), ' #0001')),
-          h('p', { className: 'ia-cardprev-note' }, look === 'art' && !art ? 'Add a picture above to see the card.' : `“${name || 'This design'}”, as customers will see it.`))
+          h('div', { className: 'ia-cardprev-row' },
+            h('div', { className: 'ia-cardprev is-' + look + (art ? ' has-art is-movable' : ''), style, onPointerDown: art ? (e) => this.drag(e) : undefined, title: art ? 'Drag to move the picture' : '' },
+              h('span', { className: 'ia-cardprev-mark' }, 'J'),
+              h('span', { className: 'ia-cardprev-top' }, h('b', {}, 'JBEATS', h('i', {}, 'ART')), h('em', {}, 'Collector')),
+              h('span', { className: 'ia-cardprev-chip' }),
+              h('strong', { className: 'ia-cardprev-name' }, 'Your name here'),
+              h('span', { className: 'ia-cardprev-foot' }, h('small', {}, 'Member no.'), ' #0001')),
+            art ? h('div', { className: 'ia-face-side' },
+              slider('Zoom', 'z', 100, 400),
+              slider('Left to right', 'x', 0, 100),
+              slider('Up and down', 'y', 0, 100),
+              h('button', { type: 'button', className: 'ia-face-reset', disabled: !this.props.value, onClick: () => this.props.onChange('') }, 'Start again')) : null),
+          h('p', { className: 'ia-cardprev-note' }, look === 'art' && !art
+            ? 'Add a picture above to see the card.'
+            : art ? '“' + (name || 'This design') + '”, as customers will see it. Drag the picture on the card, or use the sliders, to choose what shows.'
+              : '“' + (name || 'This design') + '”, as customers will see it. Add a picture above to put one across the card.'))
       },
     }))
   }

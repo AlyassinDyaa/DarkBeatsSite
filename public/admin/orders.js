@@ -1060,7 +1060,10 @@
   const KIND = { picture: 'Picture', card: 'Card', discount: 'Discount' }
   const rewardThumb = (r) => {
     if (r.kind === 'picture' && r.picture) return el('span', { className: 'io-rthumb is-pic' }, [el('img', { src: r.picture, alt: '', loading: 'lazy', style: faceStyle(r.face) })])
-    if (r.kind === 'card') return el('span', { className: `io-rthumb is-design is-${r.cardLook}`, style: r.cardArt ? `background-image:url("${r.cardArt}")` : '' })
+    if (r.kind === 'card') {
+      const [x, y, z] = String(r.cardCrop || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n)))
+      return el('span', { className: `io-rthumb is-design is-${r.cardLook} ${r.cardArt ? 'has-art' : ''}`, style: r.cardArt ? `--card-art:url("${r.cardArt}");--art-x:${Number.isFinite(x) ? x : 50}%;--art-y:${Number.isFinite(y) ? y : 25}%;--art-z:${Number.isFinite(z) && z >= 100 ? z / 100 : 1}` : '' })
+    }
     return el('span', { className: 'io-rthumb is-off', textContent: `${r.percent}%` })
   }
   const giftsFor = (p) => {

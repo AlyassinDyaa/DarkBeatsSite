@@ -204,9 +204,12 @@ const adminBundle = () => ({
 const ART_MAX = 1400
 const ART_FOLDERS = ['work', 'gallery-sections', 'redraws'] // whose pictures get the watermark
 const readBrand = () => { try { return JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')) } catch { return {} } }
-// every /uploads picture named in the Shop, Work and before-and-after content
+// the watermark can be switched off in the admin (Site → Show / hide → Artwork); it is on unless switched off
+const watermarkOn = () => { try { return (JSON.parse(readFileSync(resolve('content/site/visibility.json'), 'utf8')).artwork || {}).watermark !== false } catch { return true } }
+// every /uploads picture named in the Shop, Work and before-and-after content (none while the watermark is off)
 const artPictures = () => {
   const art = new Set()
+  if (!watermarkOn()) return art
   for (const folder of ART_FOLDERS) {
     const at = resolve('content', folder)
     if (!existsSync(at)) continue
@@ -278,10 +281,11 @@ const protectArt = () => ({
         const { default: sharp } = await import('sharp')
         sharp.cache(false)
         const at = statSync(file).mtimeMs
+        const key = `${at}:${watermarkOn()}` // made again when the file changes, or the watermark is switched
         let hit = made.get(url)
-        if (!hit || hit.at !== at) {
+        if (!hit || hit.at !== key) {
           const copy = await artCopy(sharp, readFileSync(file), url, artPictures(), readBrand())
-          hit = { at, buffer: copy && copy.buffer }
+          hit = { at: key, buffer: copy && copy.buffer }
           made.set(url, hit)
         }
         if (!hit.buffer) return next()

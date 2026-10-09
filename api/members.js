@@ -21,7 +21,7 @@ const rewardsOnOffer = () => {
   const page = readJson('content/pages/rewards.json') || {}
   return (Array.isArray(page.pictures) ? page.pictures : []).map((r) => ({ ...r, kind: 'picture' })).concat((Array.isArray(page.cards) ? page.cards : []).map((r) => ({ ...r, kind: 'card' })), (Array.isArray(page.discounts) ? page.discounts : []).map((r) => ({ ...r, kind: 'discount' })), Array.isArray(page.rewards) ? page.rewards : [])
     .filter((r) => r && !r.hidden && (r.kind === 'card' ? r.cardLook || r.cardArt : r.kind === 'discount' ? Number(r.percent) > 0 : r.picture))
-    .map((r) => ({ id: slug(r.name) || slug(r.picture), name: String(r.name || ''), kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', percent: Number(r.percent) || 0, picture: r.picture || '', face: String(r.face || ''), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '' }))
+    .map((r) => ({ id: slug(r.name) || slug(r.picture), name: String(r.name || ''), kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', percent: Number(r.percent) || 0, picture: r.picture || '', face: String(r.face || ''), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '', cardCrop: String(r.cardCrop || '') }))
 }
 /* The picture a customer has on (as their account shows it): a free picture or a reward picture
    ("icon:<picture>"), or one of the prints they bought (its slug); with its crop ("x,y,zoom"). */

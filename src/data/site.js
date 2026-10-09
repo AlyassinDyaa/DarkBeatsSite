@@ -69,6 +69,8 @@ const mixed = (list) => list.map((p) => [hash(visit + p.slug), p]).sort((a, b) =
 /* Where a piece's picture sits when a buyer uses it as their round profile picture (set in the
    admin: "left,top,zoom" in percent). The face is usually near the top, hence 22% when not set. */
 const parseFace = (v) => { const [x, y, z] = String(v || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n))); return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 22, zoom: Number.isFinite(z) && z >= 100 ? z : 100 } }
+// where a card design's picture sits on the card: "x,y,zoom" from the admin (the middle, a little above, by default)
+const parseCrop = (v) => { const [x, y, z] = String(v || '').split(',').map((n) => (n.trim() === '' ? NaN : Number(n))); return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 25, zoom: Number.isFinite(z) && z >= 100 ? z : 100 } }
 /* the style that puts it there, on an <img> filling a round frame */
 export const faceLook = (piece) => { const f = (piece && piece.face) || { x: 50, y: 22, zoom: 100 }; return { objectPosition: `${f.x}% ${f.y}%`, transform: `scale(${f.zoom / 100})`, transformOrigin: `${f.x}% ${f.y}%` } }
 
@@ -144,7 +146,7 @@ function assemble(content) {
     .filter((r) => r && !r.hidden && (r.kind === 'card' ? r.cardLook || r.cardArt : r.kind === 'discount' ? Number(r.percent) > 0 : typeof r.picture === 'string' && r.picture))
     .map((r) => {
       const by = ['verify', 'orders', 'pieces'].includes(r.earnedBy) ? r.earnedBy : 'verify'
-      return { id: slug(r.name) || slug(r.picture), name: r.name || '', kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', earnedBy: by, count: by === 'verify' ? 0 : Math.max(1, Math.round(Number(r.count) || 1)), percent: Number(r.percent) || 0, days: Number(r.days) || 60, picture: r.picture || '', face: parseFace(r.face), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '' }
+      return { id: slug(r.name) || slug(r.picture), name: r.name || '', kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', earnedBy: by, count: by === 'verify' ? 0 : Math.max(1, Math.round(Number(r.count) || 1)), percent: Number(r.percent) || 0, days: Number(r.days) || 60, picture: r.picture || '', face: parseFace(r.face), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '', cardCrop: parseCrop(r.cardCrop) }
     })
   // the pictures given on confirming the email (the confirmation page and email show these)
   accountPage.verifiedIcons = accountPage.rewards.filter((r) => r.kind === 'picture' && r.earnedBy === 'verify')

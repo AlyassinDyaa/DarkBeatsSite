@@ -73,7 +73,12 @@ const earnText = (r) => (r.earnedBy === 'verify' ? 'Confirm your email' : r.earn
 const hasEarned = (r, p) => Boolean(p) && ((p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count))
 const cardDesigns = () => accountPage.rewards.filter((r) => r.kind === 'card')
 const designOf = (id) => cardDesigns().find((r) => r.id === id) || null
-const designStyle = (d) => (d && d.cardArt ? { '--card-art': `url("${asset(d.cardArt)}")` } : undefined)
+// a design's picture, placed and zoomed as the admin set it (the card's ::before draws it)
+const designStyle = (d) => {
+  if (!d || !d.cardArt) return undefined
+  const c = d.cardCrop || { x: 50, y: 25, zoom: 100 }
+  return { '--card-art': `url("${asset(d.cardArt)}")`, '--art-x': `${c.x}%`, '--art-y': `${c.y}%`, '--art-z': c.zoom / 100 }
+}
 
 /* the collector card: the name, the year they joined, a card number, and what they have collected;
    in the design they chose (a reward), or the site's own purple */

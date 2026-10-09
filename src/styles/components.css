@@ -1419,7 +1419,9 @@ a.buy-btn { text-decoration: none; }
 .acc-card3d.is-gold .acc-card3d-mark, .acc-card3d.is-chrome .acc-card3d-mark { -webkit-text-stroke-color: rgba(10, 7, 16, 0.14); }
 .acc-card3d.is-gold .acc-card3d-brand .wordmark, .acc-card3d.is-chrome .acc-card3d-brand .wordmark { color: #0a0710; }
 .acc-card3d.is-gold .acc-card3d-kind, .acc-card3d.is-chrome .acc-card3d-kind { background: #0a0710; color: #fff; }
-.acc-card3d.has-art { background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.8)), var(--card-art) center 25% / cover, #09070d; color: var(--fg); }
+.acc-card3d.has-art { background: #09070d; color: var(--fg); }
+/* a design's own picture, placed and zoomed in the admin (--art-x, --art-y, --art-z), under the card's text */
+.acc-card3d.has-art::before, .acct-card-mini.has-art::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.8)), var(--card-art) var(--art-x, 50%) var(--art-y, 25%) / cover no-repeat; transform: scale(var(--art-z, 1)); transform-origin: var(--art-x, 50%) var(--art-y, 25%); pointer-events: none; }
 
 /* choosing the card design (Details) */
 .acct-cards { margin-top: 4px; }
@@ -1438,7 +1440,8 @@ a.buy-btn { text-decoration: none; }
 .acct-card-mini.is-gold { background: linear-gradient(135deg, #fff1b8, #f2c94c 30%, #b8860b 58%, #f6d77a); color: #0a0710; }
 .acct-card-mini.is-chrome { background: linear-gradient(135deg, #ffffff, #c9ccd2 30%, #8d929b 58%, #eef0f3); color: #0a0710; }
 .acct-card-mini.is-gold i, .acct-card-mini.is-chrome i { background: rgba(10, 7, 16, 0.25); }
-.acct-card-mini.has-art { background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.6)), var(--card-art) center 25% / cover; }
+.acct-card-mini.has-art { background: #09070d; }
+.acct-card-mini.has-art::before { background: linear-gradient(180deg, rgba(9, 7, 13, 0.1), rgba(9, 7, 13, 0.6)), var(--card-art) var(--art-x, 50%) var(--art-y, 25%) / cover no-repeat; }
 .acct-card-name { font-family: var(--display); font-weight: 400; font-size: 1rem; letter-spacing: 0.03em; text-transform: uppercase; }
 .acct-card-pick small { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-mute); }
 .acct-card-pick.on small { color: var(--accent); }

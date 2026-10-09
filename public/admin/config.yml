@@ -454,7 +454,7 @@ collections:
                   - { label: 'Chrome', value: chrome }
                   - { label: 'A picture of your choosing', value: art }
               - { name: cardArt, label: Picture across the card, widget: image, choose_url: false, required: false, hint: 'Needed for "A picture of your choosing", optional with the others. A picture with a quiet bottom half works best: the name sits there.' }
-              - { name: preview, label: As customers see it, widget: cardpreview, required: false }
+              - { name: cardCrop, label: As customers see it, widget: cardpreview, required: false }
               - name: earnedBy
                 label: How it is earned
                 widget: select
@@ -735,6 +735,12 @@ collections:
             collapsed: false
             fields:
               - { name: redraws, label: Then and now, widget: boolean, default: true, hint: 'The before-and-after drawings under the pieces.' }
+          - name: artwork
+            label: Artwork
+            widget: object
+            collapsed: false
+            fields:
+              - { name: watermark, label: Logo on the artwork (watermark), widget: boolean, default: true, required: false, hint: 'Puts your logo inside the pictures of the Shop, the Work page and Then and now: clearly in a corner, and faintly and large in the middle. Switched off, visitors see the pictures without it. Either way they are web-size copies, too small for a good print. A change shows on the site a minute or two after saving, once it has been rebuilt.' }
           - name: admin
             label: Admin
             widget: object

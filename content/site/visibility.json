@@ -19,6 +19,9 @@
   "shop": {
     "redraws": false
   },
+  "artwork": {
+    "watermark": true
+  },
   "admin": {
     "samples": false
   }
