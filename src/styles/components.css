@@ -1654,3 +1654,10 @@ a.buy-btn { text-decoration: none; }
   .pager-num, .pager-step { min-width: 40px; height: 40px; padding: 0 10px; }
   .pager-per { width: 100%; } .pager-per .fmenu { width: 100%; }
 }
+
+/* ---------- the shop-wide sales running now, at the top of the Shop page ---------- */
+.shop-sales { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 0; padding: 0; list-style: none; }
+.shop-sales li { display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; border: 1px solid var(--accent); background: rgba(197, 101, 248, 0.08); }
+.shop-sales b { padding: 6px 10px 5px; font-family: var(--display); font-weight: 400; font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
+.shop-sales span { font-size: 0.95rem; color: var(--fg-dim); }
+.shop-sales strong { font-family: var(--display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg); margin-right: 4px; }

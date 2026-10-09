@@ -606,6 +606,36 @@ collections:
           - { name: footerLine, label: Big line across the footer, widget: string, required: false }
           - { name: footerFine, label: Small print after the © line, widget: string, required: false }
 
+      - name: sales
+        label: Sales
+        file: content/site/sales.json
+        fields:
+          - name: sales
+            label: Sales
+            label_singular: sale
+            widget: list
+            collapsed: false
+            required: false
+            summary: '{{fields.name}}: {{fields.percent}}% off'
+            hint: 'A percentage off everything in the Shop, or off one category, type or universe. When more than one discount fits a piece (two sales, or a sale and its own sale price), it gets the biggest one only: they never add up. Discount codes still come off the total on top. Prices change on the site and at the checkout together.'
+            fields:
+              - { name: name, label: Name, widget: string, hint: 'Shown to buyers, for example "Summer sale" or "Villain week".' }
+              - { name: on, label: Running, widget: boolean, default: true, required: false, hint: 'Off: the sale stops at once. Switch it on again any time.' }
+              - { name: percent, label: Discount (%), widget: number, value_type: int, min: 1, max: 90, default: 10 }
+              - name: covers
+                label: What it covers
+                widget: select
+                default: all
+                options:
+                  - { label: 'Everything in the Shop', value: all }
+                  - { label: 'One category (Heroes, Villains...)', value: category }
+                  - { label: 'One type (Posters, Stickers...)', value: type }
+                  - { label: 'One universe (DC, Marvel...)', value: universe }
+              - { name: category, label: Category, widget: relation, collection: site, file: categories, value_field: 'subjects.*.name', search_fields: ['subjects.*.name'], display_fields: ['subjects.*.name'], required: false }
+              - { name: type, label: Type, widget: relation, collection: site, file: categories, value_field: 'types.*.name', search_fields: ['types.*.name'], display_fields: ['types.*.name'], required: false }
+              - { name: universe, label: Universe, widget: relation, collection: site, file: categories, value_field: 'universes.*.name', search_fields: ['universes.*.name'], display_fields: ['universes.*.name'], required: false }
+              - { name: starts, label: First day, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, required: false, hint: 'Leave empty to start straight away. Days are Gold Coast days.' }
+              - { name: ends, label: Last day, widget: datetime, format: 'YYYY-MM-DD', date_format: 'D MMM YYYY', time_format: false, picker_utc: true, required: false, hint: 'The sale runs to the end of this day. Leave empty to run until it is switched off.' }
       - name: shop
         label: Shop and payments
         file: content/site/shop.json

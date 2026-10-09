@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { currentUser } from './_users.js'
 import { SITE, boughtOf, checkCode, codeUsed, dbReady, discountCents, paidOrder, readBought, recordOrder, shapeAddress, takeFromCart } from './_orders.js'
+import { bestPrice, liveSales } from './_sales.js'
 import { db } from './_db.js'
 
 /* Buying prints. The site sends the cart here as a list of { slug, size, signed, qty } (or a single
@@ -135,6 +136,7 @@ export default async function handler(req, res) {
   const lists = read('content/site/categories.json') || {}
   const typeNote = (type) => { const t = (Array.isArray(lists.types) ? lists.types : []).find((x) => x && String(x.name).trim() === String(type || '').trim()); return (t && String(t.note || '').trim()) || '' }
   const extra = Math.max(0, Number(shop.signedExtra) || 0)
+  const running = liveSales((read('content/site/sales.json') || {}).sales)
   const lines = []
   for (const item of asked) {
     const slug = String((item && item.slug) || '')
@@ -152,7 +154,8 @@ export default async function handler(req, res) {
       if (!s) return res.status(409).json({ message: `"${piece.title || slug}" does not come in that size any more. Remove it from the cart and add it again.` })
       size = String(s.name).trim(); usual = Number(s.price); sale = Number(s.salePrice)
     }
-    const base = piece.status === 'sale' && sale > 0 && sale < usual ? sale : usual
+    // the lowest of the usual price, its own sale price and the shop-wide sales (the site shows the same)
+    const base = bestPrice(usual, piece.status === 'sale' ? sale : 0, piece, running).now
     const signed = choice ? Boolean(item.signed === true) : null
     const cents = Math.round((base + (signed ? extra : 0)) * 100)
     if (!(cents >= 50)) return res.status(404).json({ message: `"${piece.title || slug}" is not for sale.` })

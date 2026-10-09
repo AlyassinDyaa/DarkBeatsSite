@@ -69,6 +69,7 @@
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
     'site/shop': { groups: { enabled: 'Selling online', currency: 'What you sell', signedChoice: 'Signed prints', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'cartIcon', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
     'pages/rewards': { groups: { rewardText: 'Before they confirm', pictures: 'Profile pictures', cards: 'Membership card designs', discounts: 'Discounts' }, half: [], inner: ['earnedBy', 'count', 'percent', 'days', 'cardLook'] },
+    'site/sales': { groups: {}, half: [], inner: ['on', 'percent', 'starts', 'ends'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
@@ -76,7 +77,7 @@
      group's sections in the order given. The Orders group (orders.js) goes in right after Shop.
      A section not named here lands in the last group, so nothing new ever goes missing. */
   const GROUPS = [
-    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, how it is sorted, and how buyers pay.', keys: ['work', 'site/categories', 'site/shop', 'pages/rewards'] },
+    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, how it is sorted, and how buyers pay.', keys: ['work', 'site/categories', 'site/sales', 'site/shop', 'pages/rewards'] },
     { id: 'art', label: 'Your art', short: 'Your art', lead: 'The Work page, before-and-afters, conventions, and every picture you have uploaded.', keys: ['gallery_sections', 'redraws', 'events'], media: true },
     { id: 'pages', label: 'Words on each page', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', keys: ['pages/home', 'pages/lists', 'pages/commissions', 'pages/about', 'pages/contact', 'pages/support', 'pages/account'] },
     { id: 'site', label: 'Whole site', short: 'Site', lead: 'Your name and colour, and which parts are switched on.', keys: ['site/brand', 'site/visibility'] },
@@ -86,7 +87,7 @@
   const inOrder = (g, list) => list.filter(g.has).sort((a, b) => (g.keys.indexOf(a.key) + 1 || 99) - (g.keys.indexOf(b.key) + 1 || 99))
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'pages/rewards': 'Rewards', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
+  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'site/sales': 'Sales', 'pages/rewards': 'Rewards', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
   /* One line about each single page, for its tile on the Home screen. */
   const ABOUT = {
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
@@ -99,6 +100,7 @@
     'pages/rewards': 'Profile pictures, membership card designs and discounts customers earn: by confirming their email, every few orders, or the prints they collect.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
     'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
+    'site/sales': 'A percentage off everything, or off one category, type or universe: running now, or between two dates.',
     'site/categories': 'The Shop’s lists: categories (Heroes, Villains...), types (Posters, Stickers...) and universes (DC, Marvel...).',
     'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
   }
@@ -113,6 +115,7 @@
     'pages/rewards': 'M8 4h8v5a4 4 0 0 1-8 0z M8 6H5a3 3 0 0 0 3 4 M16 6h3a3 3 0 0 1-3 4 M12 13v4 M8 20h8 M9.500 17h5v3h-5z',
     'site/brand': 'M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z',
     'site/shop': 'M5 8h14l-1 12H6z M9 8V6a3 3 0 0 1 6 0v2',
+    'site/sales': 'M3 12V4h8l10 10-8 8z M7.500 8.500h.010',
     'site/categories': 'M4 5h7v7H4z M13 5h7v7h-7z M4 14h7v5H4z M13 14h7v5h-7z',
     'site/visibility': 'M2.500 12s3.500-6.500 9.500-6.500 9.500 6.500 9.500 6.500-3.500 6.500-9.500 6.500S2.500 12 2.500 12z M12 9.500a2.500 2.500 0 1 0 0 5 2.500 2.500 0 0 0 0-5z',
   })
@@ -997,4 +1000,22 @@
       },
     }))
   }
+
+  /* ---------- a sale shows only the list it covers ----------
+     Shop → Sales: "What it covers" picks everything, a category, a type or a universe; of the three
+     lists under it, only the one it names is shown. Read from the page every moment, so it follows
+     the choice as it changes; anything it cannot read stays shown. */
+  const COVER_WORDS = [['all', /^Everything/i], ['category', /^One category/i], ['type', /^One type/i], ['universe', /^One universe/i]]
+  setInterval(() => {
+    if (currentFile() !== 'sales') return
+    document.querySelectorAll('[class*="-listControlItem"]').forEach((item) => {
+      const said = [...item.querySelectorAll('[class*="singleValue"]')].map((n) => n.textContent)
+      const found = COVER_WORDS.find(([, re]) => said.some((t) => re.test(t)))
+      for (const name of ['category', 'type', 'universe']) {
+        const label = item.querySelector(`label[for^="${name}-field"]`)
+        const box = label && label.closest('[class*="ControlContainer"]')
+        if (box) box.style.display = !found || found[0] === name ? '' : 'none'
+      }
+    })
+  }, 400)
 })()

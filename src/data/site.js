@@ -11,6 +11,8 @@
    exported as `let`: it can be put together a second time.
    --------------------------------------------------------------------- */
 
+import { bestPrice, liveSales } from '../../api/_sales.js'
+
 const files = import.meta.glob('../../content/**/*.json', { eager: true })
 // keyed the way the repository names them: "content/work/venom.json"
 const built = Object.fromEntries(Object.entries(files).map(([path, m]) => [path.replace('../../', ''), m.default ?? m]))
@@ -23,6 +25,8 @@ export let brand, hero, marquee, home, commissions, about, contact, social, foot
 export let accountPage
 /* Selling: whether online purchases are on, the currency, what a buyer gets. */
 export let shop
+/* The shop-wide sales running now (Shop → Sales in the admin; api/_sales.js prices with them). */
+export let sales
 /* The Support page: the artist's own project, and the ways to back it. */
 export let support
 /* Headings and introductions of the Work and Gallery pages. */
@@ -168,6 +172,7 @@ function assemble(content) {
     thanksTitle: 'Thank you.', thanksText: 'Your order is in. A receipt is on its way to your email.',
     ...given(site('shop')),
   }
+  sales = liveSales(site('sales').sales)
   social = links || []
   brand.instagram = social.find((s) => /instagram/i.test(s.label || ''))?.url
   footer = { fine: 'Characters shown in fan art belong to their owners.', ...given({ line: footerLine, fine: footerFine }) }
@@ -257,17 +262,18 @@ export function showLatest({ content = {}, media = {} }) {
 export const asset = (url) => newPictures[url] || (url && url.startsWith('/') ? import.meta.env.BASE_URL.replace(/\/$/, '') + url : url)
 
 /* Prices. A piece has one price of its own, or a list of sizes (A3, A2...) each with its own
-   price. Either way a discount price is only used while the piece's status is "On sale" and it
-   is below the usual price, so a sale starts and ends with that one switch.
-   priceOf(piece, size) is what one way of buying it costs: { size, was, now, sale }. A size that
-   is not on the list gets the first size. Leaving the size out (undefined) means the cheapest. */
+   price. Its own discount price is only used while the piece's status is "On sale" and it is
+   below the usual price. A shop-wide sale (Shop → Sales) can also cover it; the lowest price wins,
+   discounts never add up (api/_sales.js, which the checkout prices with too).
+   priceOf(piece, size) is what one way of buying it costs: { size, was, now, sale, by }. A size
+   that is not on the list gets the first size. Leaving the size out (undefined) means the cheapest. */
 export const sizesOf = (piece) => (Array.isArray(piece?.sizes) ? piece.sizes : [])
 export const priceOf = (piece, size) => {
   const sizes = sizesOf(piece)
   if (sizes.length && size === undefined) return sizes.map((s) => priceOf(piece, s.name)).sort((a, b) => a.now - b.now)[0]
   const s = sizes.length ? sizes.find((x) => x.name === size) || sizes[0] : { name: '', price: Number(piece?.price), salePrice: Number(piece?.salePrice) }
-  const sale = piece?.status === 'sale' && s.salePrice > 0 && s.salePrice < s.price
-  return { size: s.name, was: s.price, now: sale ? s.salePrice : s.price, sale }
+  const best = bestPrice(s.price, piece?.status === 'sale' ? s.salePrice : 0, piece, sales)
+  return { size: s.name, was: s.price, now: best.now, sale: best.now < s.price, by: best.by }
 }
 /* "From" goes before a tile's price when the sizes do not all cost the same. */
 export const priceVaries = (piece) => new Set(sizesOf(piece).map((s) => priceOf(piece, s.name).now)).size > 1

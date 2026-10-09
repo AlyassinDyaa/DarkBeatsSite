@@ -3,7 +3,7 @@ import { useCart } from '../hooks/useCart'
 import { useAccount } from '../hooks/useAccount'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { asset, badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, shop, shows, soldOut, types, work } from '../data/site'
+import { asset, badge, buyable, canBuy, categories, home, money, pages, priceOf, priceVaries, redraws, sales, shop, shows, soldOut, types, work } from '../data/site'
 import Page from '../components/Page'
 import Reveal from '../components/Reveal'
 import Poster from '../components/Poster'
@@ -138,6 +138,17 @@ export default function Shop() {
             <i aria-hidden="true">{payProblem ? '!' : '…'}</i>
             <div><strong>{payProblem ? 'The payment did not go through' : 'Confirming your PayPal payment…'}</strong><span>{payProblem || 'One moment: do not close this page.'}</span></div>
           </div>
+        )}
+        {/* the shop-wide sales running now (Shop → Sales in the admin) */}
+        {shop.enabled && sales.length > 0 && (
+          <ul className="shop-sales" aria-label="Sales on now">
+            {sales.map((s, i) => (
+              <li key={i}>
+                <b>−{s.percent}%</b>
+                <span><strong>{s.name || 'Sale'}</strong> {s.covers === 'all' ? 'on everything' : `on ${s.group}`}{s.ends ? `, until ${new Date(`${s.ends}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'long' })}` : ''}</span>
+              </li>
+            ))}
+          </ul>
         )}
         {shop.enabled && !thanks && (
           <ol className="how-buy">
