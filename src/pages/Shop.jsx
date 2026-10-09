@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCart } from '../hooks/useCart'
 import { useAccount } from '../hooks/useAccount'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -14,11 +14,33 @@ import FilterMenu from '../components/FilterMenu'
 /* Every piece. While online purchases are switched on (in the admin), each piece with a price
    shows it, and opening the piece offers the Buy button. Stripe sends a buyer back here with
    "?thanks=1", which shows the thank-you line. */
+/* A card in the Shop. With a second picture (set in the admin), a mouse sees it on hover; a touch
+   screen has no hover, so there a sideways swipe on the card, or a tap on its two dots, flips between
+   the two pictures. A plain tap still opens the piece. */
+function ShopTile({ p, eager, onOpen }) {
+  const [flipped, setFlipped] = useState(false)
+  const touch = useRef(null) // where the finger went down, and whether it became a swipe
+  const flip = () => setFlipped((f) => !f)
+  const down = (e) => { const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY, swiped: false } }
+  const up = (e) => {
+    const s = touch.current, t = e.changedTouches[0]
+    if (!s || !p.hover) return
+    const dx = t.clientX - s.x, dy = t.clientY - s.y
+    if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) * 1.4) { s.swiped = true; flip() }
+  }
+  return (
+    <button type="button" className={`tile ${flipped ? 'is-flipped' : ''}`} onTouchStart={p.hover ? down : undefined} onTouchEnd={p.hover ? up : undefined}
+      onClick={() => { if (touch.current && touch.current.swiped) { touch.current = null; return } onOpen() }}>
+      <TileBody p={p} eager={eager} flipped={flipped} onFlip={p.hover ? flip : undefined} />
+    </button>
+  )
+}
+
 /* A card's picture, price and tags. Where the price and the tags sit is set in the admin (Shop &
    payments): on the picture's top corners, or under it beside the title. A sale tag goes with the
    price when both are on the picture, so the price and its discount read together. A sold-out
    piece shows its Sold out tag and no price. */
-function TileBody({ p, eager }) {
+function TileBody({ p, eager, flipped = false, onFlip }) {
   const tag = badge(p)
   const price = buyable(p) && !soldOut(p)
   const priceUp = price && shop.pricePlace !== 'below'
@@ -32,6 +54,12 @@ function TileBody({ p, eager }) {
       <span className="tile-art">
         <Poster title={p.title} hue={p.hue} src={p.src} seed={work.indexOf(p)} eager={eager} />
         {p.hover && <span className="tile-alt" aria-hidden="true"><img src={asset(p.hover)} alt="" loading="lazy" draggable="false" /></span>}
+        {/* on a touch screen (no hover): two dots say there is a second picture; tap them, or swipe the card */}
+        {p.hover && onFlip && (
+          <span className="tile-flip" aria-hidden="true" onClick={(e) => { e.stopPropagation(); e.preventDefault(); onFlip() }}>
+            <i className={flipped ? '' : 'on'} /><i className={flipped ? 'on' : ''} />
+          </span>
+        )}
         {tag && tagsUp && !saleWithPrice && tagEl()}
         {priceUp && <span className="tile-tags"><span className="tile-price">{amount}</span>{saleWithPrice && tagEl('is-under')}</span>}
         <span className="tile-cta">{canBuy(p) ? 'View & buy' : 'View'} <span className="arrow">→</span></span>
@@ -130,9 +158,7 @@ export default function Shop() {
             <AnimatePresence mode="popLayout" initial={false}>
               {shown.map((p, i) => (
                 <motion.li key={p.slug} layout initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
-                  <button type="button" className="tile" onClick={() => setSel(i)}>
-                    <TileBody p={p} eager={i < 4} />
-                  </button>
+                  <ShopTile p={p} eager={i < 4} onOpen={() => setSel(i)} />
                 </motion.li>
               ))}
             </AnimatePresence>

@@ -370,7 +370,15 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .tile:hover .tile-alt, .tile:focus-visible .tile-alt { opacity: 1; }
 .tile:hover .tile-alt img, .tile:focus-visible .tile-alt img { transform: scale(1.045); }
 .tile:has(.tile-badge.is-soldout) .tile-alt img { filter: grayscale(0.7) brightness(0.75); }
-@media (hover: none) { .tile-alt { display: none; } }
+/* a touch screen: no hover, so the card flips (swipe it sideways, or tap its two dots) */
+.tile-flip { display: none; }
+@media (hover: none) {
+  .tile:has(.tile-alt) .tile-art { touch-action: pan-y; } /* sideways swipes are the card's, up and down still scrolls */
+  .tile.is-flipped .tile-alt { opacity: 1; }
+  .tile-flip { position: absolute; z-index: 3; left: 8px; bottom: 8px; display: flex; gap: 6px; padding: 9px 10px; border-radius: 999px; background: rgba(6, 4, 9, 0.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .tile-flip i { width: 7px; height: 7px; border-radius: 50%; background: rgba(244, 239, 248, 0.45); transition: background 0.25s, transform 0.25s; }
+  .tile-flip i.on { background: var(--accent); transform: scale(1.25); }
+}
 .tile-price { position: absolute; z-index: 2; top: 14px; right: -6px; padding: 7px 16px 6px; font-family: var(--display); font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
 /* the status tag: New, Sale, Sold out */
 /* the status tag: the same slanted poster lettering as the price, in the site's purples */
