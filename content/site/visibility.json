@@ -20,7 +20,7 @@
     "redraws": false
   },
   "artwork": {
-    "watermark": true
+    "watermark": false
   },
   "admin": {
     "samples": false
