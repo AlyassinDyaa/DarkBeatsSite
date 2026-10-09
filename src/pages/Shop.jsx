@@ -10,6 +10,7 @@ import Poster from '../components/Poster'
 import Compare from '../components/Compare'
 import Lightbox from '../components/Lightbox'
 import FilterMenu from '../components/FilterMenu'
+import Pager, { usePaging } from '../components/Pager'
 
 /* Every piece. While online purchases are switched on (in the admin), each piece with a price
    shows it, and opening the piece offers the Buy button. Stripe sends a buyer back here with
@@ -110,6 +111,10 @@ export default function Shop() {
     const list = work.filter((p) => (filter === 'All' || p.category === filter) && (kind === 'All' || p.type === kind))
     return [...list.filter((p) => !soldOut(p)), ...list.filter((p) => soldOut(p))]
   }, [filter, kind])
+  // a page of them at a time (the Pager under the grid); a new filter starts again at page 1
+  const paging = usePaging(shown.length, `${filter}|${kind}`)
+  const onPage = shown.slice(paging.from, paging.to)
+  const gridTop = useRef(null)
   // each count reads with the other drop-down’s choice, so it says what picking it would show
   const count = (field, value, other, otherValue) => work.filter((p) => (value === 'All' || p[field] === value) && (otherValue === 'All' || p[other] === otherValue)).length
   const choose = (c) => { setSel(null); setFilter(c) }
@@ -152,17 +157,18 @@ export default function Shop() {
       </header>
 
       <section className="section tight">
-        <div className="container">
+        <div className="container" ref={gridTop}>
           {shown.length === 0 && <p className="shop-empty">Nothing here yet in that combination. <button type="button" onClick={() => { choose('All'); chooseKind('All') }}>Show everything</button></p>}
           <motion.ul className="grid" layout>
             <AnimatePresence mode="popLayout" initial={false}>
-              {shown.map((p, i) => (
+              {onPage.map((p, i) => (
                 <motion.li key={p.slug} layout initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.92 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
-                  <ShopTile p={p} eager={i < 4} onOpen={() => setSel(i)} />
+                  <ShopTile p={p} eager={i < 4} onOpen={() => setSel(paging.from + i)} />
                 </motion.li>
               ))}
             </AnimatePresence>
           </motion.ul>
+          <Pager paging={paging} anchor={gridTop} />
         </div>
       </section>
 
