@@ -1,0 +1,21 @@
+{
+  "src": "/uploads/illustration41.webp",
+  "universe": "DC",
+  "price": 40,
+  "hidden": false,
+  "featured": true,
+  "date": "2026-10-09",
+  "sizes": [
+    {
+      "name": "A3",
+      "price": 40
+    }
+  ],
+  "status": "soldout",
+  "title": "Why So Serious",
+  "type": "Posters",
+  "link": "https://www.instagram.com/p/DeQl94MAbPe/?img_index=1",
+  "hover": "/uploads/2.webp",
+  "face": "19,17,125",
+  "category": "Villains"
+}
