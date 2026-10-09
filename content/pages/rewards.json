@@ -11,7 +11,9 @@
     {
       "name": "Ink card",
       "earnedBy": "verify",
-      "cardLook": "ink"
+      "cardLook": "ink",
+      "cardArt": "/uploads/btassss.webp",
+      "cardCrop": "0,56,121"
     },
     {
       "name": "Gold card",
