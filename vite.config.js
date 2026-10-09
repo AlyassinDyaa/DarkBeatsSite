@@ -206,7 +206,7 @@ const ART_FOLDERS = ['work', 'gallery-sections', 'redraws'] // whose pictures ge
 const readBrand = () => { try { return JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')) } catch { return {} } }
 // the watermark can be switched off in the admin (Site → Show / hide → Artwork); it is on unless switched off
 const watermarkOn = () => { try { return (JSON.parse(readFileSync(resolve('content/site/visibility.json'), 'utf8')).artwork || {}).watermark !== false } catch { return true } }
-// every /uploads picture named in the Shop, Work and before-and-after content (none while the watermark is off)
+// every /uploads picture named in the Shop, Work, before-and-after and home-wall content (none while the watermark is off)
 const artPictures = () => {
   const art = new Set()
   if (!watermarkOn()) return art
@@ -218,6 +218,11 @@ const artPictures = () => {
       for (const m of readFileSync(resolve(at, f), 'utf8').matchAll(/"(\/uploads\/[^"]+)"/g)) art.add(m[1])
     }
   }
+  // the home page's poster wall: pictures put on it directly (not from a piece) are artwork too
+  try {
+    const home = JSON.parse(readFileSync(resolve('content/pages/home.json'), 'utf8'))
+    for (const w of Array.isArray(home.wall) ? home.wall : []) if (w && typeof w.picture === 'string' && w.picture.startsWith('/uploads/')) art.add(w.picture)
+  } catch { /* no home page content */ }
   return art
 }
 /* One picture as visitors get it: at most ART_MAX pixels on its long side, and for the artwork the
