@@ -39,49 +39,7 @@
   "wallShow": "list",
   "wallCategory": "Villains",
   "wallAddNew": true,
-  "wall": [
-    {
-      "piece": "ghost-rider",
-      "column": "any"
-    },
-    {
-      "piece": "",
-      "column": "middle",
-      "picture": "/uploads/venom.webp"
-    },
-    {
-      "piece": "neon-rain",
-      "column": "any"
-    },
-    {
-      "piece": "night-of-the-living-dummy",
-      "column": "any"
-    },
-    {
-      "piece": "superman",
-      "column": "any"
-    },
-    {
-      "piece": "the-batman-who-laughs",
-      "column": "any"
-    },
-    {
-      "piece": "leon-s-kennedy",
-      "column": "any"
-    },
-    {
-      "piece": "daredevil",
-      "column": "any"
-    },
-    {
-      "piece": "daredevil-the-mark",
-      "column": "any"
-    },
-    {
-      "piece": "spider-man",
-      "column": "any"
-    }
-  ],
+  "wall": [],
   "text": "Heroes, villains and horror icons, painted loud on a black page.",
   "latestLabel": "Fresh ink",
   "commissionsTitle": "Get something drawn",
