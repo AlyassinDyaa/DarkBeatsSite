@@ -1396,4 +1396,34 @@
     }, 500)
   }, 200)
   setTimeout(() => clearInterval(place), 30000)
+  // ---------- "Search everything" (shell.js): orders, customers and discount codes that match
+  ;(window.iaFinders = window.iaFinders || []).push(async (q) => {
+    const s = q.toLowerCase()
+    if (!state.loaded && !state.loading) load()
+    if (!memb.loaded && !memb.loading) loadMembers()
+    if (!disc.loaded && !disc.loading) loadDiscounts()
+    for (let i = 0; i < 100 && (state.loading || memb.loading || disc.loading || (!state.loaded && !state.problem)); i++) await new Promise((ok) => setTimeout(ok, 150))
+    const has = (...xs) => xs.flat().filter(Boolean).join(' ').toLowerCase().includes(s)
+    const TOP = 6
+    const folks = everyone().filter((p) => has(p.name, p.email, p.phone, p.member ? memberNo(p.member.memberNo) : '', addressLines(p.address)))
+    const orders = state.orders.filter((o) => has(o.orderNo, o.id, o.name, o.email, o.phone, o.track.number, o.items.map((i) => i.name)))
+    const codes = disc.list.filter((d) => has(d.code, d.email, d.name))
+    return [
+      {
+        name: 'Customers', total: folks.length,
+        rows: folks.slice(0, TOP).map((p) => ({ kind: 'Customer', title: p.name || p.email || 'No name given', sub: [p.email, p.member ? `Member ${memberNo(p.member.memberNo)}` : '', many(p.bought, 'order')].filter(Boolean).join(' · '), go: () => personModal(p.key) })),
+        all: () => { people.view = 'all'; people.q = q; csearch.value = q; location.hash = CROUTE; paint() },
+      },
+      {
+        name: 'Orders', total: orders.length,
+        rows: orders.slice(0, TOP).map((o) => ({ kind: 'Order', title: [o.orderNo, o.name || o.email].filter(Boolean).join(' · ') || o.id, sub: [when(o.created), o.items.map((i) => i.name).join(', '), money(o.amount, o.currency), label(o)[1]].filter(Boolean).join(' · '), go: () => showOrder(o) })),
+        all: () => { state.view = 'all'; state.period = 'all'; period.value = 'all'; state.q = q; search.value = q; location.hash = ROUTE; paint() },
+      },
+      {
+        name: 'Discounts', total: codes.length,
+        rows: codes.slice(0, TOP).map((d) => ({ kind: 'Discount', title: d.code, sub: [`${d.percent}%`, statusOf(d)[1], d.email || 'anyone with the code'].join(' · '), go: () => { disc.view = 'all'; disc.q = d.code; dsearch.value = d.code; location.hash = DROUTE; paintDiscounts() } })),
+        all: () => { disc.view = 'all'; disc.q = q; dsearch.value = q; location.hash = DROUTE; paintDiscounts() },
+      },
+    ]
+  })
 })()

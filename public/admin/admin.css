@@ -1454,3 +1454,19 @@ html[data-ia-orders="commissions"][data-ic-open] .ic-panel { display: flex; }
 .io-mcode-x:hover, .io-mcode-x:focus-visible { opacity: 1; color: #ff6b6b; }
 .io-mcode-all { margin-top: 6px; padding: 0; border: 0; background: none; font: inherit; font-size: 0.82rem; color: #ff8a8a; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .io-mcode-all:hover { color: #ff6b6b; }
+
+/* "Search everything": orders, customers, discounts and commissions, above the content Decap finds */
+.ia-find { display: grid; gap: 8px; margin: 0 0 18px; }
+.ia-find-head { margin: 6px 0 2px; font-family: var(--body); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute); }
+.ia-find-row { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; padding: 12px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.ia-find-row::after { content: '\2192'; margin-left: auto; color: var(--mute); font-size: 1.05rem; transition: transform 0.2s, color 0.2s; }
+.ia-find-row:hover, .ia-find-row:focus-visible { border-color: var(--line-strong); background: var(--panel-2); outline: 0; }
+.ia-find-row:hover::after, .ia-find-row:focus-visible::after { color: var(--accent); transform: translateX(4px); }
+.ia-find-kind { flex: 0 0 132px; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+.ia-find-what { display: grid; gap: 2px; min-width: 0; }
+.ia-find-what strong { font-size: 1.02rem; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ia-find-what small { font-size: 0.82rem; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ia-find-more { justify-self: start; padding: 2px 4px; border: 0; background: none; font: inherit; font-size: 0.85rem; color: var(--accent); cursor: pointer; }
+.ia-find-more:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ia-find-none { margin: 0; padding: 4px 2px; font-size: 0.9rem; color: var(--mute); }
+@media (max-width: 640px) { .ia-find-row { flex-wrap: wrap; gap: 4px 12px; padding: 12px 14px; } .ia-find-kind { flex-basis: 100%; } .ia-find-row::after { display: none; } }

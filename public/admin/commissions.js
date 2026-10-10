@@ -936,4 +936,16 @@
     }, 500)
   }, 250)
   setTimeout(() => clearInterval(place), 30000)
+  // ---------- "Search everything" (shell.js): commissions that match, by number, name, email or piece
+  ;(window.iaFinders = window.iaFinders || []).push(async (q) => {
+    const s = q.toLowerCase()
+    if (!cState.loaded) await loadCommissions(true)
+    for (let i = 0; i < 100 && cState.loading; i++) await new Promise((ok) => setTimeout(ok, 150))
+    const found = cState.list.filter((c) => [c.number, c.name, c.email, c.title, c.kind].join(' ').toLowerCase().includes(s))
+    return [{
+      name: 'Commissions', total: found.length,
+      rows: found.slice(0, 6).map((c) => ({ kind: 'Commission', title: [c.number, c.name || c.email].filter(Boolean).join(' · '), sub: [c.title, cName[c.status] || c.status, c.price != null ? money(c.price, c.currency) : '', date(c.createdAt)].filter(Boolean).join(' · '), go: () => { location.hash = `${CROUTE}?c=${encodeURIComponent(c.id)}` } })),
+      all: () => { cState.q = q; csearch.value = q; location.hash = CROUTE },
+    }]
+  })
 })()

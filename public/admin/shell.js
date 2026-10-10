@@ -1049,4 +1049,61 @@
     const now = `${Math.max(0, sb)}px`
     if (document.documentElement.style.getPropertyValue('--ia-sb') !== now) document.documentElement.style.setProperty('--ia-sb', now)
   }, 500)
+  /* "Search everything" covers more than the site's content: the admin's own screens (Orders,
+     Customers, Discounts, Commissions) each add a finder to window.iaFinders, and their matches show
+     on the results page above the content Decap finds, a click opening the order, customer, code or
+     commission. The admin's sections themselves are found by name too ("emails", "rewards"). */
+  const find = { q: null, box: null, run: 0 }
+  const findRow = (r) => {
+    const b = el('button', { type: 'button', className: 'ia-find-row' }, [
+      el('span', { className: 'ia-find-kind', textContent: r.kind }),
+      el('span', { className: 'ia-find-what' }, [el('strong', { textContent: r.title }), r.sub ? el('small', { textContent: r.sub }) : null]),
+    ])
+    b.addEventListener('click', () => r.go())
+    return b
+  }
+  const paintFind = (groups, busy) => {
+    if (!find.box) return
+    const rows = groups.flatMap((g) => [
+      ...g.rows.map(findRow),
+      g.total > g.rows.length && g.all ? (() => { const m = el('button', { type: 'button', className: 'ia-find-more', textContent: `See all ${g.total} in ${g.name} →` }); m.addEventListener('click', g.all); return m })() : null,
+    ]).filter(Boolean)
+    find.box.replaceChildren(
+      el('h2', { className: 'ia-find-head', textContent: 'In your admin: orders, customers, codes, commissions, sections' }),
+      ...(rows.length ? rows : [el('p', { className: 'ia-find-none', textContent: busy ? 'Looking…' : 'Nothing there matches.' })]),
+      ...(rows.length && busy ? [el('p', { className: 'ia-find-none', textContent: 'Still looking…' })] : []),
+    )
+  }
+  const runFind = async (q) => {
+    const run = ++find.run
+    const s = q.toLowerCase()
+    // the admin's sections, by the name in the left navigation (looked at again at the end: the
+    // Orders and Commissions links can join the navigation after the search starts)
+    const sections = () => {
+      const navs = [...document.querySelectorAll('.ia-side nav a')].map((a) => ({ a, name: ((a.querySelector('span') || a).textContent || '').trim() })).filter((n) => n.name && n.name.toLowerCase().includes(s))
+      return { name: 'sections', total: navs.length, rows: navs.slice(0, 6).map(({ a, name }) => ({ kind: 'Section', title: name, sub: (a.getAttribute('href') || '').startsWith('#/collections/pages/') ? 'Page text: the words on that page' : (a.getAttribute('href') || '').startsWith('#/collections/site/') ? 'Site setting' : 'Open this part of the admin', go: () => { location.hash = a.getAttribute('href') } })) }
+    }
+    const groups = [sections()]
+    paintFind(groups, true)
+    const finders = window.iaFinders || []
+    await Promise.all(finders.map(async (f) => {
+      let got = []
+      try { got = (await f(q)) || [] } catch { got = [] }
+      if (run !== find.run) return
+      groups.push(...got)
+      paintFind(groups, true)
+    }))
+    if (run === find.run) { groups[0] = sections(); paintFind(groups, false) }
+  }
+  setInterval(() => {
+    const m = location.hash.match(/^#\/search\/([^?]+)/)
+    if (!m) { find.q = null; return }
+    const head = document.querySelector('[class*="SearchResultContainer"]')
+    if (!head || !head.parentElement) return
+    let q = ''
+    try { q = decodeURIComponent(m[1]).trim() } catch { q = m[1] }
+    if (!find.box) find.box = el('section', { className: 'ia-find', ariaLabel: 'Orders, customers, discounts and commissions' })
+    if (head.nextElementSibling !== find.box) head.after(find.box)
+    if (q && q !== find.q) { find.q = q; runFind(q) }
+  }, 250)
 })()
