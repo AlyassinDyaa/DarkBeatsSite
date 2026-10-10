@@ -143,7 +143,8 @@ const adminBundle = () => ({
     const ADMIN = ['orders', 'discounts', 'members']
     if (!process.env.ADMIN_PASSCODE) process.env.ADMIN_PASSCODE = randomBytes(24).toString('hex')
     if (!process.env.GITHUB_TOKEN) process.env.GITHUB_TOKEN = randomBytes(24).toString('hex')
-    for (const name of ['checkout', 'account', 'stripe-webhook', 'contact', ...ADMIN]) {
+    // commissions: the customer's side and the admin's; its admin actions answer this computer (api/_session.js adminOk)
+    for (const name of ['checkout', 'account', 'stripe-webhook', 'contact', 'commissions', ...ADMIN]) {
       server.middlewares.use(`/api/${name}`, async (req, res) => {
         res.status = (code) => { res.statusCode = code; return res }
         res.json = (body) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res }

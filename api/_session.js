@@ -27,3 +27,11 @@ export const goodPass = (pass) => {
 export const repo = () => (process.env.VERCEL_GIT_REPO_OWNER && process.env.VERCEL_GIT_REPO_SLUG
   ? `${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}`
   : 'AlyassinDyaa/DarkBeatsSite')
+
+/* An admin request: the admin's pass (as above), or, only on this computer while developing (the
+   admin here has no login: vite.config.js), a request from this computer itself. Never on Vercel. */
+export const adminOk = (req) => {
+  const pass = String((req.headers && req.headers.authorization) || '').replace(/^(token|bearer)\s+/i, '')
+  if (configured() && goodPass(pass)) return true
+  return !process.env.VERCEL && /^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(String((req.socket && req.socket.remoteAddress) || ''))
+}

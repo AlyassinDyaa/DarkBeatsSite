@@ -3,6 +3,8 @@ import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { db, dbReady } from './_db.js'
 import { codeUsesHere, forCustomer, numberMember, orderCopy, stripeCodes } from './_orders.js'
+import { countedMatch } from './_commissions.js'
+import { unsubscribe } from './_mailings.js'
 import {
   EMAIL, checkPassword, clean, cleanCart, cleanSlugs, clientIp, currentUser, endSession, forgetCookie, forgetTries, fromThisSite, hashPassword,
   makeToken, mergeCarts, newId, noteTry, passwordProblem, publicUser, sendMail, siteUrl, startSession, tidyEmail, tooMany, spendToken,
@@ -73,7 +75,7 @@ const rewardsList = () => {
   const kindOf = (r) => (['card', 'discount'].includes(r.kind) ? r.kind : 'picture')
   return list.filter((r) => r && !r.hidden && (kindOf(r) === 'card' ? r.cardLook || r.cardArt : kindOf(r) === 'discount' ? Number(r.percent) > 0 : r.picture))
     .map((r) => {
-      const by = ['verify', 'orders', 'pieces'].includes(r.earnedBy) ? r.earnedBy : 'verify'
+      const by = ['verify', 'orders', 'pieces', 'commissions'].includes(r.earnedBy) ? r.earnedBy : 'verify'
       return {
         id: slug(r.name) || slug(r.picture), name: String(r.name || ''), kind: kindOf(r), earnedBy: by,
         count: by === 'verify' ? 0 : Math.max(1, Math.round(Number(r.count) || 1)),
@@ -89,12 +91,15 @@ const countedOrders = async (d, user) => {
   const match = user.verified ? { $or: [{ userId: user._id }, { email: user.email }] } : { userId: user._id }
   return (await d.collection('orders').find({ ...match, status: 'paid', hidden: { $ne: true }, customerRemoved: { $ne: true } }).sort({ createdAt: -1 }).limit(500).toArray()).filter((o) => (o.kind || 'shop') !== 'support')
 }
+// how far a customer has come: email confirmed, orders, prints, and (counted apart) commissions
 const progressOf = async (d, user) => {
   const orders = await countedOrders(d, user)
-  return { verified: Boolean(user.verified), orders: orders.length, pieces: orders.reduce((n, o) => n + (o.items || []).reduce((m, i) => m + (Number(i.qty) || 1), 0), 0), gifts: Array.isArray(user.gifts) ? user.gifts : [] }
+  let commissions = 0
+  try { commissions = await d.collection('commissions').countDocuments(countedMatch(user._id)) } catch (e) { console.error('commissions not counted:', e.message) }
+  return { verified: Boolean(user.verified), orders: orders.length, pieces: orders.reduce((n, o) => n + (o.items || []).reduce((m, i) => m + (Number(i.qty) || 1), 0), 0), commissions, gifts: Array.isArray(user.gifts) ? user.gifts : [] }
 }
 // earned by its own rule, or gifted by the admin (api/members.js)
-const earns = (r, p) => (p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count)
+const earns = (r, p) => (p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : r.earnedBy === 'commissions' ? (p.commissions || 0) >= r.count : p.pieces >= r.count)
 // Stripe, at the version the admin's Discounts screen uses (api/discounts.js)
 const stripe = async (path, fields) => {
   const answer = await fetch(`https://api.stripe.com/v1/${path}`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`, 'Stripe-Version': '2024-06-20', 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.entries(fields).filter(([, v]) => v !== undefined && v !== null && v !== '')).toString() })
@@ -294,6 +299,16 @@ export default async function handler(req, res) {
       return say(res, 200, { verified: true, rewards, user: publicUser(user) })
     }
 
+    if (action === 'unsubscribe') {
+      // from the link in a mass email, no login needed: the link carries the account's own token
+      if (await tooMany(`unsub-ip:${ip}`, 30, 15)) return say(res, 429, { message: 'Too many tries. Wait a few minutes.' })
+      const [status, answer] = await unsubscribe(d, body)
+      if (status !== 200) { await noteTry(`unsub-ip:${ip}`); return say(res, status, answer) }
+      // the same person logged in on this browser: their page shows the change at once
+      const me = await currentUser(req)
+      return say(res, 200, me && me._id === clean(body.u, 80) ? { ...answer, user: publicUser({ ...me, marketing: false }) } : answer)
+    }
+
     // ---------- with a login
     const user = await currentUser(req)
     if (!user) { forgetCookie(req, res); return say(res, 401, { message: 'Log in first.', user: null }) }
@@ -346,7 +361,7 @@ export default async function handler(req, res) {
         if (state === 'ready' && g.until && g.until < Date.now()) state = 'ended'
         giftCodes.push({ id: g.id, code: g.code, percent: g.percent, until: g.until || null, at: g.at || '', usedAt: g.usedAt || '', state })
       }
-      return say(res, 200, { progress: { verified: p.verified, orders: p.orders, pieces: p.pieces }, rewards: list, giftCodes, archived: Array.isArray(user.archivedGifts) ? user.archivedGifts : [], deleted: Array.isArray(user.deletedGifts) ? user.deletedGifts : [] })
+      return say(res, 200, { progress: { verified: p.verified, orders: p.orders, pieces: p.pieces, commissions: p.commissions }, rewards: list, giftCodes, archived: Array.isArray(user.archivedGifts) ? user.archivedGifts : [], deleted: Array.isArray(user.deletedGifts) ? user.deletedGifts : [] })
     }
 
     if (action === 'giftShelf') {
@@ -361,6 +376,13 @@ export default async function handler(req, res) {
       else if (body.to !== 'restore') return say(res, 400, { message: 'Nothing to do.' })
       await users.updateOne({ _id: user._id }, { $set: { archivedGifts: archived.slice(-200), deletedGifts: deleted.slice(-200) } })
       return say(res, 200, { archived, deleted })
+    }
+
+    if (action === 'news') {
+      // the question on their Overview: yes or no to news emails (the same as the box under Details)
+      const on = body.on === true
+      await users.updateOne({ _id: user._id }, { $set: { marketing: on, newsAsked: true, ...(on ? { unsubscribedAt: null } : {}) } })
+      return say(res, 200, { user: publicUser({ ...user, marketing: on, newsAsked: true }) })
     }
 
     if (action === 'seenGifts') {
@@ -388,6 +410,8 @@ export default async function handler(req, res) {
 
     if (action === 'profile') {
       const set = { name: clean(body.name, 80), phone: clean(body.phone, 30), marketing: Boolean(body.marketing) }
+      // news switched on or off by hand under Details: that is their answer, so the Overview does not ask
+      if (set.marketing !== Boolean(user.marketing)) set.newsAsked = true
       if (body.card !== undefined) {
         const card = clean(body.card, 80)
         if (!(await cardAllowed(d, user, card))) return say(res, 400, { message: 'That card design is not one you have earned yet.', field: 'card' })

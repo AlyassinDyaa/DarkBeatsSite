@@ -45,7 +45,7 @@
   ]
   const PERIODS = [['all', 'Any time'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['year', 'This year']]
   const SORTS = [['new', 'Newest first'], ['old', 'Oldest first'], ['high', 'Highest amount'], ['low', 'Lowest amount'], ['name', 'Name A–Z']]
-  const CVIEWS = [['all', 'Everyone'], ['members', 'Members'], ['buyers', 'Buyers'], ['repeat', 'Bought more than once'], ['supporters', 'Supporters'], ['waiting', 'Waiting for a parcel']]
+  const CVIEWS = [['all', 'Everyone'], ['members', 'Members'], ['news', 'Gets news'], ['buyers', 'Buyers'], ['repeat', 'Bought more than once'], ['supporters', 'Supporters'], ['waiting', 'Waiting for a parcel']]
   const CSORTS = [['recent', 'Most recent'], ['spent', 'Spent the most'], ['orders', 'Most orders'], ['name', 'Name A–Z'], ['first', 'Customer the longest']]
   const DAY = 864e5
   const TAG = 'M3 12V4h8l10 10-8 8z M7.500 8.500h.01'
@@ -545,6 +545,7 @@
   }
   const personIn = (p, view) => view === 'all'
     || (view === 'members' && Boolean(p.member))
+    || (view === 'news' && Boolean(p.member && p.member.news))
     || (view === 'buyers' && p.bought > 0)
     || (view === 'repeat' && p.bought > 1)
     || (view === 'supporters' && p.supported > 0)
@@ -635,7 +636,7 @@
 
   const personRow = (p) => {
     const open = people.open.has(p.key)
-    const tags = [p.member ? ['member', `Member ${memberNo(p.member.memberNo)}`] : null, p.bought > 1 ? ['repeat', 'Came back'] : null, p.supported ? ['support', 'Supporter'] : null, p.orders.some((o) => inView(o, 'topost')) ? ['new', 'Waiting'] : null].filter(Boolean)
+    const tags = [p.member ? ['member', `Member ${memberNo(p.member.memberNo)}`] : null, p.member && p.member.news ? ['news', 'News'] : null, p.bought > 1 ? ['repeat', 'Came back'] : null, p.supported ? ['support', 'Supporter'] : null, p.orders.some((o) => inView(o, 'topost')) ? ['new', 'Waiting'] : null].filter(Boolean)
     const head = el('button', { type: 'button', className: 'io-head io-person', ariaExpanded: String(open) }, [
       avatarOf(p),
       el('span', { className: 'io-who' }, [el('strong', { textContent: p.name || p.email || 'No name given' }), el('small', { textContent: [p.bought ? many(p.bought, 'order') : '', p.supported ? `supported ${p.supported === 1 ? 'once' : `${p.supported} times`}` : '', `last ${when(p.last)}`].filter(Boolean).join(' · ') })]),
@@ -681,7 +682,7 @@
 
   // ---------- Discounts: a percentage off, for a while, for chosen customers or anyone with a code
   const disc = { list: [], loaded: false, loading: false, problem: null, view: 'active', q: '', sort: 'new', busy: false, result: null, note: null }
-  const draft = { percent: 10, other: '', length: '30', date: '', mode: 'people', picked: new Set(), emails: '', code: '', uses: '1', usesTouched: false, label: '', find: '' }
+  const draft = { percent: 10, other: '', length: '30', date: '', mode: 'people', picked: new Set(), emails: '', code: '', uses: '1', usesTouched: false, label: '', find: '', who: 'all', pickTop: 0 }
   const now = () => Math.floor(Date.now() / 1000)
   const statusOf = (d) => (!d.active ? ['off', 'Switched off'] : d.until && d.until < now() ? ['ended', 'Ended'] : d.uses && d.used >= d.uses ? ['usedup', 'Used up'] : ['active', 'Active'])
   const dayText = (secs) => new Date(secs * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -778,25 +779,56 @@
     }))
     let whom
     if (draft.mode === 'people') {
+      /* Choosing customers, however many there are: a search, quick filters (members, buyers, those who
+         get news), one slim line each in a list that scrolls in its own box (and stays where it was
+         when one is ticked), and the ones chosen as chips above it, each with a cross. */
       const all = everyone().filter((p) => p.email)
+      const WHO = [['all', 'All', () => true], ['members', 'Members', (p) => Boolean(p.member)], ['buyers', 'Buyers', (p) => p.bought > 0], ['news', 'Gets news', (p) => Boolean(p.member && p.member.news)]]
+      const whoNow = WHO.find((w) => w[0] === draft.who) || WHO[0]
       const q = draft.find.trim().toLowerCase()
-      const list = all.filter((p) => !q || [p.name, p.email].join(' ').toLowerCase().includes(q))
-      const find = el('input', { type: 'search', className: 'io-search', value: draft.find, placeholder: 'Find a customer…', ariaLabel: 'Find a customer' })
-      find.addEventListener('input', () => { draft.find = find.value; const at = find.selectionStart; paintDiscounts(); const again = dform.querySelector('.io-pick-find'); if (again) { again.focus(); again.setSelectionRange(at, at) } })
+      const list = all.filter((p) => whoNow[2](p) && (!q || [p.name, p.email].join(' ').toLowerCase().includes(q)))
+      const find = el('input', { type: 'search', className: 'io-search', value: draft.find, placeholder: 'Find by name or email…', ariaLabel: 'Find a customer' })
+      find.addEventListener('input', () => { draft.find = find.value; draft.pickTop = 0; const at = find.selectionStart; paintDiscounts(); const again = dform.querySelector('.io-pick-find'); if (again) { again.focus(); again.setSelectionRange(at, at) } })
       find.classList.add('io-pick-find')
-      const allBtn = el('button', { type: 'button', className: 'io-link', textContent: 'Choose all shown' })
+      const whoChips = el('div', { className: 'io-pick-who', role: 'group', ariaLabel: 'Show' }, WHO.map(([k, t, test]) => {
+        const n = all.filter(test).length
+        const c = el('button', { type: 'button', className: `io-chip ${whoNow[0] === k ? 'on' : ''}`, ariaPressed: String(whoNow[0] === k) }, [t, el('small', { textContent: String(n) })])
+        c.addEventListener('click', () => { draft.who = k; draft.pickTop = 0; paintDiscounts() })
+        return c
+      }))
+      const allBtn = el('button', { type: 'button', className: 'io-link', textContent: list.length === all.length ? 'Choose everyone' : `Choose these ${list.length}` })
       allBtn.addEventListener('click', () => { list.forEach((p) => draft.picked.add(p.key)); paintDiscounts() })
       const noneBtn = el('button', { type: 'button', className: 'io-link', textContent: 'Clear' })
       noneBtn.addEventListener('click', () => { draft.picked.clear(); paintDiscounts() })
+      // what a customer is, in a word or two: a member (and their number), their orders, a supporter, news
+      const about = (p) => [p.member ? `Member ${memberNo(p.member.memberNo)}` : '', p.bought ? many(p.bought, 'order') : p.supported ? 'Supporter' : '', p.member && p.member.news ? 'News' : ''].filter(Boolean)
       const box = el('div', { className: 'io-pick' }, list.length ? list.map((p) => {
         const input = el('input', { type: 'checkbox', checked: draft.picked.has(p.key) })
         input.addEventListener('change', () => { if (input.checked) draft.picked.add(p.key); else draft.picked.delete(p.key); paintDiscounts() })
-        return el('label', { className: `io-pick-row ${draft.picked.has(p.key) ? 'on' : ''}` }, [input, el('span', { className: 'io-who' }, [el('strong', { textContent: p.name || p.email }), el('small', { textContent: [p.email, p.bought ? many(p.bought, 'order') : 'supporter', money(p.spent + p.given, p.currency)].join(' · ') })])])
+        return el('label', { className: `io-pick-row ${draft.picked.has(p.key) ? 'on' : ''}` }, [
+          input,
+          el('span', { className: 'io-pick-name' }, [el('strong', { textContent: p.name || p.email.split('@')[0] }), el('small', { textContent: p.email })]),
+          el('span', { className: 'io-pick-tags' }, about(p).map((t) => el('span', { className: `io-pill ${t === 'News' ? 'is-news' : /^Member/.test(t) ? 'is-member' : ''}`, textContent: t }))),
+        ])
       }) : [el('p', { className: 'io-pick-empty', textContent: state.loaded ? (all.length ? 'Nobody matches.' : 'No customers with an email yet. Type addresses below.') : 'Loading customers…' })])
+      // the list stays where it was scrolled to while it is drawn again
+      box.addEventListener('scroll', () => { draft.pickTop = box.scrollTop })
+      requestAnimationFrame(() => { box.scrollTop = draft.pickTop || 0 })
+      const shown = el('p', { className: 'io-pick-shown', textContent: list.length === all.length ? many(all.length, 'customer') : `${list.length} of ${many(all.length, 'customer')} shown` })
+      // the ones chosen, as chips (the first 12, then how many more)
+      const picked = [...draft.picked].map((k) => all.find((p) => p.key === k)).filter(Boolean)
+      const chips = picked.length ? el('div', { className: 'io-picked' }, [
+        ...picked.slice(0, 12).map((p) => {
+          const x = el('button', { type: 'button', className: 'io-picked-x', ariaLabel: `Remove ${p.name || p.email}` }, ['×'])
+          x.addEventListener('click', () => { draft.picked.delete(p.key); paintDiscounts() })
+          return el('span', { className: 'io-picked-chip' }, [el('span', { textContent: p.name || p.email }), x])
+        }),
+        picked.length > 12 ? el('span', { className: 'io-picked-more', textContent: `+ ${picked.length - 12} more` }) : null,
+      ]) : null
       const emails = el('textarea', { className: 'io-input', rows: 2, value: draft.emails, placeholder: 'Or type email addresses, one per line' })
       emails.addEventListener('input', () => { draft.emails = emails.value; sentence.replaceChildren(...sayIt()); count.textContent = `${chosen().length} chosen` })
       const count = el('span', { className: 'io-chosen', textContent: `${chosen().length} chosen` })
-      whom = [el('div', { className: 'io-pick-top' }, [find, count, allBtn, noneBtn]), box, emails]
+      whom = [el('div', { className: 'io-pick-top' }, [find, whoChips]), el('div', { className: 'io-pick-bar' }, [count, allBtn, noneBtn, shown]), chips, box, emails]
     } else {
       const code = el('input', { type: 'text', className: 'io-input io-code', value: draft.code, placeholder: 'For example SPOOKY20', maxLength: 30, ariaLabel: 'The code' })
       code.addEventListener('input', () => { code.value = code.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''); draft.code = code.value; sentence.replaceChildren(...sayIt()) })
@@ -926,7 +958,7 @@
   const modal = ({ title, content, actions = () => [], wide = false }) => {
     const back = el('div', { className: 'io-modal-back' })
     const before = document.activeElement
-    const key = (e) => { if (e.key === 'Escape') close() }
+    const key = (e) => { if (e.key === 'Escape' && [...document.querySelectorAll('.io-modal-back')].pop() === back) { e.stopImmediatePropagation(); close() } }
     const close = () => { back.remove(); removeEventListener('keydown', key, true); before?.focus?.() }
     const x = el('button', { type: 'button', className: 'io-icon io-modal-x', ariaLabel: 'Close' }, [svg(CROSS)])
     x.addEventListener('click', close)
@@ -976,12 +1008,13 @@
   // ---------- deleting. Stripe keeps every payment, so an order is marked and drops out of the
   // admin; a discount code is switched off and drops out. Nothing is refunded.
   const inChunks = (list, n = 100) => Array.from({ length: Math.ceil(list.length / n) }, (_, i) => list.slice(i * n, i * n + n))
-  const dropOrders = async (orders) => {
+  // scope: 'admin' (only out of the admin's lists) or 'everywhere' (out of the buyer's account too, after a copy with `copy`)
+  const dropOrders = async (orders, scope = 'everywhere', copy = false) => {
     // a Stripe order goes by its payment; a PayPal one, or a free one (no payment), by its own id
     const keys = orders.map((o) => o.pi || o.id).filter(Boolean)
     const gone = new Set()
     for (const chunk of inChunks(keys)) {
-      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', pis: chunk.filter((k) => k.startsWith('pi_')), refs: chunk.filter((k) => k.startsWith('pp_') || k.startsWith('cs_')) }) })
+      const { said } = await ask('/api/orders', { method: 'POST', body: JSON.stringify({ action: 'hide', scope, copy, pis: chunk.filter((k) => k.startsWith('pi_')), refs: chunk.filter((k) => k.startsWith('pp_') || k.startsWith('cs_')) }) })
       ;(said.hidden || []).forEach((p) => gone.add(p))
     }
     state.orders = state.orders.filter((o) => !gone.has(o.pi || o.id))
@@ -998,22 +1031,66 @@
     if (gone.size < codes.length) throw new Error(`${codes.length - gone.size} could not be deleted. Try again in a moment.`)
   }
   const after = () => { paint(); paintDiscounts() }
+
+  /* Deleting asks how far it goes. Only from the admin (the default): the customer keeps it in their
+     account. Everywhere: gone from their account too, and (ticked by default) they are emailed a copy
+     first. `run(scope, copy)` does it and answers '' or what went wrong. */
+  const askScope = ({ title, lines, many = false, run }) => {
+    const said = el('p', { className: 'io-modal-error', hidden: true })
+    let scope = 'admin'
+    const copyBox = el('input', { type: 'checkbox', checked: true })
+    const copyRow = el('label', { className: 'io-scope-copy' }, [copyBox, el('span', { textContent: `Email them a copy of ${many ? 'their orders' : 'the order'} first` })])
+    const choice = (value, head, text) => {
+      const radio = el('input', { type: 'radio', name: 'io-scope', value, checked: value === scope })
+      const row = el('label', { className: `io-scope ${value === scope ? 'on' : ''}` }, [radio, el('strong', { textContent: head }), el('small', { textContent: text })])
+      radio.addEventListener('change', () => { scope = value; box.querySelectorAll('.io-scope').forEach((x) => x.classList.toggle('on', x.contains(radio))); copyRow.hidden = scope !== 'everywhere'; yesText() })
+      return row
+    }
+    const box = el('div', { className: 'io-scopes', role: 'radiogroup', ariaLabel: 'How far it goes' }, [
+      choice('admin', 'Only from my admin', `It leaves your lists. The customer keeps it in their account: their receipt${'order' === 'order' ? ', tracking' : ', the conversation'} and what counts toward their rewards.`),
+      choice('everywhere', 'From my admin and their account', 'Gone everywhere: for test orders, mistakes or spam. This cannot be undone.'),
+    ])
+    copyRow.hidden = true
+    let yes = null
+    const yesText = () => { if (yes) yes.textContent = scope === 'everywhere' ? 'Delete everywhere' : 'Remove from my admin' }
+    modal({
+      title,
+      content: [...lines.filter(Boolean).map((l) => el('p', { textContent: l })), box, copyRow, said],
+      actions: (close) => {
+        const no = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Cancel' })
+        no.addEventListener('click', close)
+        yes = el('button', { type: 'button', className: 'ia-btn io-danger' })
+        yesText()
+        yes.addEventListener('click', async () => {
+          yes.disabled = true; no.disabled = true; said.hidden = true
+          const label = yes.textContent
+          yes.textContent = 'Working…'
+          let problem = ''
+          try { problem = (await run(scope, scope === 'everywhere' && copyBox.checked)) || '' } catch (e) { problem = e.message }
+          if (problem) { said.textContent = problem; said.hidden = false; yes.disabled = false; no.disabled = false; yes.textContent = label } else close()
+        })
+        return [no, yes]
+      },
+    })
+  }
   const LEFT_IN_STRIPE = 'The payment record itself stays in your Stripe account (Stripe never deletes payments) and nothing is refunded.'
-  const deleteOrder = (o) => sure({
+  const deleteOrder = (o) => askScope({
     title: 'Delete this order?',
-    lines: [`${o.name || o.email || 'No name'} · ${money(o.amount, o.currency)} · ${when(o.created)}`, `It is erased from the database: it leaves Orders, Customers and the buyer's account for good. ${LEFT_IN_STRIPE}`],
-    run: async () => { await dropOrders([o]); after() },
+    lines: [`${o.name || o.email || 'No name'} · ${money(o.amount, o.currency)} · ${when(o.created)}`, LEFT_IN_STRIPE],
+    run: async (scope, copy) => { await dropOrders([o], scope, copy); after(); return '' },
   })
   const codesOf = (email) => (email ? disc.list.filter((d) => d.email && d.email.toLowerCase() === email.toLowerCase()) : [])
   const deletePerson = async (p) => {
     if (!disc.loaded && !disc.loading) await loadDiscounts()
     const codes = codesOf(p.email)
-    sure({
+    askScope({
       title: `Delete ${p.name || p.email || 'this customer'}?`,
-      lines: [`Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} are erased from the database and leave the admin for good${codes.length ? '; the codes stop working' : ''}.`, LEFT_IN_STRIPE],
-      run: async () => { await dropOrders(p.orders); if (codes.length) await dropCodes(codes); people.open.delete(p.key); after() },
+      many: true,
+      lines: [`Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} leave your lists${codes.length ? '; the codes stop working' : ''}.`, LEFT_IN_STRIPE],
+      run: async (scope, copy) => { await dropOrders(p.orders, scope, copy); if (codes.length) await dropCodes(codes); people.open.delete(p.key); after(); return '' },
     })
   }
+
   const deleteCode = (d) => sure({
     title: `Delete ${d.code}?`,
     lines: [`${d.percent}% off · ${d.email || 'anyone with the code'}`, 'It stops working at once and leaves this list for good.'],
@@ -1129,6 +1206,31 @@
     if (!p) return
     const addresses = [...new Map(p.orders.filter((o) => o.address).map((o) => { const lines = addressLines(o.address); return [lines.join('|'), lines] })).values()]
     const codes = codesOf(p.email)
+    const codeBox = el('div', { className: 'io-mcodes' })
+    const paintCodes = () => {
+      const now = codesOf(p.email)
+      const rows = now.map((d) => {
+        const x = el('button', { type: 'button', className: 'io-icon io-mcode-x', ariaLabel: `Delete ${d.code}`, title: 'Delete this code' }, [svg(CROSS)])
+        x.addEventListener('click', () => sure({
+          title: `Delete ${d.code}?`,
+          lines: [`${d.percent}% off · ${d.email || 'anyone with the code'}`, 'It stops working at once and leaves the admin for good.'],
+          run: async () => { await dropCodes([d]); paintCodes(); paintDiscounts() },
+        }))
+        return el('p', { className: 'io-lines io-mcode' }, [el('span', {}, [el('code', { className: 'io-code-text', textContent: d.code }), ` · ${d.percent}% · ${statusOf(d)[1]}`]), x])
+      })
+      let all = null
+      if (now.length > 1) {
+        all = el('button', { type: 'button', className: 'io-mcode-all', textContent: `Clear all ${now.length}` })
+        all.addEventListener('click', () => sure({
+          title: `Delete all ${now.length} of their codes?`,
+          lines: [now.map((d) => d.code).join(', '), 'They stop working at once and leave the admin for good.'],
+          ok: 'Delete all',
+          run: async () => { await dropCodes(now); paintCodes(); paintDiscounts() },
+        }))
+      }
+      codeBox.replaceChildren(...(rows.length ? rows : [el('p', { className: 'io-lines io-dim', textContent: disc.loaded ? 'None' : 'Could not load the codes just now.' })]), ...(all ? [all] : []))
+    }
+    paintCodes()
     const block = (h, kids) => el('section', { className: 'io-mblock' }, [el('h4', { textContent: h }), ...kids])
     const text = [
       p.name, p.email, p.phone,
@@ -1159,6 +1261,7 @@
             el('span', { className: 'io-profile-tags' }, [
               p.member ? el('span', { className: 'io-pill is-member', textContent: `Member ${memberNo(p.member.memberNo)}` }) : el('span', { className: 'io-pill', textContent: 'No account' }),
               p.member ? el('span', { className: `io-pill ${p.member.verified ? 'is-delivered' : ''}`, textContent: p.member.verified ? 'Email confirmed' : 'Email not confirmed' }) : null,
+              p.member ? el('span', { className: `io-pill ${p.member.news ? 'is-news' : ''}`, title: p.member.news ? 'They said yes to news emails (Orders → Emails reaches them)' : p.member.unsubscribedAt ? 'They unsubscribed from a news email' : 'They have not said yes to news emails', textContent: p.member.news ? 'Gets news' : p.member.unsubscribedAt ? `Unsubscribed ${new Date(p.member.unsubscribedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No news' }) : null,
             ]),
           ]),
         ]),
@@ -1173,7 +1276,7 @@
             p.orders.length ? el('li', {}, [el('span', { textContent: 'Customer since' }), el('b', { textContent: dayText(p.first) })]) : null,
             p.orders.length ? el('li', {}, [el('span', { textContent: 'Last order' }), el('b', { textContent: dayText(p.last) })]) : null,
           ])]),
-          block('Discount codes', codes.length ? codes.map((d) => el('p', { className: 'io-lines' }, [el('code', { className: 'io-code-text', textContent: d.code }), ` · ${d.percent}% · ${statusOf(d)[1]}`])) : [el('p', { className: 'io-lines io-dim', textContent: disc.loaded ? 'None' : 'Could not load the codes just now.' })]),
+          block('Discount codes', [codeBox]),
         ]),
         p.orders.length ? block(`Their orders (${p.orders.length})`, [el('div', { className: 'io-mini' }, orderRows)]) : null,
       ].filter(Boolean),
@@ -1181,9 +1284,32 @@
         const copyAll = copyBtn(text, 'all details')
         copyAll.className = 'ia-btn ghost'
         const write = p.email ? el('a', { className: 'ia-btn ghost', href: `mailto:${p.email}`, textContent: 'Write to them' }) : null
+        const card = p.member ? el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'See their card' }) : null
+        if (card) card.addEventListener('click', () => cardModal(p))
         const done = el('button', { type: 'button', className: 'ia-btn', textContent: 'Close' })
         done.addEventListener('click', close)
-        return [copyAll, write, done].filter(Boolean)
+        return [copyAll, card, write, done].filter(Boolean)
+      },
+    })
+  }
+  // their collector card as they see it, in the design they have equipped: the site draws it (/card-view)
+  // in a frame, so it is the same 3D card, and it turns over and spins the same way
+  const cardModal = (p) => {
+    const m = p.member
+    const prints = p.orders.filter((o) => o.kind !== 'support' && o.kind !== 'other' && !o.fullyRefunded).reduce((n, o) => n + o.items.reduce((k, i) => k + (i.qty || 1), 0), 0)
+    const q = new URLSearchParams({ name: m.name || p.name || (p.email || '').split('@')[0], no: String(m.memberNo || ''), since: String(new Date(m.createdAt || Date.now()).getFullYear()), card: m.card || '', prints: String(prints), points: '0' })
+    const frame = el('iframe', { className: 'io-cardframe', src: `/card-view?${q}`, title: `${m.name || p.email}'s collector card` })
+    modal({
+      title: 'Their card',
+      wide: true,
+      content: [
+        frame,
+        el('p', { className: 'io-cardnote', textContent: m.card ? 'The card design they have equipped. Drag it round, or tap it, to see the back.' : 'They use the site\u2019s own card (no reward design equipped). Drag it round, or tap it, to see the back.' }),
+      ],
+      actions: (close) => {
+        const done = el('button', { type: 'button', className: 'ia-btn', textContent: 'Close' })
+        done.addEventListener('click', close)
+        return [done]
       },
     })
   }
@@ -1225,6 +1351,8 @@
       checkSamples().then(() => {
         if (!state.loaded && !state.loading) load(true)
         if (at === 'discounts' && !disc.loaded && !disc.loading) loadDiscounts()
+        // the customers to choose from include members with no orders yet, and whether they get news
+        if (at === 'discounts' && !memb.loaded && !memb.loading) loadMembers().then(() => { if (location.hash === DROUTE) paintDiscounts() })
         if (at === 'customers' && !memb.loaded && !memb.loading) loadMembers().then(() => { if (location.hash === CROUTE) paintPeople() })
       })
       ;(at === 'orders' ? screen : at === 'customers' ? cscreen : dscreen).scrollTop = 0

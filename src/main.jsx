@@ -8,6 +8,8 @@ import '@fontsource-variable/jetbrains-mono'
 // VITE_ROUTER=hash builds a single-URL preview (e.g. for hosts without SPA fallback).
 const Router = import.meta.env.VITE_ROUTER === 'hash' ? HashRouter : BrowserRouter
 import App from './App'
+import CardView from './pages/CardView'
+import { applyBrandHue } from './hooks/useHue'
 import { showLatest } from './data/site'
 import './styles/global.css'
 import './styles/components.css'
@@ -20,7 +22,9 @@ const isArt = (t) => t instanceof Element && Boolean(t.closest('img, picture, vi
 addEventListener('contextmenu', (e) => { if (isArt(e.target)) e.preventDefault() })
 addEventListener('dragstart', (e) => { if (isArt(e.target)) e.preventDefault() })
 
-const start = () => createRoot(document.getElementById('root')).render(
+// /card-view: one member's card on its own (the admin's "See their card" window), no menu or footer
+const cardOnly = /\/card-view\/?$/.test(location.pathname)
+const start = () => cardOnly ? (applyBrandHue(), document.documentElement.classList.add('is-card-view'), createRoot(document.getElementById('root')).render(<StrictMode><CardView /></StrictMode>)) : createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Router basename={import.meta.env.VITE_ROUTER === 'hash' ? '/' : import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
       <App />

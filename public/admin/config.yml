@@ -322,7 +322,7 @@ collections:
         label: Commissions page
         file: content/pages/commissions.json
         fields:
-          - { name: open, label: Commissions are open, widget: boolean, default: true, hint: 'Switches the "Commissions open" light in the top bar and on the page.' }
+          - { name: open, label: Commissions are open, widget: boolean, default: true, hint: 'Switches the "Commissions open" light in the top bar and on the page. Off: no request form, and the site refuses new requests (commissions already asked for carry on in the customers'' accounts).' }
           - { name: title, label: Heading, widget: string }
           - { name: intro, label: Introduction, widget: text }
           - name: tiers
@@ -333,8 +333,21 @@ collections:
             fields:
               - { name: name, label: Name, widget: string }
               - { name: text, label: Description, widget: text }
-              - { name: price, label: Price, widget: string, required: false, hint: 'Written the way it should read: "From $80 AUD". Empty shows "Ask for a quote".' }
-              - { name: includes, label: What is included, widget: list, required: false, hint: 'Separate them with commas.' }
+              - { name: price, label: Price, widget: string, required: false, hint: 'Written the way it should read: "From $80 AUD". Empty shows the quote button''s words. Either way the offer leads to where quotes are asked for.' }
+              - { name: includes, label: What is included, widget: list, required: false, hint: 'Separate them with commas. Mention ink or colour: a commission''s stages follow it (an inked piece never shows colours, a sketch neither inks nor colours).' }
+          - { name: quoteLabel, label: Wording of the quote button, widget: string, required: false, hint: 'On every offer. Empty reads "Get a quote".' }
+          - name: quoteVia
+            label: Where the quote button goes
+            widget: select
+            required: false
+            default: site
+            hint: 'On the site: the customer sends their idea from the request card, and you talk it through in Orders → Commissions.'
+            options:
+              - { label: 'On the site (default)', value: site }
+              - { label: 'Instagram', value: instagram }
+              - { label: 'By email', value: email }
+              - { label: 'Another link', value: link }
+          - { name: quoteUrl, label: The other link, widget: string, required: false, hint: 'Only for "Another link": the full address, starting https://' }
           - { name: processLabel, label: Small label, widget: string, required: false }
           - { name: processTitle, label: Heading, widget: string }
           - name: steps
@@ -348,7 +361,7 @@ collections:
           - { name: requestLabel, label: Small label, widget: string, required: false }
           - { name: requestTitle, label: Heading while open, widget: string }
           - { name: closedTitle, label: Heading while closed, widget: string }
-          - { name: closedText, label: Text while closed, widget: text, required: false }
+          - { name: closedText, label: Text while closed, widget: text, required: false, hint: 'Shown instead of the request form while commissions are closed.' }
           - name: notes
             label: Points
             label_singular: Point
@@ -432,7 +445,8 @@ collections:
                   - { label: 'Confirming their email', value: verify }
                   - { label: 'A number of orders', value: orders }
                   - { label: 'A number of prints collected', value: pieces }
-              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders or prints it takes: 1 for their first order, 3, 6, 10... Refunded and deleted orders do not count.' }
+                  - { label: 'A number of commissions', value: commissions }
+              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders, prints or commissions it takes: 1 for their first, 3, 6, 10... A commission counts once it is paid. Refunded, cancelled and deleted ones do not count, and commissions never count as shop orders or prints.' }
               - { name: hidden, label: Hide (not offered for now), widget: boolean, default: false, required: false, hint: 'Customers using it go back to their usual picture.' }
           - name: cards
             label: Membership card designs
@@ -455,6 +469,7 @@ collections:
                   - { label: 'A picture of your choosing', value: art }
               - { name: cardArt, label: Picture across the card, widget: image, choose_url: false, required: false, hint: 'Needed for "A picture of your choosing", optional with the others. A picture with a quiet bottom half works best: the name sits there.' }
               - { name: cardCrop, label: As customers see it, widget: cardpreview, required: false }
+              - { name: cardBack, label: Picture across the back (optional), widget: image, choose_url: false, required: false, hint: 'The back of the card, where the stripe, their signature and the barcode sit. Empty: the back takes the card’s look (it never repeats the front picture).' }
               - name: earnedBy
                 label: How it is earned
                 widget: select
@@ -463,7 +478,8 @@ collections:
                   - { label: 'Confirming their email', value: verify }
                   - { label: 'A number of orders', value: orders }
                   - { label: 'A number of prints collected', value: pieces }
-              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders or prints it takes: 1 for their first order, 3, 6, 10... Refunded and deleted orders do not count.' }
+                  - { label: 'A number of commissions', value: commissions }
+              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders, prints or commissions it takes: 1 for their first, 3, 6, 10... A commission counts once it is paid. Refunded, cancelled and deleted ones do not count, and commissions never count as shop orders or prints.' }
               - { name: hidden, label: Hide (not offered for now), widget: boolean, default: false, required: false, hint: 'Customers using it go back to the usual card.' }
           - name: discounts
             label: Discounts
@@ -485,7 +501,8 @@ collections:
                   - { label: 'Confirming their email', value: verify }
                   - { label: 'A number of orders', value: orders }
                   - { label: 'A number of prints collected', value: pieces }
-              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders or prints it takes: 1 for their first order, 3, 6, 10... Refunded and deleted orders do not count.' }
+                  - { label: 'A number of commissions', value: commissions }
+              - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders, prints or commissions it takes: 1 for their first, 3, 6, 10... A commission counts once it is paid. Refunded, cancelled and deleted ones do not count, and commissions never count as shop orders or prints.' }
               - { name: hidden, label: Hide (not offered for now), widget: boolean, default: false, required: false, hint: 'Customers no longer earn it; codes already made keep working.' }
 
       - name: support
@@ -696,6 +713,16 @@ collections:
           - { name: countries, label: Countries you post to, widget: list, required: false, hint: 'Two-letter country codes, separated by commas: AU, NZ, US, CA, GB.' }
           - { name: thanksTitle, label: Heading, widget: string, required: false }
           - { name: thanksText, label: Text, widget: string, required: false }
+          - name: emails
+            label: Emails to you
+            widget: object
+            required: false
+            collapsed: false
+            hint: 'Which emails come to you (the email under Brand & contact). Emails to your customers always go.'
+            fields:
+              - { name: orders, label: New shop orders, widget: boolean, default: true, required: false, hint: 'An email for each order paid in the Shop.' }
+              - { name: commissions, label: New commission requests and payments, widget: boolean, default: true, required: false, hint: 'An email when someone asks for a commission, and when they pay its quote.' }
+              - { name: replies, label: Customer replies on commissions, widget: boolean, default: true, required: false, hint: 'An email when a customer writes in a commission conversation, or cancels one. Off: you see them in Orders → Commissions.' }
 
       - name: categories
         label: Shop categories
@@ -765,6 +792,14 @@ collections:
             collapsed: false
             fields:
               - { name: redraws, label: Then and now, widget: boolean, default: true, hint: 'The before-and-after drawings under the pieces.' }
+          - name: commissions
+            label: Commissions
+            widget: object
+            collapsed: false
+            hint: 'The Commissions page itself is switched on and off under Pages above; "Commissions are open" (Page text → Commissions) says whether you are taking new ones right now.'
+            fields:
+              - { name: request, label: Request form, widget: boolean, default: true, required: false, hint: 'Customers ask for a commission from the Commissions page. Off: the page keeps your offers and how it works, without the request card, and no new requests come in. Commissions already asked for carry on.' }
+              - { name: account, label: In customer accounts, widget: boolean, default: true, required: false, hint: 'Orders → Commissions in each customer account. Off: hidden for customers who have none; anyone with a commission keeps seeing theirs.' }
           - name: artwork
             label: Artwork
             widget: object

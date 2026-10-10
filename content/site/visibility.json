@@ -19,6 +19,10 @@
   "shop": {
     "redraws": false
   },
+  "commissions": {
+    "request": true,
+    "account": true
+  },
   "artwork": {
     "watermark": true
   },

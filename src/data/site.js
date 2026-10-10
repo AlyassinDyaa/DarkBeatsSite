@@ -25,6 +25,8 @@ export let brand, hero, marquee, home, commissions, about, contact, social, foot
 export let accountPage
 /* Selling: whether online purchases are on, the currency, what a buyer gets. */
 export let shop
+/* Where the "Get a quote" buttons go (Page text → Commissions → The quote button): see assemble(). */
+export let quote
 /* The shop-wide sales running now (Shop → Sales in the admin; api/_sales.js prices with them). */
 export let sales
 /* The Support page: the artist's own project, and the ways to back it. */
@@ -131,7 +133,7 @@ function assemble(content) {
   commissions = {
     title: 'Get something drawn', processLabel: 'The process', processTitle: 'How it works',
     requestLabel: 'Request', requestTitle: 'Tell me the idea',
-    closedTitle: 'Join the queue', closedText: 'The books are closed for now. Send the idea anyway and you will hear back when a slot opens.',
+    closedTitle: 'Closed for now', closedText: 'New requests are paused while I work through the queue. They open again here soon.',
     tiers: [], steps: [], notes: [],
     ...given(page('commissions')),
   }
@@ -149,8 +151,8 @@ function assemble(content) {
   accountPage.rewards = (Array.isArray(rw.pictures) ? rw.pictures : []).map((r) => ({ ...r, kind: 'picture' })).concat((Array.isArray(rw.cards) ? rw.cards : []).map((r) => ({ ...r, kind: 'card' })), (Array.isArray(rw.discounts) ? rw.discounts : []).map((r) => ({ ...r, kind: 'discount' })), Array.isArray(rw.rewards) ? rw.rewards : [])
     .filter((r) => r && !r.hidden && (r.kind === 'card' ? r.cardLook || r.cardArt : r.kind === 'discount' ? Number(r.percent) > 0 : typeof r.picture === 'string' && r.picture))
     .map((r) => {
-      const by = ['verify', 'orders', 'pieces'].includes(r.earnedBy) ? r.earnedBy : 'verify'
-      return { id: slug(r.name) || slug(r.picture), name: r.name || '', kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', earnedBy: by, count: by === 'verify' ? 0 : Math.max(1, Math.round(Number(r.count) || 1)), percent: Number(r.percent) || 0, days: Number(r.days) || 60, picture: r.picture || '', face: parseFace(r.face), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '', cardCrop: parseCrop(r.cardCrop) }
+      const by = ['verify', 'orders', 'pieces', 'commissions'].includes(r.earnedBy) ? r.earnedBy : 'verify'
+      return { id: slug(r.name) || slug(r.picture), name: r.name || '', kind: ['card', 'discount'].includes(r.kind) ? r.kind : 'picture', earnedBy: by, count: by === 'verify' ? 0 : Math.max(1, Math.round(Number(r.count) || 1)), percent: Number(r.percent) || 0, days: Number(r.days) || 60, picture: r.picture || '', face: parseFace(r.face), cardLook: r.cardLook || 'art', cardArt: r.cardArt || '', cardBack: r.cardBack || '', cardCrop: parseCrop(r.cardCrop) }
     })
   // the pictures given on confirming the email (the confirmation page and email show these)
   accountPage.verifiedIcons = accountPage.rewards.filter((r) => r.kind === 'picture' && r.earnedBy === 'verify')
@@ -175,6 +177,23 @@ function assemble(content) {
   sales = liveSales(site('sales').sales)
   social = links || []
   brand.instagram = social.find((s) => /instagram/i.test(s.label || ''))?.url
+  /* Where the quote buttons go (Page text → Commissions → The quote button, `quoteVia`): 'site' (the
+     request card on the Commissions page, with the offer picked), 'email' (an email to the address
+     under Brand & contact), 'instagram', or 'link' (quoteUrl). A choice with nothing to go to (no
+     email, no Instagram, no address) falls back to the site. `to(tier)` is where a button on that
+     offer goes; `closed` is true when it would go to a request card that is closed. */
+  const askedVia = String(commissions.quoteVia || (commissions.quoteUrl ? 'link' : 'site'))
+  const via = askedVia === 'email' && brand.email ? 'email' : askedVia === 'instagram' && brand.instagram ? 'instagram' : askedVia === 'link' && /^(https?:|mailto:)/.test(String(commissions.quoteUrl || '')) ? 'link' : 'site'
+  quote = {
+    label: commissions.quoteLabel || 'Get a quote',
+    via,
+    external: via === 'instagram' || via === 'link',
+    // nowhere to go: the request card is closed, or switched off (Show / hide → Commissions)
+    closed: via === 'site' && (commissions.open === false || visibility?.commissions?.request === false),
+    to: (tier = '') => (via === 'email' ? `mailto:${brand.email}?subject=${encodeURIComponent(tier ? `Commission: ${tier}` : 'Commission')}`
+      : via === 'instagram' ? brand.instagram : via === 'link' ? commissions.quoteUrl
+        : `/commissions${tier ? `?kind=${encodeURIComponent(tier)}` : ''}#request`),
+  }
   footer = { fine: 'Characters shown in fan art belong to their owners.', ...given({ line: footerLine, fine: footerFine }) }
 
   nav = [

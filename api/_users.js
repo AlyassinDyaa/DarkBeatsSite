@@ -120,7 +120,38 @@ export const forgetTries = async (key) => (await db()).collection('attempts').de
    - Resend (resend.com): RESEND_API_KEY, sending from an address on a domain verified there.
    MAIL_FROM is the sender as people see it ("JBeatsArt <hello@...>"); MAIL_REPLY_TO, if set,
    is where replies go. With neither set, on this computer the email is printed instead.
-   An email is { to, subject, kicker, title, lines, button: { label, url }, picture: { src, title, text }, after, replyTo }. */
+   An email is { to, subject, kicker, title, lines, button: { label, url }, picture: { src, title, text },
+   code: { label, text, note } (a discount code, in a dashed box), orders: [{ title, sub, rows: [[what, price]],
+   total, foot }] (orders written out, a box each), items: [{ src, title, text, url }] (pieces in a grid),
+   highlight: { label, title, lines } (a box for an event), unsubscribe (a link in the footer), list: { unsubscribe }
+   (the List-Unsubscribe header), after, replyTo, attachments: [{ filename, content (a Buffer), contentType }]
+   (files sent with it: a finished commission) }. */
+/* The artist's own inbox: CONTACT_TO, else the email under Site → Brand & contact, else the
+   address the site sends from. */
+export const artistInbox = () => {
+  const m = String(process.env.MAIL_FROM || '').match(/<([^>]+)>/)
+  return process.env.CONTACT_TO || brandInfo().email || (m && m[1]) || process.env.SMTP_USER || ''
+}
+/* Emails to the artist can be switched off, each kind on its own (Shop → Shop settings → Emails to
+   you, content/site/shop.json `emails`): 'orders' (a new shop order), 'commissions' (a new
+   commission request, and a commission paid), 'replies' (a customer's message on a commission, or
+   their cancelling it). On unless switched off; read afresh each time. Emails to customers never
+   depend on these. */
+export const emailsToArtist = (kind) => {
+  try {
+    const emails = (JSON.parse(readFileSync(join(process.cwd(), 'content/site/shop.json'), 'utf8')) || {}).emails || {}
+    return emails[kind] !== false
+  } catch { return true }
+}
+/* Addresses that can never receive email: the reserved test domains (example.com/.net/.org,
+   *.test, *.example, *.invalid, *.localhost). Mass emails (api/_mailings.js) never count or send to
+   them. */
+const TEST_DOMAIN = /(^|\.)(example\.(com|net|org)|[^.]+\.(test|example|invalid|localhost)|test|example|invalid|localhost)$/i
+export const testAddress = (to) => {
+  const m = String(to || '').trim().toLowerCase().match(/<([^>]+)>\s*$/)
+  const domain = String(m ? m[1] : to || '').trim().toLowerCase().split('@').pop().replace(/\.$/, '')
+  return TEST_DOMAIN.test(domain)
+}
 export const siteUrl = (req) => (process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : process.env.VERCEL ? '' : `http://${req.headers.host}`)).replace(/\/$/, '')
 const smtpReady = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
 export const mailReady = () => smtpReady() || Boolean(process.env.RESEND_API_KEY && process.env.MAIL_FROM)
@@ -145,9 +176,11 @@ const assetHost = () => {
 }
 const pictureUrl = (path) => (/^https?:\/\//.test(path) ? path : `${assetHost()}${path.startsWith('/') ? '' : '/'}${path}`)
 
-/* Every email in the site's own look: a dark purple band with the logo and the name (the last
+/* Every email in the site's own look, on the purple circuit picture (across the top at full width,
+   running into its own deep purple below): a dark purple band with the logo and the name (the last
    part in the brand purple), a dark panel with a small slanted tag, a big tall heading, the words,
-   a picture when there is one, a purple button, the link written out under it, and a quiet footer.
+   pieces in a grid, an event box, a discount code, a picture when there is one, a purple button,
+   the link written out under it, and a quiet footer (with an unsubscribe link on a mass email).
    Built from tables with the styles on each piece, the way email apps need it.
    Staying dark everywhere: the page says it is a dark email (color-scheme), so Apple Mail and
    Outlook leave it alone. Gmail's phone app in dark mode turns light emails dark and dark ones light
@@ -157,11 +190,27 @@ const pictureUrl = (path) => (/^https?:\/\//.test(path) ? path : `${assetHost()}
 const DISPLAY = "Anton, Impact, 'Arial Narrow Bold', 'Helvetica Neue', Arial, sans-serif"
 const BODY = "'Helvetica Neue', Helvetica, Arial, sans-serif"
 const MONO = "'JetBrains Mono', Consolas, 'Courier New', monospace"
-const C = { page: '#09070d', panel: '#15101c', line: '#2c2236', accent: '#c565f8', button: '#a447e0', text: '#e4dcec', soft: '#a397ae', gold: '#ffd34d' }
+const C = { page: '#18122e', panel: '#15101c', ink: '#0d0a14', line: '#2c2236', accent: '#c565f8', button: '#a447e0', text: '#e4dcec', soft: '#a397ae', gold: '#ffd34d' }
 const paint = (c) => `background-color:${c};background-image:linear-gradient(${c},${c});`
 // light words that must stay light in Gmail's dark mode
 const keep = (html, tag = 'div') => `<${tag} class="gmail-screen"><${tag} class="gmail-dif">${html}</${tag}></${tag}>`
-export const emailHtml = ({ subject, kicker, title, lines = [], button, picture, after, code, orders }) => {
+/* Pieces in a grid of two (up to four): their picture, name and price, each a link. One piece gets
+   the whole width. Built from tables, painted for Gmail's dark mode like the rest. */
+const itemsHtml = (items) => {
+  const list = items.slice(0, 4)
+  const wide = list.length === 1 ? 300 : 220
+  const cell = (it) => `<td width="${list.length === 1 ? '100%' : '50%'}" valign="top" style="padding:6px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${paint(C.ink)}border:1px solid ${C.line};"><tr><td align="center" style="padding:10px;">
+          ${it.src ? `<a href="${esc(it.url || '#')}" style="text-decoration:none;"><img src="${esc(pictureUrl(it.src))}" width="${wide}" alt="${esc(it.title || '')}" style="display:block;width:100%;max-width:${wide}px;height:auto;border:0;"></a>` : ''}
+          <span style="display:block;margin-top:10px;font-family:${DISPLAY};font-size:16px;letter-spacing:0.5px;text-transform:uppercase;line-height:1.15;color:#ffffff;">${keep(esc(it.title || ''), 'span')}</span>
+          ${it.text ? `<span style="display:block;margin-top:4px;font-family:${DISPLAY};font-size:15px;color:${C.accent};">${esc(it.text)}</span>` : ''}
+        </td></tr></table>
+      </td>`
+  const rows = []
+  for (let i = 0; i < list.length; i += 2) rows.push(`<tr>${cell(list[i])}${list[i + 1] ? cell(list[i + 1]) : list.length > 1 ? '<td width="50%" style="padding:6px;">&nbsp;</td>' : ''}</tr>`)
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 18px;">${rows.join('')}</table>`
+}
+export const emailHtml = ({ subject, kicker, title, lines = [], button, picture, after, code, orders, items, highlight, unsubscribe }) => {
   const b = brandInfo()
   const name = String(b.name || 'JBeatsArt').trim()
   // "JBeatsArt" reads JBEATS + ART, as the site's wordmark does
@@ -171,6 +220,7 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
   // the footer always names the real site, never this computer
   const home = assetHost()
   const para = (t) => `<p style="margin:0 0 14px;font-family:${BODY};font-size:16px;line-height:1.65;color:${C.text};">${keep(esc(t), 'span')}</p>`
+  const back = pictureUrl('/email/background.jpg')
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark"><title>${esc(subject)}</title>
 <style>
@@ -179,9 +229,10 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
   u + .body .gmail-dif { background:#000; mix-blend-mode:difference; display:inline; }
   u + .body div.gmail-screen, u + .body div.gmail-dif { display:block; }
   a { text-decoration:none; }
+  @media (max-width:600px) { .email-back { background-size:240% auto !important; } }
 </style></head>
 <body class="body" style="margin:0;padding:0;${paint(C.page)}">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="${paint(C.page)}"><tr><td align="center" style="padding:28px 12px 36px;${paint(C.page)}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" background="${esc(back)}" class="email-back" style="background-color:${C.page};background-image:url('${esc(back)}');background-size:100% auto;background-position:center top;background-repeat:no-repeat;"><tr><td align="center" style="padding:28px 12px 36px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
   <tr><td style="background-color:#3d0a57;background-image:linear-gradient(120deg,#540075,#2a0a3d 70%);border:1px solid ${C.line};border-bottom:3px solid ${C.accent};padding:16px 22px;">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -210,6 +261,12 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
       <td style="vertical-align:middle;"><img src="${esc(pictureUrl(picture.src))}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;border-radius:50%;border:3px solid ${C.gold};"></td>
       <td style="vertical-align:middle;padding-left:14px;font-family:${BODY};font-size:14px;line-height:1.55;color:${C.text};"><strong style="display:block;margin-bottom:2px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:0.5px;text-transform:uppercase;color:${C.gold};">${esc(picture.title)}</strong>${keep(esc(picture.text), 'span')}</td>
     </tr></table>` : ''}
+    ${Array.isArray(items) && items.length ? itemsHtml(items) : ''}
+    ${highlight ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 22px;"><tr><td style="${paint('#1e1628')}border:1px solid ${C.line};border-left:5px solid ${C.accent};padding:14px 18px;">
+      ${highlight.label ? `<span style="display:block;font-family:${MONO};font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${C.gold};">${esc(highlight.label)}</span>` : ''}
+      <span style="display:block;margin-top:6px;font-family:${DISPLAY};font-size:22px;text-transform:uppercase;line-height:1.1;color:#ffffff;">${keep(esc(highlight.title || ''), 'span')}</span>
+      ${(highlight.lines || []).map((l) => `<span style="display:block;margin-top:4px;font-family:${BODY};font-size:14px;line-height:1.5;color:${C.text};">${keep(esc(l), 'span')}</span>`).join('')}
+    </td></tr></table>` : ''}
     ${button ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 6px;"><tr><td style="${paint(C.button)}border-right:6px solid #540075;border-bottom:6px solid #540075;">
       <a href="${esc(button.url)}" style="display:inline-block;padding:14px 26px;font-family:${DISPLAY};font-size:17px;font-weight:400;letter-spacing:1px;text-transform:uppercase;color:#ffffff;text-decoration:none;">${keep(`${esc(button.label)} &rarr;`, 'span')}</a>
     </td></tr></table>
@@ -218,6 +275,7 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
   </td></tr>
   <tr><td align="center" style="padding:20px 10px 0;font-family:${BODY};font-size:12px;line-height:1.7;color:#7d7288;${paint(C.page)}">
     ${b.tagline ? `${esc(b.tagline)}${b.location ? ` &middot; ${esc(b.location)}` : ''}<br>` : ''}<a href="${esc(home)}" style="color:${C.soft};text-decoration:underline;">${esc(home.replace(/^https?:\/\//, ''))}</a>${insta ? ` &middot; <a href="${esc(insta.url)}" style="color:${C.soft};text-decoration:underline;">Instagram</a>` : ''}
+    ${unsubscribe ? `<br><span style="display:inline-block;margin-top:10px;color:${C.soft};">No more news emails? <a href="${esc(unsubscribe)}" style="color:${C.accent};text-decoration:underline;">Unsubscribe</a></span>` : ''}
   </td></tr>
 </table>
 </td></tr></table>
@@ -227,24 +285,27 @@ export const emailHtml = ({ subject, kicker, title, lines = [], button, picture,
 export const sendMail = async (mail) => {
   const { to, subject, lines = [], button, after } = mail
   const brand = process.env.MAIL_BRAND || brandInfo().name || 'JBeatsArt'
-  const text = [mail.title || subject, '', ...lines, ...(Array.isArray(mail.orders) ? mail.orders.map((o) => ['', `${o.title} (${o.sub || ''})`, ...(o.rows || []).map(([l, v]) => `  ${l}  ${v || ''}`), o.total ? `  Total  ${o.total}` : '', o.foot ? `  ${o.foot}` : ''].filter(Boolean).join('\n')) : []), mail.code ? `\n${mail.code.label || 'Your code'}: ${mail.code.text}${mail.code.note ? ` (${mail.code.note})` : ''}` : '', mail.picture ? `\n${mail.picture.title}: ${mail.picture.text}` : '', button ? `\n${button.label}: ${button.url}` : '', after ? `\n${after}` : '', '', `— ${brand}`].join('\n')
+  const files = Array.isArray(mail.attachments) ? mail.attachments.filter((a) => a && a.filename && a.content) : []
+  const text = [mail.title || subject, '', ...lines, ...(Array.isArray(mail.orders) ? mail.orders.map((o) => ['', `${o.title} (${o.sub || ''})`, ...(o.rows || []).map(([l, v]) => `  ${l}  ${v || ''}`), o.total ? `  Total  ${o.total}` : '', o.foot ? `  ${o.foot}` : ''].filter(Boolean).join('\n')) : []), mail.code ? `\n${mail.code.label || 'Your code'}: ${mail.code.text}${mail.code.note ? ` (${mail.code.note})` : ''}` : '', mail.picture ? `\n${mail.picture.title}: ${mail.picture.text}` : '', ...(Array.isArray(mail.items) && mail.items.length ? ['', ...mail.items.map((i) => `  ${i.title}${i.text ? `  ${i.text}` : ''}`)] : []), mail.highlight ? `\n${mail.highlight.title}\n${(mail.highlight.lines || []).join('\n')}` : '', button ? `\n${button.label}: ${button.url}` : '', after ? `\n${after}` : '', '', `— ${brand}`, ...(mail.unsubscribe ? ['', `No more news emails? Unsubscribe: ${mail.unsubscribe}`] : [])].join('\n')
   if (!mailReady()) {
     // on this computer the link is printed instead, so the whole journey can be tried without email
-    if (!process.env.VERCEL) console.log(`\n[email to ${to}] ${subject}\n${text}\n`)
+    if (!process.env.VERCEL) console.log(`\n[email to ${to}] ${subject}\n${text}\n${files.length ? `(with ${files.map((a) => `${a.filename}, ${a.content.length} bytes`).join('; ')})\n` : ''}`)
     else console.warn('email not sent: no SMTP_* or RESEND_API_KEY / MAIL_FROM set')
     return false
   }
   const html = emailHtml(mail)
   const from = process.env.MAIL_FROM || `${brand} <${process.env.SMTP_USER}>`
   const replyTo = mail.replyTo || process.env.MAIL_REPLY_TO || undefined // a contact message: replies go to the visitor
+  // a mass email: mail apps show their own Unsubscribe button from this header
+  const list = mail.list && mail.list.unsubscribe ? { unsubscribe: mail.list.unsubscribe } : null
   if (smtpReady()) {
     try {
-      await smtp().sendMail({ from, to, subject, text, html, replyTo })
+      await smtp().sendMail({ from, to, subject, text, html, replyTo, ...(list ? { list } : {}), ...(files.length ? { attachments: files.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType || undefined })) } : {}) })
       return true
     } catch (e) { console.error('the email server refused the email:', e && (e.response || e.message)); return false }
   }
   try {
-    const answer = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: [to], subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}) }) })
+    const answer = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: [to], subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}), ...(list ? { headers: { 'List-Unsubscribe': `<${list.unsubscribe}>` } } : {}), ...(files.length ? { attachments: files.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString('base64') })) } : {}) }) })
     if (!answer.ok) console.error('resend refused the email:', answer.status)
     return answer.ok
   } catch (e) { console.error('could not reach resend:', e.message); return false }
@@ -257,6 +318,7 @@ export const publicUser = (u) => (u ? {
   phone: u.phone || '',
   verified: Boolean(u.verified),
   marketing: Boolean(u.marketing),
+  newsAsked: Boolean(u.newsAsked || u.unsubscribedAt), // asked on their Overview already, or unsubscribed from an email: not asked again
   createdAt: u.createdAt,
   lastVisit: u.prevLogin || u.createdAt, // for "new since your last visit"
   avatar: typeof u.avatar === 'string' ? u.avatar : '',

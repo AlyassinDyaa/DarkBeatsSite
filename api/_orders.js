@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
-import { sendMail } from './_users.js'
+import { emailsToArtist, sendMail } from './_users.js'
 
 /* Orders in the database. Each is kept under `ref`: the Stripe checkout's id (cs_...) or "pp_"
    and the PayPal order's id. Stripe orders arrive through api/stripe-webhook.js once paid; PayPal
@@ -191,6 +191,7 @@ export const paidOrder = async (ref, siteUrl) => {
    ORDER_EMAIL_TO, else CONTACT_TO, else the email in Site → Brand & contact. */
 export const tellAdmin = async (ref, siteUrl) => {
   if (!dbReady()) return
+  if (!emailsToArtist('orders')) return // switched off under Shop → Shop settings → Emails to you
   const col = (await db()).collection('orders')
   const o = await col.findOneAndUpdate({ ref, status: 'paid', adminTold: { $ne: true } }, { $set: { adminTold: true } })
   const order = o && o.value !== undefined && o.ok !== undefined ? o.value : o // older drivers wrap the document

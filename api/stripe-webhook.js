@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
 import { codeUsed, ours, paidOrder, paidWithOf, piecesNow, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart, withPiece } from './_orders.js'
+import { ofStripe, paidByStripe, refundedByStripe } from './_commissions.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -34,6 +35,18 @@ const stripe = async (path) => {
   return answer.ok ? answer.json() : null
 }
 
+const liveSite = () => process.env.SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
+
+/* A commission paid by card (api/commissions.js): how it was paid (card brand and last four), then
+   the commission is marked paid and both sides are emailed (api/_commissions.js), once however
+   often Stripe says so. It is never a shop order. */
+const commissionPaid = async (o) => {
+  const piId = typeof o.payment_intent === 'string' ? o.payment_intent : (o.payment_intent && o.payment_intent.id) || ''
+  const payment = piId ? await stripe(`payment_intents/${piId}?expand[]=latest_charge`) : null
+  const charge = payment && payment.latest_charge && typeof payment.latest_charge === 'object' ? payment.latest_charge : null
+  return paidByStripe(o, { paidWith: (charge && paidWithOf(charge.payment_method_details)) || (o.amount_total === 0 ? 'Free, with a code' : 'Card'), pi: piId, site: liveSite() })
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Stripe sends POST.' })
   const secret = process.env.STRIPE_WEBHOOK_SECRET
@@ -46,7 +59,10 @@ export default async function handler(req, res) {
   try {
     const o = event.data && event.data.object
     // a checkout of another site sharing the Stripe account is none of this site's business
-    if ((event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o && (o.payment_status === 'paid' || o.payment_status === 'no_payment_required') && ours(o)) { // a 100% code: nothing to pay, still an order
+    const paidCheckout = (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') && o && (o.payment_status === 'paid' || o.payment_status === 'no_payment_required') && ours(o) // a 100% code: nothing to pay, still an order
+    // a commission's payment: the commission is marked paid, and it is never a shop order
+    if (paidCheckout && ofStripe(o)) await commissionPaid(o)
+    else if (paidCheckout) {
       const lines = await stripe(`checkout/sessions/${o.id}/line_items?limit=100`)
       const ship = (o.collected_information && o.collected_information.shipping_details) || o.shipping_details || null
       const who = o.customer_details || {}
@@ -90,6 +106,7 @@ export default async function handler(req, res) {
     }
     if (event.type === 'charge.refunded' && o && o.payment_intent && o.refunded) {
       await (await db()).collection('orders').updateOne({ pi: o.payment_intent }, { $set: { status: 'refunded', updatedAt: new Date() } })
+      await refundedByStripe(o.payment_intent) // a commission's payment: shown as refunded, with a note
     }
     return res.status(200).json({ received: true })
   } catch (e) {

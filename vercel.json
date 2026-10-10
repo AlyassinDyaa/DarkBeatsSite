@@ -37,7 +37,15 @@
       "includeFiles": "content/site/**"
     },
     "api/members.js": {
-      "includeFiles": "content/{pages,site}/**"
+      "includeFiles": "content/**",
+      "maxDuration": 60
+    },
+    "api/commissions.js": {
+      "includeFiles": "content/**",
+      "maxDuration": 60
+    },
+    "api/stripe-webhook.js": {
+      "includeFiles": "content/**"
     }
   }
 }

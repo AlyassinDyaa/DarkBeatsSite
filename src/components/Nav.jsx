@@ -61,18 +61,32 @@ export default function Nav() {
         {open && (
           <motion.div className="menu" initial={{ clipPath: 'polygon(0 0, 100% 0, 100% 0, 0 0)' }} animate={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }} exit={{ clipPath: 'polygon(0 0, 100% 0, 100% 0, 0 0)' }} transition={{ duration: 0.55, ease: [0.76, 0, 0.24, 1] }}>
             <div className="container menu-inner">
-              <ul className="menu-links">
-                {nav.map((n, i) => (
-                  <motion.li key={n.to} initial={{ x: -40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.12 + i * 0.05, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
-                    <NavLink to={n.to} end onClick={() => setOpen(false)}>{n.label}</NavLink>
-                  </motion.li>
-                ))}
-              </ul>
-              <div className="menu-foot">
-                {hire && <span className="nav-status"><Status /></span>}
-                {account.on && <Link className="menu-account" to={account.user ? '/account' : '/account/login'} onClick={() => setOpen(false)}>{account.user ? 'Your account' : 'Log in / make an account'}</Link>}
-                <ul>{social.map((s) => <li key={s.label}><a href={s.url} target="_blank" rel="noreferrer">{s.label}</a></li>)}</ul>
-              </div>
+              <nav aria-label="Menu">
+                <span className="menu-kicker">Menu</span>
+                {/* each page on its own row: its number, its name, an arrow; the page you are on in purple */}
+                <ul className="menu-links">
+                  {nav.map((n, i) => (
+                    <motion.li key={n.to} initial={{ y: 14, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 + i * 0.04, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}>
+                      <NavLink to={n.to} end onClick={() => setOpen(false)}>
+                        <small aria-hidden="true">{String(i + 1).padStart(2, '0')}</small>
+                        <span>{n.label}</span>
+                        <i aria-hidden="true">→</i>
+                      </NavLink>
+                    </motion.li>
+                  ))}
+                </ul>
+              </nav>
+              <motion.div className="menu-foot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 0.4 }}>
+                {account.on && (
+                  <Link className="menu-account" to={account.user ? '/account' : '/account/login'} onClick={() => setOpen(false)}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4.500 20.500c.8-3.600 3.800-5.700 7.500-5.700s6.700 2.100 7.500 5.700" /></svg>
+                    <span>{account.user ? 'Your account' : 'Log in or make an account'}</span>
+                    <i aria-hidden="true">→</i>
+                  </Link>
+                )}
+                {hire && <Link className="nav-status menu-status" to="/commissions" onClick={() => setOpen(false)}><Status /></Link>}
+                {social.length > 0 && <ul className="menu-social">{social.map((s) => <li key={s.label}><a href={s.url} target="_blank" rel="noreferrer">{s.label} <span aria-hidden="true">↗</span></a></li>)}</ul>}
+              </motion.div>
             </div>
           </motion.div>
         )}

@@ -1,6 +1,7 @@
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
-import { describeItem, numberOrder, ours, paidWithOf, piecesNow, setTrack } from './_orders.js'
+import { describeItem, numberOrder, orderCopy, ours, paidWithOf, piecesNow, setTrack } from './_orders.js'
+import { sendMail } from './_users.js'
 
 /* The admin's Orders screen. Everything paid through Stripe (prints from the Shop, and support
    through the payment links) is read here, straight from Stripe, for the logged-in admin only.
@@ -134,7 +135,7 @@ export default async function handler(req, res) {
       // PayPal orders from the database, with the first page
       if (!after && dbReady()) {
         try {
-          const saved = await (await db()).collection('orders').find({ provider: 'paypal', status: { $in: ['paid', 'refunded'] }, hidden: { $ne: true } }).sort({ createdAt: -1 }).limit(300).toArray()
+          const saved = await (await db()).collection('orders').find({ provider: 'paypal', status: { $in: ['paid', 'refunded'] }, hidden: { $ne: true }, adminHidden: { $ne: true } }).sort({ createdAt: -1 }).limit(300).toArray()
           orders.push(...saved.map(shapeSaved))
           orders.sort((a, b) => b.created - a.created)
         } catch (e) { console.error('paypal orders not read:', e.message) }
@@ -181,23 +182,54 @@ export default async function handler(req, res) {
         const refs = (Array.isArray(body.refs) ? body.refs : []).map((r) => text(r, 80)).filter((r) => /^pp_[A-Z0-9]+$/.test(r) || /^cs_(test|live)_[A-Za-z0-9]+$/.test(r))
         if (!pis.length && !refs.length) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
         if (pis.length + refs.length > 100) return res.status(400).json({ message: 'Between 1 and 100 orders at a time.' })
+        /* How far it goes (the admin picks in the delete window):
+           'admin'      only out of the admin's lists: the buyer keeps it in their account (their receipt,
+                        tracking, and what counts toward their rewards)
+           'everywhere' erased from the database too, so it leaves the buyer's account (orders, count,
+                        pictures); with `copy`, each buyer is first emailed a copy of their orders */
+        const everywhere = body.scope === 'everywhere'
         const done = []
+        const d = dbReady() ? await db() : null
+        // the buyers' copies, before anything goes (an order the database never kept has none to send)
+        let copies = { sent: 0, failed: 0 }
+        if (everywhere && body.copy && d) {
+          const rows = await d.collection('orders').find({ $or: [{ pi: { $in: pis } }, { ref: { $in: refs } }] }).limit(200).toArray()
+          const byBuyer = new Map()
+          for (const o of rows.filter((x) => x.email && ['paid', 'refunded'].includes(x.status) && !x.customerRemoved)) byBuyer.set(o.email, [...(byBuyer.get(o.email) || []), o])
+          for (const [email, list] of byBuyer) {
+            const first = String(list[0].name || '').split(' ')[0]
+            const ok = await sendMail({
+              to: email,
+              subject: `Your JBeatsArt order history: a copy of ${list.length === 1 ? '1 order' : `${list.length} orders`}`,
+              kicker: 'Your orders',
+              title: list.length === 1 ? 'A copy of your order' : `A copy of ${list.length} orders`,
+              lines: [`Hi${first ? ` ${first}` : ''},`, `${list.length === 1 ? 'This order has' : 'These orders have'} been taken off our records and out of your account. Here is a copy to keep.`],
+              orders: list.map(orderCopy),
+              after: 'Questions about an order? Just reply to this email.',
+            }).catch(() => false)
+            if (ok) copies.sent++; else copies.failed++
+          }
+        }
         for (const pi of hasStripe ? pis : []) {
           const got = await stripe(`payment_intents/${pi}`, { method: 'POST', body: 'metadata[jb_hidden]=1' })
           if (got.ok) done.push(pi)
         }
-        // erased from the database, so it leaves the buyer's account too (orders, count, pictures)
-        if (done.length && dbReady()) {
-          try { await (await db()).collection('orders').deleteMany({ pi: { $in: done } }) } catch (e) { console.error('not erased from the database:', e.message) }
+        if (d) {
+          try {
+            if (done.length) {
+              if (everywhere) await d.collection('orders').deleteMany({ pi: { $in: done } })
+              else await d.collection('orders').updateMany({ pi: { $in: done } }, { $set: { adminHidden: true, updatedAt: new Date() } })
+            }
+            if (refs.length) {
+              if (everywhere) await d.collection('orders').deleteMany({ ref: { $in: refs } })
+              else await d.collection('orders').updateMany({ ref: { $in: refs } }, { $set: { adminHidden: true, updatedAt: new Date() } })
+              // a Stripe checkout with no payment (a free order) stays in Stripe's list: remembered as deleted here
+              for (const ref of refs.filter((r) => r.startsWith('cs_'))) await d.collection('hiddenOrders').updateOne({ ref }, { $setOnInsert: { ref, at: new Date() } }, { upsert: true })
+              done.push(...refs)
+            }
+          } catch (e) { console.error('not removed from the database:', e.message) }
         }
-        if (refs.length && dbReady()) {
-          const d = await db()
-          await d.collection('orders').deleteMany({ ref: { $in: refs } })
-          // a Stripe checkout with no payment (a free order) stays in Stripe's list: remembered as deleted here
-          for (const ref of refs.filter((r) => r.startsWith('cs_'))) await d.collection('hiddenOrders').updateOne({ ref }, { $setOnInsert: { ref, at: new Date() } }, { upsert: true })
-          done.push(...refs)
-        }
-        return res.status(done.length ? 200 : 502).json({ hidden: done, ...(done.length < pis.length + refs.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
+        return res.status(done.length ? 200 : 502).json({ hidden: done, scope: everywhere ? 'everywhere' : 'admin', copies, ...(done.length < pis.length + refs.length ? { message: 'Some could not be removed. Try again in a moment.' } : {}) })
       }
       const id = text(body.id, 120)
       const status = STATUSES.includes(body.status) ? body.status : 'new'

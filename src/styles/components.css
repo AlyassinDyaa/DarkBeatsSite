@@ -73,11 +73,32 @@ a.nav-status:hover { border-color: var(--fg); }
 .burger.open span:last-child { transform: rotate(-45deg); }
 .menu { position: fixed; inset: 0; z-index: 90; background: var(--bg); overflow-y: auto; }
 .menu::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 50% at 100% 100%, oklch(0.5 0.2 var(--h) / 0.4), transparent 70%); pointer-events: none; }
-.menu-inner { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; min-height: 100%; padding-block: calc(var(--nav) + 32px) 36px; }
-.menu-links a { display: block; padding: 4px 0; font-family: var(--display); font-size: clamp(3rem, 15vw, 5.5rem); line-height: 1.02; text-transform: uppercase; transform: skewX(var(--slant)); transform-origin: 0 100%; color: var(--fg); }
+/* the menu (a phone, or a narrow window): a short label, then each page on its own row (its number,
+   its name in a calm size, an arrow), fine lines between them; under them the account, the
+   commissions light and the social links */
+.menu-inner { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 36px; min-height: 100%; padding-block: calc(var(--nav) + 22px) 32px; }
+.menu-kicker { display: block; margin-bottom: 10px; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg-mute); }
+.menu-links { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.menu-links li { border-bottom: 1px solid var(--line); }
+.menu-links a { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 15px 2px; color: var(--fg); transition: color 0.2s, padding 0.25s var(--ease-out); }
+.menu-links a small { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; color: var(--fg-mute); }
+.menu-links a span { font-family: var(--display); font-size: clamp(1.45rem, 6vw, 1.9rem); line-height: 1; letter-spacing: 0.03em; text-transform: uppercase; }
+.menu-links a i { font-style: normal; font-size: 1.05rem; color: var(--fg-mute); transition: transform 0.25s var(--ease-out), color 0.2s; }
+.menu-links a:hover, .menu-links a:focus-visible { padding-left: 8px; outline: 0; }
+.menu-links a:hover i, .menu-links a:focus-visible i { transform: translateX(4px); color: var(--accent); }
 .menu-links a.active { color: var(--accent); }
-.menu-foot { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
-.menu-foot ul { display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); }
+.menu-links a.active small { color: var(--accent); }
+.menu-links a.active i { color: var(--accent); }
+.menu-foot { display: grid; gap: 14px; max-width: 480px; }
+.menu-account { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.02); font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg); transition: border-color 0.2s, background 0.2s; }
+.menu-account svg { width: 20px; height: 20px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.menu-account i { font-style: normal; color: var(--accent); }
+.menu-account:hover, .menu-account:focus-visible { border-color: var(--accent); background: var(--accent-soft); outline: 0; }
+.menu-status { justify-self: start; }
+
+.menu-social { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.menu-social a { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--line); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); transition: color 0.2s, border-color 0.2s; }
+.menu-social a:hover, .menu-social a:focus-visible { color: var(--fg); border-color: var(--line-strong); outline: 0; }
 /* seven links, the name and the commissions light need this much room; below it, the menu button */
 @media (max-width: 1179px) {
   .nav-links, .nav-bar > .nav-status { display: none; }
@@ -816,7 +837,6 @@ a.event[href]:hover .arrow { color: var(--accent); transform: translate(3px, -3p
 .nav-account svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .nav-account.is-in::after { content: ''; position: absolute; top: 7px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--open); box-shadow: 0 0 0 2px var(--bg); }
 .nav-account + .nav-cart { margin-left: -6px; }
-.menu-account { font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 .cart-account { margin: 12px 0 0; font-size: 0.86rem; color: var(--fg-dim); text-align: center; }
 .cart-account a, .thanks-link { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .thanks-link { display: inline-block; margin-top: 6px; font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -1117,7 +1137,7 @@ a.buy-btn { text-decoration: none; }
     radial-gradient(90% 80% at 0% 100%, oklch(0.4 0.18 calc(var(--h) + 40) / 0.45), transparent 60%),
     repeating-linear-gradient(-58deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 9px),
     linear-gradient(150deg, #1d1428, #0c0912 70%);
-  border: 1px solid rgba(244, 239, 248, 0.16); box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 18px 18px 0 -2px var(--accent);
+  border: 1px solid rgba(244, 239, 248, 0.16); box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
   transform: rotateX(var(--rx)) rotateY(var(--ry)); transform-style: preserve-3d; transition: transform 0.5s var(--ease-out); }
 .acc-card3d-wrap:hover .acc-card3d { transition-duration: 0.15s; }
 /* a strip of light that sweeps across now and then, and follows the pointer */
@@ -1143,7 +1163,7 @@ a.buy-btn { text-decoration: none; }
 
 /* the overview opens with the customer's own collector card, the three numbers beside it */
 .acct-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(20px, 3vw, 36px); align-items: center; }
-.acct-top .acc-card3d-wrap { width: 100%; max-width: 520px; padding: 0 18px 18px 0; }
+.acct-top .acc-card3d-wrap { width: 100%; max-width: 520px; }
 .acct-top .acc-card3d { --rx: 2deg; --ry: -8deg; }
 .acct-stats.is-stacked { grid-template-columns: minmax(0, 1fr); margin-top: 0; }
 .acct-stats.is-stacked button { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 16px; padding: 14px 18px; }
@@ -1168,7 +1188,7 @@ a.buy-btn { text-decoration: none; }
   .acc-art::before { display: none; }
   .acc-art::after { content: 'Why make an account'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 0 12px; background: var(--bg); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-mute); white-space: nowrap; }
   .acc-art .acc-card3d-wrap { width: calc(100% - 22px); justify-self: start; }
-  .acc-art .acc-card3d { box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 10px 10px 0 -2px var(--accent); padding: 16px 18px; }
+  .acc-art .acc-card3d { padding: 16px 18px; }
   .acc-art .acc-card3d-chip { width: 38px; height: 28px; margin-top: 10px; }
   .acc-art .acc-card3d-name { font-size: 1.45rem; }
   .acc-art .acc-card3d-foot { margin-top: 10px; }
@@ -1272,8 +1292,7 @@ a.buy-btn { text-decoration: none; }
   .acct2-tabs button { padding: 14px 12px 13px; font-size: 0.7rem; }
   .acct2-main { padding-top: 20px; }
   .acct-top { gap: 18px; }
-  .acct-top .acc-card3d-wrap { padding: 0 10px 10px 0; }
-  .acct-top .acc-card3d { box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 10px 10px 0 -2px var(--accent); padding: 16px 18px; }
+  .acct-top .acc-card3d { padding: 16px 18px; }
   .acct-top .acc-card3d-chip { width: 38px; height: 28px; margin-top: 10px; }
   .acct-top .acc-card3d-name { font-size: 1.5rem; }
 }
@@ -1661,3 +1680,347 @@ a.buy-btn { text-decoration: none; }
 .shop-sales b { padding: 6px 10px 5px; font-family: var(--display); font-weight: 400; font-size: 1.15rem; line-height: 1; letter-spacing: 0.03em; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); }
 .shop-sales span { font-size: 0.95rem; color: var(--fg-dim); }
 .shop-sales strong { font-family: var(--display); font-weight: 400; font-size: 1.05rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg); margin-right: 4px; }
+
+/* ---------- commissions (components/AccountCommissions.jsx, pages/Commissions.jsx) ----------
+   The colours they are drawn with, named once here from the site's own: ink, panels, the page, gold
+   for what waits on the customer, a deep purple shadow, and the reds of a problem. */
+:root { --k: #0a0710; --panel: var(--bg-2); --panel-2: var(--bg-3); --page: var(--bg); --gold: #ffd34d; --gold-soft: rgba(255, 211, 77, 0.08); --gold-ink: #ffd34d; --rule: 2px; --accent-deep: oklch(0.42 0.18 var(--h)); --acc-bad: #ff6b7f; --acc-bad-text: #ff8a9b; }
+
+/* ---------- commissions, followed in the account (components/AccountCommissions.jsx) ---------- */
+/* the Orders tab: Shop orders | Commissions */
+.acc-csub { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px dashed var(--line-strong); }
+.acc-csub button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px 9px; border: 1px solid var(--line-strong); font-family: var(--display); font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; }
+.acc-csub button small { min-width: 20px; padding: 1px 6px; text-align: center; font-size: 0.72rem; font-style: normal; background: var(--panel-2); color: var(--fg); }
+.acc-csub button small.is-alert { background: var(--gold); color: #0b0b0c; }
+.acc-csub button:hover { color: var(--fg); border-color: var(--fg-mute); }
+.acc-csub button.on { color: var(--on-accent); border-color: var(--accent); background: var(--accent); box-shadow: 4px 4px 0 var(--k); }
+.acc-csub button.on small:not(.is-alert) { background: rgba(0, 0, 0, 0.3); color: #fff; }
+.acc-csub button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* the list of commissions */
+.acc-crow { grid-template-columns: auto minmax(0, 1fr) auto auto 26px; }
+.acc-crow-no { display: grid; place-items: center; min-width: 64px; height: 54px; padding: 0 8px; font-family: var(--display); font-size: 0.86rem; letter-spacing: 0.04em; background: var(--accent); color: var(--on-accent); box-shadow: 3px 3px 0 var(--k); }
+.acc-crow.is-unread { border-color: var(--gold); }
+.acc-cbadge { display: grid; place-items: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; font-family: var(--display); font-size: 0.8rem; background: var(--gold); color: #0b0b0c; }
+.acc-pill.is-requested, .acc-pill.is-discussing { background: var(--panel-2); }
+.acc-pill.is-quoted { background: var(--gold); color: #0b0b0c; }
+.acc-pill.is-paid, .acc-pill.is-sketch, .acc-pill.is-inks, .acc-pill.is-colours { background: var(--accent); color: var(--on-accent); }
+@media (max-width: 599px) {
+  .acc-crow { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .acc-crow .acc-pill { grid-column: 2; justify-self: start; font-size: 0.8rem; padding: 4px 10px 3px; }
+  .acc-crow .acc-orow-total { grid-column: 3; grid-row: 1; }
+  .acc-crow-no { grid-row: span 2; min-width: 52px; font-size: 0.74rem; }
+  .acc-crow .acc-cbadge { grid-column: 3; grid-row: 2; justify-self: end; }
+}
+
+/* the Overview: the artist has written */
+.acc-cnotice { display: flex; align-items: center; gap: 16px; width: 100%; margin: 0 0 clamp(20px, 3vw, 30px); padding: 14px 18px; text-align: left; border: 2px solid var(--gold); background: var(--gold-soft); color: var(--fg); cursor: pointer; transition: transform 0.2s var(--ease-out); }
+.acc-cnotice:hover { transform: translateX(3px); }
+.acc-cnotice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-cnotice > b { display: grid; place-items: center; min-width: 38px; height: 38px; border-radius: 50%; font-family: var(--display); font-size: 1.1rem; background: var(--gold); color: #0b0b0c; }
+.acc-cnotice > span { flex: 1; display: grid; gap: 2px; }
+.acc-cnotice strong { font-family: var(--display); font-size: 1.1rem; letter-spacing: 0.03em; text-transform: uppercase; }
+.acc-cnotice small { color: var(--fg-dim); }
+.acc-cnotice > i { font-style: normal; font-size: 1.4rem; color: var(--gold-ink); }
+
+/* one commission */
+.acc-com { display: grid; gap: 16px; }
+.acc-com-back { justify-self: start; font-family: var(--display); font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; }
+.acc-com .acc-welcome { margin: 0; }
+.acc-com-card { display: grid; gap: 4px; }
+.acc-csteps { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+@media (max-width: 699px) {
+  .acc-csteps { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 18px; }
+  .acc-csteps li:nth-child(5)::before { display: none; }
+}
+.acc-com-dim { color: var(--fg-mute) !important; font-size: 0.92rem; }
+.acc-com-paid b { color: var(--fg); font-family: var(--display); font-size: 1.2rem; }
+
+/* the quote: a panel with the price, framed in gold while it waits */
+.acc-quote { position: relative; display: grid; justify-items: start; gap: 8px; margin: 22px 0 6px; padding: clamp(18px, 3vw, 26px); border: 2px solid var(--line-strong); background: var(--panel-2); }
+.acc-quote.is-open { border-color: var(--gold); box-shadow: 6px 6px 0 var(--k); }
+.acc-quote .label { color: var(--gold-ink); }
+.acc-quote-price { font-family: var(--display); font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 0.9; color: var(--fg); text-shadow: 0.05em 0.05em 0 var(--accent); }
+.acc-quote-what { margin: 4px 0 0; color: var(--fg); white-space: pre-wrap; }
+.acc-quote-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 6px; font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); }
+.acc-quote-meta span + span::before { content: '·'; margin-right: 16px; color: var(--accent); }
+.acc-quote-pay { display: grid; gap: 4px; width: min(100%, 420px); }
+.acc-quote-pay .btn.buy-btn { margin-top: 4px; }
+.acc-quote-pay .acc-link { justify-self: start; margin-top: 8px; }
+.acc-quote-note { margin: 0; font-size: 0.88rem; color: var(--fg-mute); }
+
+/* the conversation: the artist's messages left, theirs right, notes from the site in the middle */
+.acc-com-talk { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.acc-thread { display: grid; gap: 12px; max-height: min(60vh, 560px); overflow-y: auto; margin: 12px 0 14px; padding: 14px; border: 1px solid var(--line); background: var(--page); overscroll-behavior: contain; }
+.acc-msg { display: grid; justify-items: start; gap: 4px; max-width: min(82%, 560px); }
+.acc-msg.is-mine { justify-self: end; justify-items: end; }
+.acc-msg.is-note { justify-self: center; justify-items: center; max-width: 92%; }
+.acc-msg-who { font-family: var(--display); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); }
+.acc-msg-bubble { padding: 10px 14px; border: 2px solid var(--line-strong); background: var(--panel); color: var(--fg); box-shadow: 3px 3px 0 var(--k); }
+.acc-msg.is-mine .acc-msg-bubble { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.acc-msg.is-mine .acc-msg-bubble a { color: inherit; }
+.acc-msg.is-note .acc-msg-bubble { padding: 6px 12px; border: 1px dashed var(--line-strong); background: transparent; box-shadow: none; text-align: center; font-family: var(--display); font-size: 0.86rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--fg-dim); }
+.acc-msg-bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.acc-msg-bubble a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.acc-msg-links { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 0.9rem; }
+.acc-msg-links li::before { content: '↗ '; }
+.acc-msg time { font-size: 0.72rem; color: var(--fg-mute); }
+.acc-reply { display: grid; gap: 10px; }
+.acc-reply textarea, .acc-reply input { width: 100%; padding: 12px 14px; font: inherit; color: var(--fg); background: var(--panel-2); border: 2px solid var(--line-strong); border-radius: 0; outline: 0; transition: border-color 0.2s; }
+.acc-reply textarea { resize: vertical; min-height: 86px; line-height: 1.5; }
+.acc-reply textarea:focus, .acc-reply input:focus { border-color: var(--accent); }
+.acc-reply > .acc-link { justify-self: start; }
+.acc-reply-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 16px; }
+.acc-reply-bad { margin: 0; color: var(--acc-bad-text); font-size: 0.9rem; }
+.acc-com-ask { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.acc-com-ask summary { cursor: pointer; font-family: var(--display); font-size: 0.82rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); }
+.acc-com-ask summary:hover { color: var(--fg); }
+.acc-com-ask dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 18px; margin: 14px 0 0; }
+.acc-com-ask dt { font-family: var(--display); font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-mute); }
+.acc-com-ask dd { margin: 0; color: var(--fg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.acc-com-ask dd a { display: block; color: var(--accent); }
+.acc-com-cancel { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); color: var(--fg-dim); }
+.acc-com-cancel .acc-link { color: var(--fg-mute); }
+
+/* ---------- the Commissions page's request: one dark card with a purple strip ---------- */
+.cmr { border: var(--rule) solid var(--k); background: var(--panel); box-shadow: 8px 8px 0 var(--accent-deep); }
+/* the strip: open or closed, who is asking, the heading */
+.cmr-head { display: grid; gap: 10px; padding: 14px clamp(18px, 3vw, 28px) 16px; background: var(--accent); color: var(--on-accent); border-bottom: var(--rule) solid var(--k); }
+.cmr.is-closed .cmr-head { background: var(--panel-2); color: var(--fg); }
+.cmr-head-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 18px; }
+.cmr-head .status { background: var(--k); color: #fff; }
+.cmr-head .cm-as { margin: 0; font-family: var(--display); font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: inherit; opacity: 0.92; }
+.cmr-head .cm-as b { opacity: 1; }
+.cmr-title { margin: 0; font-family: var(--display); font-size: clamp(1.5rem, 2.4vw, 2.1rem); line-height: 1; letter-spacing: 0.01em; text-transform: uppercase; color: inherit; text-shadow: 0.06em 0.06em 0 var(--k); }
+.cmr-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(18px, 3vw, 34px); padding: clamp(18px, 3vw, 30px); }
+@media (min-width: 900px) { .cmr-body { grid-template-columns: minmax(200px, 0.7fr) minmax(0, 2fr); } }
+/* the points to know: a short list, quiet */
+.cmr-notes h3 { margin: 0 0 10px; font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); }
+.cmr-notes ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.cmr-notes li { position: relative; padding-left: 18px; font-size: 0.92rem; line-height: 1.45; color: var(--fg-dim); }
+.cmr-notes li::before { content: ''; position: absolute; left: 0; top: 0.5em; width: 7px; height: 7px; background: var(--accent); }
+@media (max-width: 899px) { .cmr-notes { padding-bottom: 16px; border-bottom: 1px dashed var(--line-strong); } }
+/* the form, in groups: the kind of piece, the idea, the details */
+.cmr-form { max-width: none; }
+.cmr-group { min-width: 0; margin: 0 0 18px; padding: 0; border: 0; }
+.cmr-group > legend { display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 12px; padding: 0; font-family: var(--display); font-size: 0.84rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg); }
+.cmr-group > legend::after { content: ''; flex: 1; height: 1px; background: var(--line-strong); }
+.cmr-field { display: grid; gap: 6px; margin-bottom: 12px; }
+.cmr-field label { margin: 0; font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-dim); }
+.cmr-field label small { font-family: var(--body); font-size: 0.8rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--fg-mute); }
+.cmr-req { color: var(--accent); }
+.cmr-field input, .cmr-field textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: 1rem; color: var(--fg); background: var(--page); border: 2px solid var(--line-strong); border-radius: 0; outline: 0; transition: border-color 0.2s; }
+.cmr-field input::placeholder, .cmr-field textarea::placeholder { color: var(--fg-mute); opacity: 1; }
+.cmr-field textarea { min-height: 104px; resize: vertical; line-height: 1.5; }
+.cmr-field input:hover, .cmr-field textarea:hover { border-color: var(--fg-mute); }
+.cmr-field input:focus-visible, .cmr-field textarea:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
+.cmr-field.is-bad input, .cmr-field.is-bad textarea { border-color: var(--acc-bad); }
+.cmr-hint { font-size: 0.82rem; color: var(--fg-mute); }
+.cmr-err { font-size: 0.86rem; font-weight: 600; color: var(--acc-bad-text); }
+.cmr-err::before { content: '! '; }
+.cmr-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
+.cmr-row.is-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 599px) { .cmr-row, .cmr-row.is-two { grid-template-columns: minmax(0, 1fr); } }
+/* the kind of piece: a small card each, the chosen one in purple */
+.cmr-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cmr-kind { position: relative; display: grid; gap: 3px; padding: 11px 14px 10px; border: 2px solid var(--line-strong); background: var(--page); cursor: pointer; transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease-out), box-shadow 0.2s; }
+.cmr-kind input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.cmr-kind strong { font-family: var(--display); font-size: 1.05rem; line-height: 1.05; text-transform: uppercase; color: var(--fg); }
+.cmr-kind small { font-family: var(--display); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-mute); }
+.cmr-kind:hover { border-color: var(--fg-mute); }
+.cmr-kind.on { border-color: var(--k); background: var(--accent); box-shadow: 4px 4px 0 var(--k); transform: translate(-2px, -2px); }
+.cmr-kind.on strong, .cmr-kind.on small { color: var(--on-accent); }
+.cmr-kind.on::after { content: '✓'; position: absolute; top: 6px; right: 9px; color: var(--on-accent); }
+.cmr-kind:has(input:focus-visible) { outline: 2px solid var(--fg); outline-offset: 3px; }
+@media (max-width: 479px) { .cmr-kinds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* sending it */
+.cmr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 4px; }
+.cmr-send:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.cmr-after { flex: 1 1 220px; font-size: 0.86rem; color: var(--fg-mute); }
+.cmr-form > .form-alt { margin-top: 14px; }
+/* not logged in: the way in */
+.cm-login { display: grid; justify-items: start; gap: 10px; }
+.cm-login > strong { font-family: var(--display); font-size: clamp(1.25rem, 2vw, 1.6rem); line-height: 1.05; text-transform: uppercase; color: var(--fg); }
+.cm-login > p { margin: 0; color: var(--fg-dim); }
+.cm-login > p b { color: var(--fg); }
+.cm-login-go, .cm-sent-go { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0; }
+.cm-login .form-alt { margin-top: 4px; }
+.form-sent .cm-sent-go { grid-column: 1 / -1; }
+/* closed: no form, the admin's words and how to write */
+.cmr-closed { display: grid; justify-items: start; gap: 10px; padding: 4px 0 4px 16px; border-left: 4px solid var(--accent); }
+.cmr-closed p { margin: 0; color: var(--fg-dim); }
+.cmr-closed .cmr-closed-text { font-size: 1.05rem; color: var(--fg); }
+.cmr-closed a:not(.btn) { color: var(--fg); border-bottom: 2px solid var(--accent); }
+
+/* ---------- commissions, round two: readable bubbles (WCAG AA), the quote in the thread, a code ---------- */
+/* the same colours in either theme: light words on a dark bubble (14:1), white on a deep purple one */
+.acc-thread .acc-msg .acc-msg-bubble { background: #221a2e; border-color: #43355a; color: #f4eff8; }
+.acc-thread .acc-msg .acc-msg-bubble p, .acc-thread .acc-msg .acc-msg-bubble li { color: #f3f3f1; }
+.acc-thread .acc-msg.is-mine .acc-msg-bubble { background: #5f1d86; border-color: #5f1d86; }
+.acc-thread .acc-msg.is-mine .acc-msg-bubble p, .acc-thread .acc-msg.is-mine .acc-msg-bubble li { color: #fff; }
+.acc-thread .acc-msg .acc-msg-bubble a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.acc-thread .acc-msg .acc-msg-bubble a:hover, .acc-thread .acc-msg .acc-msg-bubble a:focus-visible { text-decoration-thickness: 2px; outline: 0; }
+.acc-thread .acc-msg.is-note .acc-msg-bubble { background: transparent; border-color: var(--line-strong); color: var(--fg); }
+.acc-thread .acc-msg.is-note .acc-msg-bubble p { color: var(--fg); }
+.acc-thread .acc-msg-who, .acc-thread .acc-msg time { color: var(--fg-dim); }
+.acc-csteps { grid-template-columns: repeat(var(--n, 8), minmax(0, 1fr)); }
+@media (max-width: 699px) { .acc-csteps { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* a quote in the conversation: a card of its own */
+.acc-qnote { display: grid; gap: 6px; min-width: min(100%, 300px); padding: 14px 16px; text-align: left; border: 2px solid #ffc446; background: #1d1d21; color: #f3f3f1; box-shadow: 4px 4px 0 var(--k); }
+.acc-qnote-tag { justify-self: start; padding: 3px 8px 2px; font-family: var(--display); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; background: #ffc446; color: #0b0b0c; }
+.acc-qnote strong { font-family: var(--display); font-size: 2rem; line-height: 1; color: #fff; }
+.acc-qnote p { margin: 0; color: #f3f3f1; white-space: pre-wrap; overflow-wrap: anywhere; }
+.acc-qnote a { color: inherit; text-decoration: underline; }
+.acc-qnote dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 4px 0 0; font-size: 0.9rem; }
+.acc-qnote dt { font-family: var(--display); font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: #c9c9c6; }
+.acc-qnote dd { margin: 0; color: #f3f3f1; }
+.acc-msg.is-note:has(.acc-qnote) { max-width: min(96%, 460px); }
+/* the quote pinned above the reply box */
+.acc-com-talk .acc-quote { margin: 0 0 14px; }
+.acc-quote-code { display: grid; gap: 8px; width: min(100%, 420px); }
+.acc-quote-codeform { display: grid; gap: 6px; max-width: none; }
+.acc-quote-codeform label { font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); }
+.acc-quote-codeform > div { display: flex; gap: 8px; }
+.acc-quote-codeform input { flex: 1; min-width: 0; padding: 9px 12px; font: inherit; letter-spacing: 0.08em; color: var(--fg); background: var(--page); border: 2px solid var(--line-strong); border-radius: 0; outline: 0; }
+.acc-quote-codeform input:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
+.acc-quote-off { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 0; padding: 8px 12px; border: 1px dashed var(--gold-ink); color: var(--fg); }
+.acc-quote-off b { font-family: var(--display); letter-spacing: 0.06em; }
+.acc-quote-total { display: flex; justify-content: space-between; margin: 0; font-family: var(--display); font-size: 1.05rem; text-transform: uppercase; color: var(--fg); }
+.acc-quote-total b { font-size: 1.4rem; }
+.cmr-kinds[role='radiogroup'] { margin: 0; }
+/* a commission's row, with its delete button beside it; choosing several to delete */
+.acc-crow-wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.acc-crow-del { width: 40px; height: 40px; }
+.acc-orow.acc-crow.is-picking { grid-template-columns: auto minmax(0, 1fr) auto auto 26px; }
+.acc-ccount { font-family: var(--display); font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); }
+@media (max-width: 599px) {
+  .acc-orow.acc-crow.is-picking { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .acc-crow-del { width: 34px; height: 34px; }
+}
+
+/* ---------- commissions: received, closed ---------- */
+.acc-pill.is-complete { background: var(--open); color: #06140c; }
+.acc-received { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 0 14px; padding: 14px 16px; border: 2px solid var(--open); background: color-mix(in srgb, var(--open) 10%, transparent); }
+.acc-received > div { display: grid; gap: 3px; flex: 1 1 260px; }
+.acc-received strong { font-family: var(--display); font-size: 1.15rem; text-transform: uppercase; color: var(--fg); }
+.acc-received span { color: var(--fg-dim); }
+.acc-closed { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 0; padding: 12px 14px; border: 1px dashed var(--line-strong); color: var(--fg-dim); }
+.acc-closed p { margin: 0; }
+.acc-closed b { color: var(--fg); }
+.acc-modal-icon.is-ok { background: var(--open); color: #06140c; }
+/* an offer's quote button (Commissions page): its price, and where a quote is asked for */
+.tier-go { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: auto; padding: 12px 0 0; border-top: 1px dashed var(--line-strong); text-align: left; background: none; color: var(--accent); cursor: pointer; transition: color 0.2s, gap 0.25s var(--ease-out); }
+.tier-go i { font-style: normal; font-size: 1.1rem; }
+.tier-go:hover, .tier-go:focus-visible { color: var(--fg); gap: 18px; outline: 0; }
+.tier-go:focus-visible span { text-decoration: underline; text-underline-offset: 4px; }
+.tier-go.is-closed { cursor: default; color: var(--fg-mute); }
+.tier-go.is-closed small { font-size: 0.72rem; letter-spacing: 0.1em; }
+.cmr-label { margin-bottom: 14px; }
+.cmr-head .status { justify-self: start; display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 6px 12px 5px; }
+.acc-reply { max-width: none; }
+.acc-quote-code > .acc-link { justify-self: start; }
+
+/* a phone: the top bar keeps its three square buttons whole (the name gives way instead) */
+@media (max-width: 599px) {
+  .nav-bar { gap: 10px; }
+  .brand { min-width: 0; gap: 8px; }
+  .nav-account, .nav-cart, .burger { flex: 0 0 auto; }
+  .nav-account + .nav-cart { margin-left: 0; }
+}
+
+/* news emails, asked once on the account's Overview */
+.acct-news { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px 20px; margin: 0 0 clamp(20px, 3vw, 30px); padding: 18px 20px; border: 1px solid var(--line-strong); border-left: 4px solid var(--accent); background: var(--accent-soft); }
+.acct-news-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.acct-news-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.acct-news-words h2 { margin: 0 0 4px; font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg); }
+.acct-news-words p { margin: 0; color: var(--fg-dim); font-size: 0.95rem; line-height: 1.5; }
+.acct-news-go { display: flex; flex-wrap: wrap; gap: 8px; }
+.acct-news-done { margin: 0 0 clamp(20px, 3vw, 30px); }
+@media (max-width: 759px) { .acct-news { grid-template-columns: auto minmax(0, 1fr); } .acct-news-go { grid-column: 1 / -1; } }
+
+/* ---------- the member card as a real card (as on Milton's site) ----------
+   A layer that leans toward the pointer, and inside it the card itself, which turns over (a tap, a
+   click, or a drag round), its front and back two faces a little apart with thin slices of its body
+   between them. No flat backdrop under it: only its soft shadow, so nothing reads as part of the card
+   while it turns. */
+.acc-card3d-wrap { display: grid; perspective: 900px; }
+.acc-card3d-lean { --rx: 4deg; --ry: -12deg; --mx: 30%; transform: rotateX(var(--rx)) rotateY(var(--ry)); transform-style: preserve-3d; transition: transform 0.5s var(--ease-out); }
+.acc-card3d-wrap:hover .acc-card3d-lean { transition-duration: 0.15s; }
+.acc-card3d-flip { --turn: 0deg; display: grid; transform: rotateY(var(--turn)); transform-style: preserve-3d; transition: transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.acc-card3d-flip.is-dragging { transition: none; cursor: grabbing; }
+.acc-card3d-flip > .acc-card3d { grid-area: 1 / 1; transform: translateZ(2.5px); backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: none; box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55); }
+.acc-card3d-flip > .acc-card3d.is-ink { box-shadow: 0 40px 80px rgba(0, 0, 0, 0.55), inset 0 0 0 1px var(--accent); }
+.acc-card3d-flip > .acc-card3d-back { transform: rotateY(180deg) translateZ(2.5px); }
+/* the body between the faces: the same rounded shape, each slice a little further forward, in the look's own edge colour */
+.acc-card3d-edge { grid-area: 1 / 1; border-radius: 20px; background: linear-gradient(90deg, #4a1d72, #7a36b0 50%, #4a1d72); transform: translateZ(calc(var(--z) * 0.8px)); pointer-events: none; }
+.acc-card3d-edge.is-ink { background: linear-gradient(90deg, #1d1428, #3d2156 50%, #1d1428); }
+.acc-card3d-edge.is-gold { background: linear-gradient(90deg, #7a560c, #b8860b 50%, #7a560c); }
+.acc-card3d-edge.is-chrome { background: linear-gradient(90deg, #5d626b, #8d929b 50%, #5d626b); }
+.acc-card3d-flip img { pointer-events: none; }
+/* the band of light takes its place from the lean (the face would otherwise hold it at 30%) */
+.acc-card3d-lean .acc-card3d { --mx: inherit; }
+/* a finger resting on it: the band of light follows the finger instead of sweeping */
+.acc-card3d-lean.is-touched .acc-card3d-shine { animation: none; }
+.acc-card3d-lean.is-touched { transition-duration: 0.15s; }
+.acct-top .acc-card3d-lean { --rx: 2deg; --ry: -8deg; }
+@media (max-width: 1023px) { .acc-card3d-lean { --rx: 0deg; --ry: 0deg; } }
+
+/* the back: a stripe across it, the signature panel with a hologram, the numbers, a barcode and the small print */
+.acc-card3d-back { display: flex !important; flex-direction: column; justify-content: flex-end; gap: clamp(6px, 1.2vw, 10px); }
+.acc-card3d-back.has-art::before { background: linear-gradient(180deg, rgba(9, 7, 13, 0.2), rgba(9, 7, 13, 0.72)), var(--card-art) 50% 50% / cover no-repeat; }
+.acc-card3d-stripe { position: absolute; left: 0; right: 0; top: 9%; height: 19%; background: linear-gradient(180deg, #120c1a, #050307 40%, #1d1428); }
+.acc-card3d-sign { position: relative; display: flex; align-items: center; gap: clamp(10px, 1.8vw, 16px); }
+.acc-card3d-sign-strip { flex: 1; min-width: 0; display: flex; align-items: center; height: clamp(30px, 4.2vw, 40px); padding: 0 12px; background: repeating-linear-gradient(-45deg, #f4eff8 0 6px, #e6dcef 6px 12px); color: #2a1450; overflow: hidden; }
+.acc-card3d-sign-strip i { font-family: 'Segoe Script', 'Brush Script MT', 'Snell Roundhand', cursive; font-size: clamp(1rem, 2.1vw, 1.35rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transform: rotate(-3deg); }
+.acc-card3d-holo { flex: 0 0 auto; display: grid; place-items: center; width: clamp(38px, 5.4vw, 50px); aspect-ratio: 1; border-radius: 50%; background: conic-gradient(from 200deg, #c58bff, #ff8bd8, #8bd5ff, #9bffcf, #ffe08b, #c58bff); box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.3); }
+.acc-card3d-holo b { font-family: var(--display); font-size: clamp(0.9rem, 1.5vw, 1.1rem); font-weight: 400; color: rgba(10, 7, 16, 0.72); }
+.acc-card3d-sign-label { position: relative; margin-top: -4px; font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-mute); }
+.acc-card3d-facts { position: relative; display: flex; gap: clamp(14px, 2.4vw, 28px); font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.acc-card3d-facts small { display: block; margin-bottom: 3px; font-size: 0.56rem; letter-spacing: 0.16em; color: var(--fg-mute); }
+.acc-card3d-base { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.acc-card3d-bars { flex: 0 0 auto; height: clamp(20px, 3vw, 28px); padding: 0 6px; background-color: #fff; background-origin: content-box; background-clip: content-box; box-sizing: content-box; color: #0a0710; border: 4px solid #fff; }
+.acc-card3d-base p { margin: 0; max-width: 24ch; font-size: 0.56rem; line-height: 1.35; text-align: right; color: var(--fg-mute); }
+.acc-card3d.is-gold .acc-card3d-sign-label, .acc-card3d.is-chrome .acc-card3d-sign-label, .acc-card3d.is-gold .acc-card3d-facts small, .acc-card3d.is-chrome .acc-card3d-facts small, .acc-card3d.is-gold .acc-card3d-base p, .acc-card3d.is-chrome .acc-card3d-base p { color: rgba(10, 7, 16, 0.65); }
+.acc-card3d.has-art .acc-card3d-sign-label, .acc-card3d.has-art .acc-card3d-base p, .acc-card3d.has-art .acc-card3d-facts small { color: rgba(244, 239, 248, 0.8); }
+.acc-card3d-back.has-art.is-gold, .acc-card3d-back.has-art.is-chrome { color: var(--fg); }
+
+/* the button under the card */
+.acc-card3d-turn { justify-self: center; display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 4px 2px; border: 0; background: none; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); cursor: pointer; }
+.acc-card3d-turn span { font-size: 1rem; letter-spacing: 0; transition: transform 0.4s var(--ease-out); }
+.acc-card3d-turn:hover { color: var(--fg); }
+.acc-card3d-turn:hover span { transform: rotate(180deg); }
+.acc-card3d-turn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (max-width: 599px) {
+  .acc-card3d-flip > .acc-card3d { box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55); }
+  .acc-card3d-flip > .acc-card3d-back { padding: 14px 16px; gap: 6px; }
+  .acc-card3d-base p { display: none; }
+  .acc-card3d-facts { font-size: 0.72rem; }
+}
+@media (prefers-reduced-motion: reduce) { .acc-card3d-lean, .acc-card3d-flip { transition: none; } }
+/* points, on their way (the Rewards tab) */
+.acct-points .acct-group-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
+.acct-soon { padding: 4px 10px 3px; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; background: var(--gold); color: #0a0710; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.acct-points-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px 20px; padding: 18px 20px; border: 1px dashed var(--line-strong); background: rgba(255, 255, 255, 0.02); opacity: 0.9; }
+.acct-points-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); }
+.acct-points-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.acct-points-card strong { display: block; margin-bottom: 4px; font-family: var(--display); font-weight: 400; font-size: 1.15rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--fg); }
+.acct-points-card p { margin: 0; color: var(--fg-dim); font-size: 0.93rem; line-height: 1.5; }
+.acct-points-num { display: grid; justify-items: center; min-width: 76px; padding: 8px 12px; border: 1px solid var(--line); }
+.acct-points-num b { font-family: var(--display); font-weight: 400; font-size: 1.8rem; line-height: 1; color: var(--fg-mute); }
+.acct-points-num small { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-mute); }
+@media (max-width: 599px) { .acct-points-card { grid-template-columns: auto minmax(0, 1fr); } .acct-points-num { grid-column: 1 / -1; justify-self: start; display: flex; gap: 8px; align-items: baseline; } }
+
+/* points beside the card on Overview (coming soon) */
+.acct-stats button.is-soon strong { color: var(--fg-mute); }
+.acct-stats button.is-soon em { margin-left: 6px; padding: 2px 6px 1px; font-style: normal; font-size: 0.56rem; letter-spacing: 0.14em; background: var(--gold); color: #0a0710; }
+@media (max-width: 1099px) { .acct-stats.is-stacked { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 599px) { .acct-stats.is-stacked { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* four facts along the card's foot now (since, number, points, prints): a little tighter */
+.acc-card3d-foot { gap: clamp(12px, 2vw, 24px); }
+
+/* /card-view: the card alone, centred, in the admin's window (the window's own background shows through) */
+html.is-card-view, html.is-card-view body { background: radial-gradient(120% 90% at 50% 0%, #241536, #0b0812 70%) fixed; color-scheme: dark; }
+html.is-card-view body::before, html.is-card-view body::after { display: none; }
+.card-view { min-height: 100svh; display: grid; place-items: center; padding: 28px 24px 18px; overflow: hidden; }
+.card-view .acc-card3d-wrap { width: min(100%, 460px); }

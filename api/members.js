@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
 import { sendMail, siteUrl } from './_users.js'
+import { mailingAction } from './_mailings.js'
 
 /* The admin's view of customer accounts, and gifting rewards. A reward the admin gifts counts as
    earned, whatever the customer's orders: its picture or card design opens up, and a discount
@@ -36,7 +37,7 @@ const pictureOf = (avatar) => {
   const piece = readJson(`content/work/${avatar}.json`)
   return piece && piece.src ? { src: piece.src, face: String(piece.face || '') } : null
 }
-const shape = (u) => ({ email: u.email, name: u.name || '', memberNo: Number(u.memberNo) || null, verified: Boolean(u.verified), createdAt: u.createdAt, gifts: Array.isArray(u.gifts) ? u.gifts : [], picture: pictureOf(typeof u.avatar === 'string' ? u.avatar : '') })
+const shape = (u) => ({ email: u.email, name: u.name || '', memberNo: Number(u.memberNo) || null, verified: Boolean(u.verified), news: Boolean(u.marketing), unsubscribedAt: u.unsubscribedAt || null, createdAt: u.createdAt, gifts: Array.isArray(u.gifts) ? u.gifts : [], card: typeof u.card === 'string' ? u.card : '', picture: pictureOf(typeof u.avatar === 'string' ? u.avatar : '') })
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
@@ -47,6 +48,11 @@ export default async function handler(req, res) {
   const users = (await db()).collection('users')
 
   try {
+    // Orders → Emails: news and notices to many customers at once (api/_mailings.js)
+    if (req.method === 'POST' && req.body && typeof req.body === 'object' && String(req.body.action || '').startsWith('adminMail')) {
+      const [status, answer] = await mailingAction(req, await db(), String(req.body.action), req.body)
+      return res.status(status).json(answer)
+    }
     if (req.method === 'GET') {
       const list = await users.find({}).sort({ memberNo: 1 }).limit(2000).toArray()
       const members = list.map(shape)

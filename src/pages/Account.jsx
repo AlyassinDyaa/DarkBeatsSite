@@ -2,11 +2,12 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Page from '../components/Page'
-import { accountPage, asset, brand, canBuy, faceLook, money, priceOf, priceVaries, shop, soldOut, work } from '../data/site'
+import { accountPage, asset, brand, canBuy, faceLook, money, priceOf, priceVaries, shop, shows, soldOut, work } from '../data/site'
 import Poster from '../components/Poster'
 import Wordmark from '../components/Wordmark'
 import { useAccount } from '../hooks/useAccount'
 import { useCart } from '../hooks/useCart'
+import AccountCommissions, { useCommissionList } from '../components/AccountCommissions'
 
 /* Customer accounts: log in, make an account, forgotten and new passwords, confirming the email
    address, and the account itself (orders with their tracking, details, security). Everything
@@ -69,10 +70,11 @@ const PERKS = [
   ['Your own corner', 'Your collection, hung on your own wall.'],
 ]
 /* Rewards: how each is earned, whether this customer has, and the card design they chose. */
-const earnText = (r) => (r.earnedBy === 'verify' ? 'Confirm your email' : r.earnedBy === 'orders' ? (r.count === 1 ? 'Place your first order' : `Place ${r.count} orders`) : `Collect ${r.count} prints`)
-const hasEarned = (r, p) => Boolean(p) && ((p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : p.pieces >= r.count))
+const earnText = (r) => (r.earnedBy === 'verify' ? 'Confirm your email' : r.earnedBy === 'orders' ? (r.count === 1 ? 'Place your first order' : `Place ${r.count} orders`) : r.earnedBy === 'commissions' ? (r.count === 1 ? 'Commission a piece' : `Commission ${r.count} pieces`) : `Collect ${r.count} prints`)
+// commissions are counted apart from the shop's orders and prints (paid, not refunded, still in the account)
+const hasEarned = (r, p) => Boolean(p) && ((p.gifts || []).includes(r.id) || (r.earnedBy === 'verify' ? p.verified : r.earnedBy === 'orders' ? p.orders >= r.count : r.earnedBy === 'commissions' ? (p.commissions || 0) >= r.count : p.pieces >= r.count))
 const cardDesigns = () => accountPage.rewards.filter((r) => r.kind === 'card')
-const designOf = (id) => cardDesigns().find((r) => r.id === id) || null
+export const designOf = (id) => cardDesigns().find((r) => r.id === id) || null
 // a design's picture, placed and zoomed as the admin set it (the card's ::before draws it)
 const designStyle = (d) => {
   if (!d || !d.cardArt) return undefined
@@ -82,42 +84,139 @@ const designStyle = (d) => {
 
 /* the collector card: the name, the year they joined, a card number, and what they have collected;
    in the design they chose (a reward), or the site's own purple */
-function CollectorCard({ name, since, number, prints, design = null }) {
-  const card = useRef(null)
-  // the card leans toward the pointer, a little
-  const lean = (e) => {
-    const el = card.current
-    if (!el || e.pointerType === 'touch') return
-    const r = el.getBoundingClientRect()
-    el.style.setProperty('--rx', `${((e.clientY - r.top) / r.height - 0.5) * -10}deg`)
-    el.style.setProperty('--ry', `${((e.clientX - r.left) / r.width - 0.5) * 14}deg`)
-    el.style.setProperty('--mx', `${((e.clientX - r.left) / r.width) * 100}%`)
+/* The collector card, a real card with two sides: the front (the name, the year they joined, the
+   number, what they have collected) and the back (a stripe, their signature, a hologram, the number
+   again as a barcode, the small print). It leans toward the pointer; a tap or click turns it over,
+   and a drag spins it round by hand, settling on whichever side is nearer when let go.
+   The back never borrows the front's picture: it is the design's own back picture (set in the
+   admin), or else the card's look (the site's purple, ink, gold or chrome). */
+const EDGE = [-3, -2, -1, 0, 1, 2, 3] // the slices of the card's body, from its back face to its front
+const backStyle = (d) => (d && d.cardBack ? { '--card-art': `url("${asset(d.cardBack)}")`, '--art-x': '50%', '--art-y': '50%', '--art-z': 1 } : undefined)
+// the barcode on the back, made from the member number: the same bars for the same number every time
+const barsOf = (number) => {
+  const digits = String(number || '').replace(/\D/g, '').padStart(4, '0')
+  const seq = `${digits}${[...digits].reverse().join('')}7319${digits}`.split('').map(Number)
+  const stops = []
+  let x = 0
+  seq.forEach((n, i) => {
+    const w = 2 * (1 + (n % 3))
+    const gap = 2 * (1 + ((n + i) % 2))
+    stops.push(`currentColor ${x}px ${x + w}px`, `transparent ${x + w}px ${x + w + gap}px`)
+    x += w + gap
+  })
+  return { backgroundImage: `linear-gradient(90deg, ${stops.join(', ')})`, width: `${x}px` }
+}
+export function CollectorCard({ name, since, number, prints, points = 0, design = null }) {
+  const lean = useRef(null)
+  const flip = useRef(null)
+  const turn = useRef(0) // how far round it is turned, in degrees: 0 the front, 180 the back, 360 the front again
+  const drag = useRef(null)
+  const [back, setBack] = useState(false)
+  const setTurn = (deg, moving = false) => {
+    turn.current = deg
+    const el = flip.current
+    if (el) { el.style.setProperty('--turn', `${deg}deg`); el.classList.toggle('is-dragging', moving) }
+    setBack(Math.abs(Math.round(deg / 180)) % 2 === 1)
   }
-  const rest = () => { const el = card.current; if (el) { el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); el.style.removeProperty('--mx') } }
+  const settle = () => Math.round(turn.current / 180) * 180
+  const turnOver = () => setTurn(settle() + 180)
+  // the card leans toward the pointer, or the finger resting on it, and the band of light follows it; not while it is being spun
+  const leanTo = (e) => {
+    const el = lean.current
+    if (!el || (drag.current && drag.current.moved)) return
+    const r = el.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height
+    el.style.setProperty('--rx', `${(y - 0.5) * -10}deg`)
+    el.style.setProperty('--ry', `${(x - 0.5) * 14}deg`)
+    el.style.setProperty('--mx', `${x * 100}%`)
+  }
+  const rest = (force = false) => {
+    const el = lean.current
+    if (!el || (drag.current && !force)) return
+    for (const k of ['--rx', '--ry', '--mx']) el.style.removeProperty(k)
+    el.classList.remove('is-touched')
+  }
+  const down = (e) => {
+    if (e.button !== undefined && e.button !== 0) return
+    drag.current = { x: e.clientX, from: turn.current, moved: false, id: e.pointerId }
+    if (e.pointerType === 'touch' && lean.current) { lean.current.classList.add('is-touched'); leanTo(e) }
+  }
+  const move = (e) => {
+    const d = drag.current
+    if (!d) { if (e.pointerType !== 'touch') leanTo(e); return }
+    const dx = e.clientX - d.x
+    if (!d.moved) {
+      leanTo(e)
+      if (Math.abs(dx) < 6) return
+      d.moved = true // from here it is a spin: the lean lets go and the card turns with the hand
+      rest(true)
+      try { flip.current.setPointerCapture(d.id) } catch { /* fine */ }
+    }
+    setTurn(d.from + dx * 0.55, true)
+  }
+  const up = (e) => {
+    const d = drag.current
+    drag.current = null
+    if (!d) return
+    if (d.moved) setTurn(settle())
+    else turnOver()
+    if (e.pointerType === 'touch') rest()
+  }
   const shown = (name || '').trim()
+  const look = design ? `is-${design.cardLook}` : ''
+  const host = typeof window !== 'undefined' ? window.location.host : ''
   return (
-    <div className="acc-card3d-wrap" onPointerMove={lean} onPointerLeave={rest}>
-      <div ref={card} className={`acc-card3d ${design ? `is-${design.cardLook}` : ''} ${design && design.cardArt ? 'has-art' : ''}`} style={designStyle(design)} role="img" aria-label={`${brand.name} collector card${shown ? ` for ${shown}` : ''}`}>
-        <span className="acc-card3d-shine" />
-        <span className="acc-card3d-mark" aria-hidden="true">J</span>
-        <div className="acc-card3d-top" aria-hidden="true">
-          <span className="acc-card3d-brand">{brand.logo && <img src={asset(brand.logo)} alt="" />}<Wordmark /></span>
-          <span className="acc-card3d-kind">Collector</span>
-        </div>
-        <span className="acc-card3d-chip" aria-hidden="true" />
-        <div className={`acc-card3d-name ${shown ? '' : 'is-empty'}`} aria-hidden="true">{shown || 'Your name here'}</div>
-        <div className="acc-card3d-foot" aria-hidden="true">
-          <span><small>Member since</small>{since}</span>
-          <span><small>Member no.</small>{number}</span>
-          <span><small>Prints</small>{prints}</span>
+    <div className="acc-card3d-wrap" onPointerLeave={() => rest()} role="group" aria-label={`${brand.name} collector card${shown ? ` for ${shown}` : ''}, ${back ? 'the back' : 'the front'}`}>
+      <div ref={lean} className="acc-card3d-lean">
+        <div ref={flip} className="acc-card3d-flip" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+          {/* the card's thickness: slices between the faces, seen edge-on while it turns or leans */}
+          {EDGE.map((z) => <span key={z} className={`acc-card3d-edge ${look}`} style={{ '--z': z }} aria-hidden="true" />)}
+          <div className={`acc-card3d is-front ${look} ${design && design.cardArt ? 'has-art' : ''}`} style={designStyle(design)} aria-hidden={back}>
+            <span className="acc-card3d-shine" />
+            <span className="acc-card3d-mark" aria-hidden="true">J</span>
+            <div className="acc-card3d-top">
+              <span className="acc-card3d-brand">{brand.logo && <img src={asset(brand.logo)} alt="" draggable="false" />}<Wordmark /></span>
+              <span className="acc-card3d-kind">Collector</span>
+            </div>
+            <span className="acc-card3d-chip" aria-hidden="true" />
+            <div className={`acc-card3d-name ${shown ? '' : 'is-empty'}`}>{shown || 'Your name here'}</div>
+            <div className="acc-card3d-foot">
+              <span><small>Member since</small>{since}</span>
+              <span><small>Member no.</small>{number}</span>
+              <span><small>Points</small>{points}</span>
+              <span><small>Prints</small>{prints}</span>
+            </div>
+          </div>
+          <div className={`acc-card3d acc-card3d-back ${look} ${design && design.cardBack ? 'has-art' : ''}`} style={backStyle(design)} aria-hidden={!back}>
+            <span className="acc-card3d-shine" />
+            <span className="acc-card3d-stripe" aria-hidden="true" />
+            <div className="acc-card3d-sign">
+              <span className="acc-card3d-sign-strip"><i>{shown || 'Your name'}</i></span>
+              <span className="acc-card3d-holo" aria-hidden="true"><b>J</b></span>
+            </div>
+            <small className="acc-card3d-sign-label">Collector’s signature</small>
+            <div className="acc-card3d-facts">
+              <span><small>Member no.</small>{number}</span>
+              <span><small>Since</small>{since}</span>
+              <span><small>Points</small>{points}</span>
+              <span><small>Prints</small>{prints}</span>
+            </div>
+            <div className="acc-card3d-base">
+              <span className="acc-card3d-bars" style={barsOf(number)} aria-hidden="true" />
+              <p>Original art by {brand.name}. This card belongs to its member{host ? ` · ${host}` : ''}</p>
+            </div>
+          </div>
         </div>
       </div>
+      <button type="button" className="acc-card3d-turn" onClick={turnOver} aria-label={back ? 'Turn the card to its front' : 'Turn the card over'}>
+        <span aria-hidden="true">↻</span> {back ? 'See the front' : 'Turn over'}
+      </button>
     </div>
   )
 }
 // the same four digits for the same customer, every time
 // member 1 reads #0001
-const memberNumber = (n) => (n ? `#${String(n).padStart(4, '0')}` : '#----')
+export const memberNumber = (n) => (n ? `#${String(n).padStart(4, '0')}` : '#----')
 
 function AuthArt({ cardName }) {
   // logged in (confirming the email, for example): their own card
@@ -283,6 +382,32 @@ function Verify() {
         <i aria-hidden="true">{state === 'done' ? '✓' : state === 'working' ? '…' : '!'}</i>
         <p>{state === 'working' ? 'Checking the link…' : state === 'done' ? 'Thank you. Every order placed with this email now shows in your account.' : state === 'missing' ? 'This page needs the link from the email.' : text}</p>
         <Link className="btn ghost sm" to={user ? '/account' : '/account/login'}>{user ? 'Go to your account' : 'Log in'} <span className="arrow">→</span></Link>
+      </div>
+    </Shell>
+  )
+}
+
+/* ---------- no more news emails, from the link at the foot of a mass email (no login needed) ---------- */
+function Unsubscribe() {
+  const { call, user } = useAccount()
+  const [params] = useSearchParams()
+  const u = params.get('u') || ''
+  const t = params.get('t') || ''
+  const [state, setState] = useState(u && t ? 'working' : 'missing')
+  const [text, setText] = useState('')
+  useEffect(() => {
+    if (!u || !t) return
+    let stale = false
+    call('unsubscribe', { u, t }).then(() => { if (!stale) setState('done') }).catch((e) => { if (!stale) { setState('failed'); setText(e.message) } })
+    return () => { stale = true }
+  }, [u, t, call])
+  const details = '/account?tab=details'
+  return (
+    <Shell title={state === 'done' ? 'You are unsubscribed' : 'Unsubscribe'} label="News emails">
+      <div className={`acc-card acc-done ${state === 'failed' || state === 'missing' ? 'is-bad' : ''}`} role="status">
+        <i aria-hidden="true">{state === 'done' ? '✓' : state === 'working' ? '…' : '!'}</i>
+        <p>{state === 'working' ? 'One moment…' : state === 'done' ? 'You won’t get news emails any more. Emails about your orders and your account still come as usual. Changed your mind? Turn news back on under Details in your account.' : state === 'missing' ? 'This page needs the link from the email. You can also turn news emails off under Details in your account.' : text}</p>
+        <Link className="btn ghost sm" to={user ? details : `/account/login?next=${encodeURIComponent(details)}`}>{state === 'done' ? 'Resubscribe in Details' : 'Go to Details'} <span className="arrow">→</span></Link>
       </div>
     </Shell>
   )
@@ -911,8 +1036,43 @@ function Security() {
   )
 }
 
+/* News emails, asked once on the Overview: for someone who did not tick "Email me about new prints"
+   when they signed up (and has not unsubscribed since). Yes turns news on; No thanks is remembered,
+   so it is not asked again on any device. The box under Details changes it either way. */
+function NewsAsk() {
+  const { user, call } = useAccount()
+  const [busy, setBusy] = useState('')
+  const [done, setDone] = useState('')
+  const [problem, setProblem] = useState('')
+  if (done) return <p className="acc-welcome acct-news-done" role="status">{done}</p>
+  if (!user || user.marketing || user.newsAsked) return null
+  const answer = async (on) => {
+    setBusy(on ? 'yes' : 'no'); setProblem('')
+    try {
+      await call('news', { on })
+      setDone(on ? 'You are on the list. News about new prints, conventions and the odd discount will come to ' + user.email + '. Change it any time under Details.' : 'No problem: no news emails. You can turn them on any time under Details.')
+    } catch (e) { setProblem(e.message) }
+    setBusy('')
+  }
+  const artist = String(brand.artist || brand.name || '').trim().split(/\s+/)[0]
+  return (
+    <section className="acct-news" aria-labelledby="acct-news-title">
+      <span className="acct-news-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18v12H3z M3 7l9 6 9-6" /></svg></span>
+      <div className="acct-news-words">
+        <h2 id="acct-news-title">Want news from {artist}?</h2>
+        <p>New prints, conventions, commissions opening and the odd discount, straight to your inbox. No spam, and you can stop any time.</p>
+        {problem && <p className="acc-reply-bad" role="alert">{problem}</p>}
+      </div>
+      <div className="acct-news-go">
+        <button type="button" className="btn sm" onClick={() => answer(true)} disabled={Boolean(busy)}>{busy === 'yes' ? 'One moment…' : 'Yes, keep me posted'}</button>
+        <button type="button" className="btn ghost sm" onClick={() => answer(false)} disabled={Boolean(busy)}>{busy === 'no' ? 'One moment…' : 'No thanks'}</button>
+      </div>
+    </section>
+  )
+}
+
 /* the first thing a customer sees: hello, how things stand, their prints, what is new */
-function Overview({ orders, go }) {
+function Overview({ orders, go, commissions = null, openCommissions = () => {} }) {
   const { user } = useAccount()
   const shopOrders = keptOrders(orders)
   const collected = printsIn(orders)
@@ -934,8 +1094,19 @@ function Overview({ orders, go }) {
         <button type="button" onClick={() => go('orders')}><strong>{orders ? shopOrders.length : '–'}</strong><span>{shopOrders.length === 1 ? 'Order' : 'Orders'}</span></button>
         <button type="button" onClick={() => go('orders')}><strong>{orders ? collected : '–'}</strong><span>{collected === 1 ? 'Print collected' : 'Prints collected'}</span></button>
         <button type="button" onClick={() => go('saved')}><strong>{saved.length}</strong><span>Saved for later</span></button>
+        <button type="button" className="is-soon" onClick={() => go('rewards')}><strong>0</strong><span>Points <em>Soon</em></span></button>
       </div>
       </div>
+
+      <NewsAsk />
+
+      {commissions && commissions.unread > 0 && (
+        <button type="button" className="acc-cnotice" onClick={openCommissions}>
+          <b>{commissions.unread}</b>
+          <span><strong>{commissions.unread === 1 ? 'A new message' : 'New messages'} about your commission</strong><small>Read and answer under Orders → Commissions</small></span>
+          <i aria-hidden="true">→</i>
+        </button>
+      )}
 
       {latest ? (
         <section className="acct-block">
@@ -1031,9 +1202,9 @@ function Rewards({ go, fresh = [] }) {
   const gifted = list.filter((r) => r.gifted)
   const earnable = list.filter((r) => !r.gifted)
   if (!list.length && !giftCodes.length) return <div className="acc-empty"><strong>No rewards yet</strong><p>Rewards for members are on their way.</p></div>
-  const have = (r) => (r.earnedBy === 'orders' ? p.orders : r.earnedBy === 'pieces' ? p.pieces : p.verified ? 1 : 0)
+  const have = (r) => (r.earnedBy === 'orders' ? p.orders : r.earnedBy === 'pieces' ? p.pieces : r.earnedBy === 'commissions' ? p.commissions || 0 : p.verified ? 1 : 0)
   const need = (r) => (r.earnedBy === 'verify' ? 1 : r.count)
-  const unit = (r) => (r.earnedBy === 'pieces' ? 'prints' : 'orders')
+  const unit = (r) => (r.earnedBy === 'pieces' ? 'prints' : r.earnedBy === 'commissions' ? 'commissions' : 'orders')
   const copy = async (code) => { try { await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(''), 1600) } catch { /* the code is on screen to copy by hand */ } }
 
   // a code: the chip with its copy icon and "Add to my cart", or crossed out once it no longer works
@@ -1128,6 +1299,7 @@ function Rewards({ go, fresh = [] }) {
       <div className="acct-progress">
         <span><b>{p.orders}</b> {p.orders === 1 ? 'order' : 'orders'}</span>
         <span><b>{p.pieces}</b> {p.pieces === 1 ? 'print' : 'prints'}</span>
+        {(p.commissions || 0) > 0 && <span><b>{p.commissions}</b> {p.commissions === 1 ? 'commission' : 'commissions'}</span>}
         <span><b>{p.verified ? '✓' : '–'}</b> email {p.verified ? 'confirmed' : 'not confirmed'}</span>
         {giftCount > 0 && <span><b>{giftCount}</b> {giftCount === 1 ? 'gift' : 'gifts'}</span>}
       </div>
@@ -1170,6 +1342,21 @@ function Rewards({ go, fresh = [] }) {
           <div className="acct-reward-list">{earnable.map((r) => rewardCard(r))}</div>
         </section>
       )}
+      {/* points: on their way (nothing is counted yet) */}
+      <section className="acct-reward-group acct-points" aria-labelledby="acct-points-title">
+        <header className="acct-group-head">
+          <h3 id="acct-points-title">Points</h3>
+          <span className="acct-soon">Coming soon</span>
+        </header>
+        <div className="acct-points-card">
+          <span className="acct-points-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.600 5.600 6.100.700-4.500 4.200 1.200 6-5.400-3-5.400 3 1.200-6L3.300 9.300l6.100-.700z" /></svg></span>
+          <div>
+            <strong>Earn points with every print and commission</strong>
+            <p>Collect them as you go and spend them on prints, signatures and more. Your points will show here once they start.</p>
+          </div>
+          <div className="acct-points-num" aria-label="0 points"><b>0</b><small>points</small></div>
+        </div>
+      </section>
     </div>
   )
 }
@@ -1205,6 +1392,11 @@ function Home() {
   const [resent, setResent] = useState('')
   const paid = params.get('thanks') === '1'
   const { orders, problem, drop } = useOrders(paid)
+  // their commissions (components/AccountCommissions.jsx): the Orders tab counts new messages
+  const commissions = useCommissionList(Boolean(user))
+  // Commissions in the account can be switched off (Show / hide → Commissions): still shown to anyone who has one
+  const comShown = shows('commissions', 'account') || Boolean(commissions.list && commissions.list.length)
+  const view = comShown && tab === 'orders' && params.get('view') === 'commissions' ? 'commissions' : 'shop'
   // back from paying: what was bought leaves the cart
   const { settle } = useCart()
   useEffect(() => { if (paid) settle() }, [paid, settle])
@@ -1253,7 +1445,7 @@ function Home() {
   const savedPieces = (user.saved || []).map((slug) => work.find((p) => p.slug === slug))
   const strip = [...new Map([chosen, ...owned, ...savedPieces, ...work].filter((p) => p && p.src).map((p) => [p.slug, p])).values()].slice(0, 12)
   const LEADS = {
-    orders: 'Every print you have ordered, and where it is now.',
+    orders: view === 'commissions' ? `The pieces drawn for you: the conversation with ${String(brand.artist || brand.name).split(' ')[0]}, the quote, and each stage of the work.` : 'Every print you have ordered, and where it is now.',
     rewards: 'What you have earned, and how close you are to the next one.',
     saved: 'The pieces you are keeping an eye on.',
     details: 'Your name, how to reach you, and your picture.',
@@ -1309,6 +1501,7 @@ function Home() {
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d={TAB_ICONS[k]} /></svg>
               <span>{label}</span>
               {counts[k] > 0 && <small className={k === 'rewards' ? 'is-alert' : ''} aria-label={k === 'rewards' ? `${counts[k]} new` : undefined}>{counts[k]}</small>}
+              {k === 'orders' && commissions.unread > 0 && <small className="is-alert" title="New messages about your commissions" aria-label={`${commissions.unread} new ${commissions.unread === 1 ? 'message' : 'messages'} about your commissions`}>{commissions.unread}</small>}
             </button>
           ))}
         </nav>
@@ -1333,11 +1526,25 @@ function Home() {
                 <p>{LEADS[tab]}</p>
               </div>
             )}
-            {tab === 'overview' && <Overview orders={orders} go={go} />}
-            {tab === 'orders' && <Orders orders={orders} problem={problem} onRemoved={drop} />}
+            {tab === 'overview' && <Overview orders={orders} go={go} commissions={commissions} openCommissions={() => setParams({ tab: 'orders', view: 'commissions' }, { replace: true })} />}
+            {tab === 'orders' && (
+              <>
+                {/* the shop's orders, and the commissions: a tab each (?view=commissions) */}
+                {comShown && <div className="acc-csub" role="tablist" aria-label="Which orders">
+                  <button type="button" role="tab" aria-selected={view === 'shop'} className={view === 'shop' ? 'on' : ''} onClick={() => setParams({ tab: 'orders' }, { replace: true })}>Shop orders<small>{orders ? shopOrders.length : '–'}</small></button>
+                  <button type="button" role="tab" aria-selected={view === 'commissions'} className={view === 'commissions' ? 'on' : ''} onClick={() => setParams({ tab: 'orders', view: 'commissions' }, { replace: true })}>
+                    Commissions<small>{commissions.list ? commissions.list.length : '–'}</small>
+                    {commissions.unread > 0 && <small className="is-alert" aria-label={`${commissions.unread} new`}>{commissions.unread} new</small>}
+                  </button>
+                </div>}
+                {view === 'commissions'
+                  ? <AccountCommissions list={commissions.list} reload={commissions.reload} params={params} setParams={setParams} />
+                  : <Orders orders={orders} problem={problem} onRemoved={drop} />}
+              </>
+            )}
             {tab === 'rewards' && <Rewards go={go} fresh={freshGifts} />}
             {tab === 'saved' && <Saved />}
-            {tab === 'details' && <Details onPreview={setPreview} owned={owned} progress={orders ? { verified: Boolean(user.verified), orders: keptOrders(orders).length, pieces: printsIn(orders) } : null} />}
+            {tab === 'details' && <Details onPreview={setPreview} owned={owned} progress={orders ? { verified: Boolean(user.verified), orders: keptOrders(orders).length, pieces: printsIn(orders), commissions: (commissions.list || []).filter((c) => c.counted).length } : null} />}
             {tab === 'security' && <Security />}
           </motion.div>
         </div>
@@ -1363,6 +1570,7 @@ export default function Account() {
       <Route path="forgot" element={<Forgot />} />
       <Route path="reset" element={<Reset />} />
       <Route path="verify" element={<Verify />} />
+      <Route path="unsubscribe" element={<Unsubscribe />} />
       <Route path="*" element={<Navigate to="/account" replace />} />
     </Routes>
   )

@@ -29,6 +29,13 @@ export const db = async () => {
         d.collection('attempts').createIndex({ key: 1, at: -1 }),
         d.collection('attempts').createIndex({ at: 1 }, { expireAfterSeconds: 2 * 3600 }),
         d.collection('orders').createIndex({ ref: 1 }, { unique: true }),
+        // commissions (api/_commissions.js), and mass emails (api/_mailings.js): the hourly counts go after three days
+        d.collection('commissions').createIndex({ userId: 1, createdAt: -1 }),
+        d.collection('commissions').createIndex({ updatedAt: -1 }),
+        d.collection('commissions').createIndex({ 'payment.pi': 1 }),
+        d.collection('deliveryChunks').createIndex({ createdAt: 1 }, { expireAfterSeconds: 864e2 }),
+        d.collection('mailCounts').createIndex({ at: 1 }, { expireAfterSeconds: 3 * 86400 }),
+        d.collection('mailings').createIndex({ createdAt: -1 }),
         d.collection('orders').createIndex({ userId: 1, createdAt: -1 }),
         d.collection('orders').createIndex({ email: 1, createdAt: -1 }),
         d.collection('orders').createIndex({ pi: 1 }),

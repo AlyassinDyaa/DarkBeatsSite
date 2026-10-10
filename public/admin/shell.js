@@ -57,8 +57,8 @@
     },
     'pages/lists': { groups: { workLabel: 'Shop page', galleryLabel: 'Work page' }, half: ['workLabel', 'workTitle', 'galleryLabel', 'galleryTitle'] },
     'pages/commissions': {
-      groups: { title: 'Top of the page', tiers: 'What you offer', processLabel: 'How it works', requestLabel: 'Request form', notes: 'Good to know' },
-      half: ['processLabel', 'processTitle', 'requestLabel', 'requestTitle'],
+      groups: { title: 'Top of the page', tiers: 'What you offer', quoteLabel: 'The quote button', processLabel: 'How it works', requestLabel: 'Request form', notes: 'Good to know' },
+      half: ['quoteLabel', 'quoteVia', 'processLabel', 'processTitle', 'requestLabel', 'requestTitle'],
     },
     'pages/about': { groups: { title: 'Text', facts: 'Quick facts' }, half: [] },
     'pages/contact': { groups: { label: 'Top of the page', topics: 'Form' }, half: ['label', 'title'] },
@@ -67,7 +67,7 @@
       half: ['label', 'title', 'logo', 'figure', 'aboutLabel', 'aboutTitle', 'artLabel', 'artTitle', 'supportLabel', 'supportTitle', 'customLabel', 'customUrl', 'soonTitle', 'soonText', 'goalSign', 'goalLabel', 'goalRaised', 'goalTarget'],
     },
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
-    'site/shop': { groups: { enabled: 'Selling online', currency: 'What you sell', signedChoice: 'Signed prints', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase' }, half: ['currency', 'buttonLabel', 'cartIcon', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
+    'site/shop': { groups: { enabled: 'Selling online', currency: 'What you sell', signedChoice: 'Signed prints', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase', emails: 'Emails to you' }, half: ['currency', 'buttonLabel', 'cartIcon', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
     'pages/rewards': { groups: { rewardText: 'Before they confirm', pictures: 'Profile pictures', cards: 'Membership card designs', discounts: 'Discounts' }, half: [], inner: ['earnedBy', 'count', 'percent', 'days', 'cardLook'] },
     'site/sales': { groups: {}, half: [], inner: ['on', 'percent', 'starts', 'ends'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
@@ -950,7 +950,8 @@
         if (!item) return
         const said = [...item.querySelectorAll('[class*="singleValue"]')].map((n) => n.textContent)
         const found = LOOKS.find(([, re]) => said.some((t) => re.test(t)))
-        const img = item.querySelector('[class*="ImageWrapper"] img')
+        const artBox = (item.querySelector('label[for^="cardArt-field"]') || {}).closest ? item.querySelector('label[for^="cardArt-field"]').closest('[class*="ControlContainer"]') : null
+        const img = (artBox || item).querySelector('[class*="ImageWrapper"] img')
         const name = (item.querySelector('input[id^="name-field"]') || {}).value || ''
         const next = { look: found ? found[0] : 'ink', art: img ? img.getAttribute('src') || '' : '', name }
         if (next.look !== this.state.look || next.art !== this.state.art || next.name !== this.state.name) this.setState(next)
@@ -1026,4 +1027,26 @@
       if (input) box.classList.toggle('ia-date-empty', !input.value)
     })
   }, 300)
+
+  /* ---------- the quote button (Page text → Commissions) ----------
+     Its address field only matters for "Another link": hidden for the other choices. */
+  setInterval(() => {
+    if (currentFile() !== 'commissions') return
+    const fieldOf = (name) => { const label = document.querySelector(`label[for^="${name}-field"]`); return label && label.closest('[class*="ControlContainer"]') }
+    const via = fieldOf('quoteVia')
+    const url = fieldOf('quoteUrl')
+    if (!via || !url) return
+    const shown = ((via.querySelector('[class*="singleValue"]') || {}).textContent || '').trim()
+    url.style.display = /^Another link/i.test(shown) ? '' : 'none'
+  }, 400)
+
+  /* ---------- the form's scrollbar, so the header card above it can line up (admin.css --ia-sb) ---------- */
+  setInterval(() => {
+    const form = document.querySelector('[class*="ControlPaneContainer"]:not([class*="PreviewPaneContainer"])')
+    let box = form && form.parentElement
+    while (box && box !== document.body && !/(auto|scroll)/.test(getComputedStyle(box).overflowY)) box = box.parentElement
+    const sb = box && box !== document.body ? box.offsetWidth - box.clientWidth : 0
+    const now = `${Math.max(0, sb)}px`
+    if (document.documentElement.style.getPropertyValue('--ia-sb') !== now) document.documentElement.style.setProperty('--ia-sb', now)
+  }, 500)
 })()

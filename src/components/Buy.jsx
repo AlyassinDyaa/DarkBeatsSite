@@ -3,7 +3,8 @@ import { notePaying, useCart } from '../hooks/useCart'
 import { useAccount } from '../hooks/useAccount'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { badge, brand, buyable, money, payLine, payWays, priceOf, shop, sizesOf, soldOut } from '../data/site'
+import { badge, brand, buyable, money, payLine, payWays, priceOf, quote, shop, sizesOf, soldOut } from '../data/site'
+import { QuoteGo } from './QuoteLink'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -102,7 +103,7 @@ export default function Buy({ piece }) {
       {out ? (
         <>
           <span className="buy-btn is-out" aria-disabled="true"><span className="buy-btn-label">Sold out</span></span>
-          <p className="buy-secure"><span>This one has gone. {brand.email && <a href={`mailto:${brand.email}?subject=${encodeURIComponent(`About "${piece.title}"`)}`}>Ask about a reprint or a commission</a>}</span></p>
+          {!quote.closed && <p className="buy-secure"><span>This one has gone. <QuoteGo>Ask about a reprint or a commission</QuoteGo></span></p>}
         </>
       ) : (
         <>
