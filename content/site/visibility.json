@@ -10,11 +10,11 @@
   "home": {
     "ticker": true,
     "latest": true,
-    "gallery": true,
-    "redraws": true,
-    "commissions": true,
+    "gallery": false,
+    "redraws": false,
+    "commissions": false,
     "events": true,
-    "support": true
+    "support": false
   },
   "shop": {
     "redraws": false
