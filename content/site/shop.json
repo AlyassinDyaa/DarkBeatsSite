@@ -17,6 +17,9 @@
     "GB"
   ],
   "thanksText": "Your order is in. A receipt is on its way to your email.",
+  "emails": {
+    "orders": true
+  },
   "cartIcon": "bag",
   "signedChoice": true,
   "pricePlace": "below"
