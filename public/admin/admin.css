@@ -1470,3 +1470,90 @@ html[data-ia-orders="commissions"][data-ic-open] .ic-panel { display: flex; }
 .ia-find-more:hover { text-decoration: underline; text-underline-offset: 3px; }
 .ia-find-none { margin: 0; padding: 4px 2px; font-size: 0.9rem; color: var(--mute); }
 @media (max-width: 640px) { .ia-find-row { flex-wrap: wrap; gap: 4px 12px; padding: 12px 14px; } .ia-find-kind { flex-basis: 100%; } .ia-find-row::after { display: none; } }
+
+/* a member's points in their window */
+.io-points { display: grid; gap: 12px; }
+.io-points-balance { margin: 0; }
+.io-points-balance strong { font-size: 1.7rem; font-weight: 800; color: var(--fg); }
+.io-points-balance span { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.io-points-balance small { color: var(--mute); }
+.io-claims { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.io-claims li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; }
+.io-claims li > span:first-child { flex: 1; min-width: 0; }
+.io-claim-btn { padding: 6px 10px !important; font-size: 0.75rem !important; }
+.io-points-log { margin: 0; font-size: 0.82rem; }
+.io-points-adjust { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+@media (max-width: 599px) {
+  .io-points-adjust { grid-template-columns: minmax(0, 1fr); }
+  .io-claims li { flex-wrap: wrap; }
+  .io-claims li > span:first-child { flex: 1 1 100%; }
+  .io-claim-btn { margin-left: auto; }
+}
+
+/* ---------- the admin tidied (as on Milton's site): groups in the navigation, the Overview's strip,
+   one heading on every screen, the screen named on a phone, every switch saying Yes or No ---------- */
+/* phones: finger-sized rows in the drawer */
+@media (max-width: 899px) {
+  .ia-side nav a, .ia-side nav button, .ia-foot a, .ia-foot button { min-height: 46px; }
+  .ia-search input { height: 44px; }
+}
+/* the groups of the navigation: a little more air above each heading, a line between groups */
+.ia-scroll .ia-label { margin: 14px 10px 4px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ia-scroll nav:first-child + .ia-label { border-top: 0; }
+
+/* the Overview: what needs doing, at a glance (each one opens the list it counts) */
+.ia-glance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+.ia-fact { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); text-decoration: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.ia-fact:hover { border-color: var(--accent); }
+.ia-fact span { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute); }
+.ia-fact strong { font-weight: 800; font-size: 2.1rem; line-height: 1; color: var(--fg); }
+.ia-fact small { font-size: 0.8rem; color: var(--dim); }
+.ia-fact.is-hot { background: linear-gradient(135deg, var(--accent-soft), var(--panel) 70%); box-shadow: inset 3px 0 0 var(--accent); }
+.ia-fact.is-hot strong { color: #fff; }
+@media (max-width: 899px) { .ia-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 22px; } .ia-fact { padding: 12px 14px; } .ia-fact strong { font-size: 1.7rem; } }
+
+/* Decap's screens get the same heading as the others: the group in small capitals over the title
+   (shell.js puts it in data-ia-kicker), and on a form, a line about it (data-ia-lead) */
+[class*='CollectionTopContainer'][data-ia-kicker]::before,
+[class*='BackCollection'][data-ia-kicker]::before {
+  content: attr(data-ia-kicker); display: block; margin-bottom: 8px;
+  font-weight: 700; font-style: normal; font-size: 0.78rem; line-height: 1.2; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent);
+}
+[class*='BackCollection'][data-ia-kicker]::before { margin-bottom: 4px; font-size: 0.68rem; }
+[class*='ControlPaneContainer']:not([class*='PreviewPaneContainer'])[data-ia-lead]::before {
+  content: attr(data-ia-lead); display: block; margin: 0 0 18px; font-size: 1rem; line-height: 1.5; color: var(--dim);
+}
+
+/* phones: the bar across the top says where you are */
+.ia-top-where { margin-left: auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 6px; font-weight: 700; font-size: 0.74rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+
+/* every switch says what it is set to: Yes or No; "Hide from the site" says what the visitor gets, Shown or Hidden */
+[class*='ControlContainer'] > div:has(> [class*='ToggleContainer']) { gap: 12px; }
+[class*='ControlContainer'] > div:has(> [class*='ToggleContainer'])::before { content: 'No'; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+[class*='ControlContainer'] > div:has(> [class*='ToggleContainer'][aria-checked='true'])::before { content: 'Yes'; color: var(--fg); }
+[class*='ControlContainer'] > div:has(> [id^='hidden-field'])::before { content: 'Shown'; color: var(--ok); }
+[class*='ControlContainer'] > div:has(> [id^='hidden-field'][aria-checked='true'])::before { content: 'Hidden'; color: var(--dim); }
+
+/* the bar under a long list of entries: which these are, the pages, how many to a page */
+.ia-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 18px; margin: 18px 0 10px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--text); }
+.ia-pager-count { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.ia-pager-pages { display: flex; align-items: center; gap: 6px; }
+.ia-page { all: unset; box-sizing: border-box; display: grid; place-items: center; min-width: 36px; height: 36px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 10px; font-size: 0.85rem; font-weight: 800; color: var(--fg); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.ia-page:hover:not(:disabled):not(.on) { border-color: var(--accent); }
+.ia-page.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ia-page:disabled { opacity: 0.35; cursor: default; }
+.ia-page:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ia-page-gap { padding: 0 2px; color: var(--dim); }
+.ia-pager-per { display: flex; align-items: center; gap: 10px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.ia-pager-sel { min-width: 72px; height: 36px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--field); color: var(--fg); font: inherit; letter-spacing: 0; }
+@media (max-width: 599px) { .ia-pager { padding: 10px 12px; } .ia-page { min-width: 32px; height: 32px; } }
+
+/* a gift emailed and not yet accepted */
+.io-gift-chip.is-waiting { background: rgba(255, 211, 77, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 211, 77, 0.4); }
+.io-gift-chip small { font-size: 0.72rem; font-weight: 600; color: #ffd34d; }
+
+/* the quote: where they asked from, their currency one tap away */
+.ic-cur-theirs { justify-self: start; margin-top: 6px; padding: 0; border: 0; background: none; font: inherit; font-size: 0.82rem; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* a protected account (it cannot be deleted) */
+.io-pill.is-locked { background: rgba(255, 211, 77, 0.12); color: #ffd34d; box-shadow: inset 0 0 0 1px rgba(255, 211, 77, 0.4); }

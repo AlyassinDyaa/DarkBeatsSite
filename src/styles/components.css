@@ -2024,3 +2024,228 @@ html.is-card-view, html.is-card-view body { background: radial-gradient(120% 90%
 html.is-card-view body::before, html.is-card-view body::after { display: none; }
 .card-view { min-height: 100svh; display: grid; place-items: center; padding: 28px 24px 18px; overflow: hidden; }
 .card-view .acc-card3d-wrap { width: min(100%, 460px); }
+
+/* ---------- Points (Rewards): the balance in a star, a road of rewards with "you" on it, the reward
+   looked at, the ways to earn as one-tap chips, what was redeemed as tickets, and the history ---------- */
+.acc-bonus { color: var(--gold); font-weight: 700; }
+.pts { display: grid; gap: 22px; margin: 6px 0 34px; padding: clamp(18px, 2.6vw, 30px); border: 1px solid var(--line-strong); background:
+  radial-gradient(120% 140% at 0% 0%, oklch(0.68 0.22 var(--h) / 0.16), transparent 55%), var(--panel); }
+.pts h4 { margin: 0 0 10px; font-family: var(--mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-mute); }
+.pts-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(16px, 2.6vw, 30px); align-items: center; }
+.pts-burst { position: relative; display: grid; place-items: center; align-content: center; width: clamp(104px, 12vw, 128px); aspect-ratio: 1; color: var(--on-accent); isolation: isolate; }
+.pts-burst::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--accent); clip-path: polygon(50% 0%, 61% 13%, 78% 5%, 81% 23%, 98% 25%, 89% 41%, 100% 54%, 85% 63%, 92% 80%, 74% 80%, 68% 97%, 54% 87%, 40% 100%, 34% 82%, 16% 89%, 18% 70%, 1% 63%, 12% 49%, 2% 34%, 20% 29%, 19% 10%, 36% 15%); filter: drop-shadow(0 10px 24px oklch(0.68 0.22 var(--h) / 0.45)); animation: pts-pop 0.6s var(--ease-out) both; }
+.pts-burst b { font-family: var(--display); font-weight: 400; font-size: clamp(1.9rem, 3.4vw, 2.6rem); line-height: 1; }
+.pts-burst small { font-family: var(--mono); font-size: 0.58rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+@keyframes pts-pop { from { transform: scale(0.4) rotate(-20deg); opacity: 0; } 70% { transform: scale(1.08) rotate(4deg); opacity: 1; } to { transform: none; } }
+.pts-head-words h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 2.8vw, 2.4rem); letter-spacing: 0.03em; text-transform: uppercase; line-height: 1; }
+.pts-head-words p { margin: 6px 0 0; color: var(--fg-dim); }
+.pts-next { display: inline-block; margin-top: 10px !important; padding: 6px 14px; background: rgba(0, 0, 0, 0.45); border: 1px solid var(--line); color: var(--fg) !important; clip-path: var(--lean); padding-inline: 18px; }
+.pts-next b { font-family: var(--display); font-weight: 400; letter-spacing: 0.03em; color: var(--gold); }
+.pts-next.is-all { color: var(--gold) !important; }
+
+/* the road */
+.pts-road { position: relative; height: 112px; margin: 6px clamp(8px, 3vw, 46px) 0 clamp(14px, 3vw, 30px); }
+.pts-line { position: absolute; left: 0; right: 0; top: 30px; height: 10px; border: 1px solid var(--line-strong); background: var(--panel-2); }
+.pts-line i { display: block; height: 100%; background: repeating-linear-gradient(-45deg, var(--accent) 0 10px, oklch(0.56 0.2 var(--h)) 10px 20px); transition: width 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pts-start { position: absolute; left: 0; top: 46px; transform: translateX(-50%); font-family: var(--mono); font-size: 0.68rem; color: var(--fg-mute); }
+.pts-you { position: absolute; top: 0; transform: translateX(-50%); transition: left 1s cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: none; z-index: 2; }
+.pts-you b { display: block; padding: 2px 8px 1px; font-family: var(--mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; background: var(--gold); color: #0a0710; }
+.pts-you::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--gold); }
+.pts-stops { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+.pts-stops li { position: absolute; top: 14px; transform: translateX(-50%); }
+.pts-stop { all: unset; box-sizing: border-box; display: grid; justify-items: center; gap: 4px; width: 116px; cursor: pointer; text-align: center; }
+.pts-stop-dot { display: grid; place-items: center; width: 42px; height: 42px; border: 2px solid var(--line-strong); border-radius: 50%; background: var(--panel-2); color: var(--fg-mute); font-size: 1rem; transition: transform 0.25s var(--ease-out), background 0.25s, border-color 0.25s; }
+.pts-stop.is-reached .pts-stop-dot { background: var(--gold); border-color: var(--gold); color: #0a0710; animation: pts-glow 2.4s ease-in-out infinite; }
+.pts-stop:hover .pts-stop-dot, .pts-stop:focus-visible .pts-stop-dot { transform: translateY(-3px) scale(1.08); border-color: var(--accent); }
+.pts-stop.is-on .pts-stop-dot { outline: 2px solid var(--accent); outline-offset: 3px; }
+.pts-stop:focus-visible { outline: none; }
+.pts-stop-cost { font-family: var(--display); font-weight: 400; font-size: 1rem; letter-spacing: 0.03em; color: var(--accent); }
+.pts-stop.is-reached .pts-stop-cost { color: var(--gold); }
+.pts-stop-name { font-size: 0.74rem; line-height: 1.2; color: var(--fg-dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pts-stop.is-on .pts-stop-name { color: var(--fg); }
+@keyframes pts-glow { 50% { box-shadow: 0 0 0 6px rgba(255, 211, 77, 0.22); } }
+
+/* the reward looked at */
+.pts-pick { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; padding: 16px 18px; border: 1px solid var(--line-strong); background: rgba(0, 0, 0, 0.35); animation: pts-in 0.35s var(--ease-out) both; }
+.pts-pick.is-open { border-color: var(--gold); box-shadow: 8px 8px 0 -2px var(--accent); }
+@keyframes pts-in { from { opacity: 0; transform: translateY(8px); } }
+.pts-pick-tag { padding: 8px 12px; font-family: var(--mono); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: var(--accent); color: var(--on-accent); clip-path: var(--lean); padding-inline: 18px; }
+.pts-pick-words h4 { margin: 0 0 4px; font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.03em; color: var(--fg); }
+.pts-pick-words p { margin: 0 0 4px; color: var(--fg-dim); }
+.pts-pick-words small { color: var(--fg-mute); }
+.pts-pick-do { display: grid; justify-items: end; gap: 6px; text-align: right; }
+.pts-gap { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); }
+.pts-gap b { font-family: var(--display); font-weight: 400; font-size: 1.5rem; letter-spacing: 0.02em; color: var(--fg); }
+.pts-pick-do small { color: var(--fg-mute); }
+
+/* the ways to earn */
+.pts-ways ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.pts-ways li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; padding: 12px 14px; border: 1px solid var(--line-strong); background: var(--panel-2); transition: border-color 0.2s, transform 0.2s var(--ease-out); }
+.pts-ways li:not(.is-done):hover { border-color: var(--accent); transform: translateY(-2px); }
+.pts-way-pts { grid-row: span 2; font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.02em; color: var(--accent); }
+.pts-way-text { font-size: 0.9rem; color: var(--fg-dim); }
+.pts-way-go { all: unset; justify-self: start; font-family: var(--mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg); cursor: pointer; text-decoration: none; }
+.pts-way-go:hover, .pts-way-go:focus-visible { color: var(--accent); }
+.pts-way-go:disabled { cursor: default; color: var(--fg-mute); }
+.pts-ways li.is-done { opacity: 0.7; }
+.pts-ways li.is-done .pts-way-pts { color: var(--fg-mute); text-decoration: line-through; }
+.pts-way-done { justify-self: start; font-family: var(--mono); font-size: 0.72rem; font-weight: 700; color: var(--open); }
+.pts-way-wait { justify-self: start; font-size: 0.78rem; color: var(--gold); }
+
+/* what was redeemed, as tickets */
+.pts-tickets ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pts-ticket { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 18px; background: var(--panel-2); border: 1px dashed var(--line-strong);
+  -webkit-mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
+.pts-ticket-cost { font-family: var(--display); font-weight: 400; font-size: 1.05rem; color: var(--fg-mute); }
+.pts-ticket-words { display: grid; gap: 2px; min-width: 0; }
+.pts-ticket-words small { color: var(--fg-mute); }
+.pts-ticket-code { all: unset; padding: 6px 10px; border: 1px dashed var(--gold); color: var(--gold); font-family: var(--mono); letter-spacing: 0.08em; cursor: copy; white-space: nowrap; }
+.pts-ticket-code:hover, .pts-ticket-code:focus-visible { background: rgba(255, 211, 77, 0.12); }
+.pts-ticket-state { font-family: var(--mono); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-mute); white-space: nowrap; }
+.pts-ticket-state.is-sent { color: var(--open); }
+
+/* the history */
+.pts-log ul { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.pts-log li { display: grid; grid-template-columns: 6.5ch minmax(0, 1fr) auto; gap: 12px; font-size: 0.88rem; color: var(--fg-dim); }
+.pts-log li b { font-family: var(--display); font-weight: 400; color: var(--fg); }
+.pts-log li b.is-minus { color: var(--fg-mute); }
+
+@media (max-width: 699px) {
+  .pts-head { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+  .pts-road { height: 96px; margin-inline: 22px; }
+  .pts-stop { width: 64px; }
+  .pts-stop-name { display: none; } /* the reward's name shows in the panel under the road */
+  .pts-stop-dot { width: 36px; height: 36px; }
+  .pts-pick { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+  .pts-pick-do { justify-items: start; text-align: left; }
+  .pts-ticket { grid-template-columns: minmax(0, 1fr) auto; }
+  .pts-ticket-cost { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .pts-burst::before, .pts-pick, .pts-stop.is-reached .pts-stop-dot { animation: none; } .pts-line i, .pts-you { transition: none; } }
+
+/* the overview's numbers: three across instead of four when points are switched off */
+@media (min-width: 600px) and (max-width: 1099px) { .acct-stats.is-stacked:not(:has(> :nth-child(4))) { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* the phone number: the country's code on the left (a list behind it), the number on the same line */
+.acc-phone-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: end; column-gap: 14px; }
+.acc-phone-country { position: relative; display: flex; align-items: center; gap: 8px; padding: 22px 20px 10px 0; border-bottom: 1px solid var(--line-strong); cursor: pointer; }
+.acc-phone-country:focus-within { border-bottom-color: var(--accent); }
+.acc-phone-code { font: inherit; color: var(--fg); white-space: nowrap; }
+.acc-phone-country::after { content: ''; position: absolute; right: 2px; bottom: 16px; width: 7px; height: 7px; border-right: 1.5px solid var(--fg-mute); border-bottom: 1.5px solid var(--fg-mute); transform: rotate(45deg); pointer-events: none; }
+.acc-phone-country select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.acc-phone-number { position: relative; display: block; min-width: 0; }
+
+/* the "are you sure" window for something that cannot be undone */
+.acc-modal-box.is-danger .acc-modal-icon { color: #ff6b7f; border-color: #ff6b7f; }
+.acc-modal-box.is-danger .acc-modal-yes { background: #ff6b7f; color: #1a0710; }
+
+/* The collector card at a small size (the Details preview, a phone): its lettering follows the
+   card's own width, so the facts along the bottom stay on one line each and nothing is cramped */
+.acc-card3d-wrap { container-type: inline-size; }
+@container (max-width: 470px) {
+  .acc-card3d { padding: 16px 18px; }
+  .acc-card3d-brand img { width: 28px; height: 28px; }
+  .acc-card3d-brand .wordmark { font-size: 0.95rem; }
+  .acc-card3d-kind { padding: 4px 9px 3px; font-size: 0.58rem; }
+  .acc-card3d-chip { width: 36px; height: 27px; margin-top: 10px; }
+  .acc-card3d-name { font-size: clamp(1.3rem, 7.5cqw, 1.9rem); }
+  .acc-card3d-foot { gap: 4cqw; margin-top: 10px; font-size: clamp(0.6rem, 2.8cqw, 0.78rem); }
+  .acc-card3d-foot small, .acc-card3d-facts small { font-size: clamp(0.44rem, 2cqw, 0.54rem); letter-spacing: 0.1em; white-space: nowrap; }
+  .acc-card3d-foot > span { white-space: nowrap; }
+  .acc-card3d-back { padding: 14px 16px; gap: 6px; }
+  .acc-card3d-facts { gap: 4cqw; font-size: clamp(0.6rem, 2.8cqw, 0.76rem); }
+  .acc-card3d-facts > span { white-space: nowrap; }
+  .acc-card3d-sign-strip { height: 28px; }
+  .acc-card3d-holo { width: 34px; }
+  .acc-card3d-base p { display: none; }
+}
+@container (max-width: 330px) {
+  .acc-card3d-foot span:last-child { display: none; } /* the smallest card: the prints are on the back */
+}
+
+/* ---------- Rewards on a phone: everything tighter, nothing wasted ---------- */
+@media (max-width: 599px) {
+  .acct-progress { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .acct-progress span { display: grid; justify-items: center; gap: 2px; padding: 10px 6px 9px; text-align: center; font-size: 0.56rem; letter-spacing: 0.08em; line-height: 1.2; }
+  .acct-progress b { font-size: 1.3rem; }
+  .pts { gap: 16px; padding: 16px 14px; margin-bottom: 26px; }
+  .pts-head { grid-template-columns: auto minmax(0, 1fr); justify-items: stretch; gap: 14px; }
+  .pts-burst { width: 86px; }
+  .pts-burst b { font-size: 1.55rem; }
+  .pts-burst small { font-size: 0.5rem; }
+  .pts-head-words h3 { font-size: 1.55rem; }
+  .pts-head-words p { font-size: 0.86rem; line-height: 1.4; }
+  .pts-next { font-size: 0.8rem; padding: 5px 14px; }
+  .pts-road { margin-inline: 20px 26px; }
+  .pts-pick { padding: 14px; gap: 10px; }
+  .pts-pick-words h4 { font-size: 1.1rem; }
+  .pts-ways ul { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pts-ways li { grid-template-columns: minmax(0, 1fr); align-content: start; gap: 3px; padding: 10px; }
+  .pts-way-pts { grid-row: auto; font-size: 1.1rem; }
+  .pts-way-text { font-size: 0.8rem; line-height: 1.35; }
+  .pts-way-go, .pts-way-done { font-size: 0.62rem; margin-top: 2px; }
+  .pts-ticket { padding: 10px 14px; gap: 10px; }
+  .acct-reward-list { gap: 10px; }
+  .acct-reward { grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 12px; }
+  .acct-reward-art .acct-pick-pic { width: 58px; height: 58px; }
+  .acct-reward-art .acct-card-mini { width: 64px; }
+  .acct-reward-off { width: 60px; height: 60px; }
+  .acct-reward-off b { font-size: 1.1rem; }
+  .acct-reward-off small { font-size: 0.6rem; }
+  .acct-reward-body strong { font-size: 1rem; }
+  .acct-reward-how { font-size: 0.82rem; }
+  .acct-group-head h3 { font-size: 1.3rem; }
+  .acct-group-head p { font-size: 0.86rem; }
+}
+
+/* Rewards on a phone: three parts behind a bar that stays in view (Points · Gifts · Rewards), one at a time */
+.acct-parts { position: sticky; top: calc(var(--nav) + 50px); /* under the account tabs, which stick too */ z-index: 20; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; margin: 0 0 16px; padding: 4px; border: 1px solid var(--line-strong); background: rgba(14, 11, 20, 0.9); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.acct-parts button { all: unset; box-sizing: border-box; position: relative; display: grid; justify-items: center; gap: 1px; padding: 8px 4px 7px; cursor: pointer; text-align: center; transition: background 0.2s, color 0.2s; }
+.acct-parts button span { font-family: var(--mono); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-mute); }
+.acct-parts button b { font-family: var(--display); font-weight: 400; font-size: 1.2rem; line-height: 1; color: var(--fg); }
+.acct-parts button.on { background: var(--accent); }
+.acct-parts button.on span, .acct-parts button.on b { color: var(--on-accent); }
+.acct-parts button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.acct-parts button i { position: absolute; top: 6px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px #0a0710; }
+.acct-rewards.is-parted > :not(.acct-parts):not(.acct-keep) { animation: parts-in 0.3s var(--ease-out) both; }
+@keyframes parts-in { from { opacity: 0; transform: translateY(6px); } }
+.acct-rewards.is-parted .acct-reward-group > .acct-group-head h3, .acct-rewards.is-parted .pts-head-words h3 { display: none; } /* the bar already names the part */
+@media (prefers-reduced-motion: reduce) { .acct-rewards.is-parted > * { animation: none; } }
+
+/* The account's sections on a phone: one row that scrolls sideways only, exactly as tall as its tabs,
+   so the names never shift while the page scrolls; the edges fade where there are more tabs to see. */
+.acct2-tabs button::after { bottom: 0; }
+@media (max-width: 799px) {
+  .acct2-tabs { height: 50px; overflow: auto hidden; overscroll-behavior-x: contain; touch-action: pan-x pan-y; scroll-padding-inline: var(--gutter);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 28px), transparent); }
+  .acct2-tabs button { height: 49px; padding: 0 12px; }
+  .acct-parts { top: calc(var(--nav) + 51px); }
+}
+
+/* conventions with pictures (up to three, as a small mosaic at the start of the row) and words on the link */
+.event.has-pics { grid-template-columns: 132px minmax(10rem, 18%) 1fr auto auto; align-items: center; }
+.event-pics { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 44px; gap: 4px; width: 132px; }
+.event-pics img { width: 100%; height: 100%; object-fit: cover; background: var(--bg-3); transition: transform 0.4s var(--ease-out); }
+.event-pics[data-n='1'] { grid-template-columns: 1fr; grid-auto-rows: 92px; }
+.event-pics[data-n='2'] { grid-auto-rows: 92px; }
+.event-pics[data-n='3'] img:first-child { grid-row: span 2; }
+a.event[href]:hover .event-pics img { transform: scale(1.04); }
+.event-go { display: inline-flex; align-items: center; gap: 10px; justify-self: end; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; }
+a.event[href]:hover .event-go { color: var(--fg); }
+@media (max-width: 699px) {
+  .event.has-pics { grid-template-columns: 96px minmax(0, 1fr) 2rem; column-gap: 16px; }
+  .event.has-pics .event-pics { grid-column: 1; grid-row: 1 / 4; width: 96px; grid-auto-rows: 34px; }
+  .event.has-pics .event-pics[data-n='1'], .event.has-pics .event-pics[data-n='2'] { grid-auto-rows: 72px; }
+  .event.has-pics .event-when, .event.has-pics .event-name, .event.has-pics .event-where { grid-column: 2; }
+  .event.has-pics .event-go { grid-column: 3; grid-row: 1 / 4; }
+  .event-go span:not(.arrow) { display: none; } /* a phone: the arrow alone */
+  .event:not(.has-pics) .event-go { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+}
+
+/* news under Details: what unticking costs (their news points), and that they come only once */
+.acc-news-warn { margin: -4px 0 14px; padding: 10px 14px; border-left: 3px solid #ff6b7f; background: rgba(255, 107, 127, 0.08); color: var(--fg); font-size: 0.9rem; line-height: 1.5; }
+.acc-news-note { margin: -4px 0 14px; color: var(--fg-mute); font-size: 0.88rem; line-height: 1.5; }
+
+/* a protected account under Security: no delete form, only this */
+.acc-locked { color: var(--fg-mute); }

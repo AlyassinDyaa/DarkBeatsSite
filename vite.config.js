@@ -7,6 +7,25 @@ import { spawn } from 'node:child_process'
 import { connect } from 'node:net'
 import { createHash, randomBytes } from 'node:crypto'
 
+/* The admin's own scripts and styles are loaded by name (shell.js, admin.css...). After a deploy a
+   browser could keep an old copy while Decap fetched the new config, and the two would not match. So
+   the built admin page names each with a stamp of its contents (shell.js?v=…): a change is a new
+   address, and an unchanged file can stay cached. */
+const stampAdmin = () => {
+  const dir = resolve('dist/admin')
+  const page = resolve(dir, 'index.html')
+  if (!existsSync(page)) return
+  let html = readFileSync(page, 'utf8')
+  for (const name of ['admin.css', 'login.css', 'shell.js', 'orders.js', 'commissions.js', 'login.js']) {
+    const file = resolve(dir, name)
+    if (!existsSync(file)) continue
+    const stamp = createHash('md5').update(readFileSync(file)).digest('hex').slice(0, 10)
+    // the name as written in the page, inside double or single quotes
+    html = html.split(`"${name}"`).join(`"${name}?v=${stamp}"`).split(`'${name}'`).join(`'${name}?v=${stamp}'`)
+  }
+  writeFileSync(page, html)
+}
+
 // Copies index.html to 404.html after build so GitHub Pages serves the SPA on deep links.
 const spaFallback = () => ({
   name: 'spa-404',
@@ -191,6 +210,7 @@ const adminBundle = () => ({
           : 'AlyassinDyaa/DarkBeatsSite'
         writeFileSync(resolve('dist/admin/backend.json'), JSON.stringify({ name: 'github', repo, branch: process.env.VERCEL_GIT_COMMIT_REF || 'main' }))
       }
+      stampAdmin()
     } catch (e) { console.warn('admin bundle copy failed', e.message) }
   },
 })
@@ -204,6 +224,14 @@ const adminBundle = () => ({
    dist, which are what visitors get, are changed. The logo and the site icon are left alone. */
 const ART_MAX = 1400
 const ART_FOLDERS = ['work', 'gallery-sections', 'redraws'] // whose pictures get the watermark
+// the pictures on the membership card designs (Rewards): shown on cards without the logo, at /uploads/card/<name>
+const cardPictures = () => {
+  const set = new Set()
+  try {
+    for (const m of readFileSync(resolve('content/pages/rewards.json'), 'utf8').matchAll(/"card(?:Art|Back)":\s*"(\/uploads\/[^"]+)"/g)) set.add(m[1])
+  } catch { /* no rewards file: nothing */ }
+  return set
+}
 const readBrand = () => { try { return JSON.parse(readFileSync(resolve('content/site/brand.json'), 'utf8')) } catch { return {} } }
 // the watermark can be switched off in the admin (Site → Show / hide → Artwork); it is on unless switched off
 const watermarkOn = () => { try { return (JSON.parse(readFileSync(resolve('content/site/visibility.json'), 'utf8')).artwork || {}).watermark !== false } catch { return true } }
@@ -280,6 +308,19 @@ const protectArt = () => ({
     const made = new Map() // url -> { at, buffer }: made once per change of the file
     server.middlewares.use(async (req, res, next) => {
       const url = decodeURIComponent((req.url || '').split('?')[0])
+      // a card's picture: the same upload brought down to size but without the logo
+      const card = url.match(/^\/uploads\/card\/([^/]+\.(webp|png|jpe?g))$/i)
+      if (card) {
+        const file = resolve(`public/uploads/${card[1]}`)
+        if (!cardPictures().has(`/uploads/${card[1]}`) || !existsSync(file)) return next()
+        try {
+          const { default: sharp } = await import('sharp')
+          const copy = await artCopy(sharp, readFileSync(file), `/uploads/${card[1]}`, new Set(), readBrand())
+          res.setHeader('Content-Type', `image/${/\.jpe?g$/i.test(url) ? 'jpeg' : url.split('.').pop().toLowerCase()}`)
+          res.setHeader('Cache-Control', 'no-cache')
+          return res.end(copy ? copy.buffer : readFileSync(file))
+        } catch { return next() }
+      }
       if (!/^\/uploads\/[^/]+\.(webp|png|jpe?g)$/i.test(url)) return next()
       const file = resolve(`public${url}`)
       if (!existsSync(file)) return next()
@@ -319,6 +360,17 @@ const protectArt = () => ({
       if (copy.marked) marked++
     }
     console.log(`  artwork: ${shrunk} pictures brought down to ${ART_MAX}px, ${marked} marked with the logo`)
+    // the card pictures again, without the logo, under uploads/card (made from the uploads as they were)
+    let cards = 0
+    for (const url of cardPictures()) {
+      const source = resolve(`public${url}`)
+      if (!existsSync(source)) continue
+      const copy = await artCopy(sharp, readFileSync(source), url, new Set(), brand)
+      mkdirSync(resolve(dir, 'card'), { recursive: true })
+      writeFileSync(resolve(dir, 'card', url.slice('/uploads/'.length)), copy ? copy.buffer : readFileSync(source))
+      cards++
+    }
+    if (cards) console.log(`  cards: ${cards} pictures without the logo under uploads/card`)
   },
 })
 

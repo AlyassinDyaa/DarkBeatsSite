@@ -77,6 +77,14 @@ function TileBody({ p, eager, flipped = false, onFlip }) {
   )
 }
 
+// the steps under the introduction: the admin's own (Shop settings), else the usual three, worded for
+// how buyers pay (card, PayPal, or both) and whether pieces are posted
+const buySteps = () => {
+  const own = (Array.isArray(shop.steps) ? shop.steps : []).map((x) => String(x || '').trim()).filter(Boolean)
+  const pay = shop.payments === 'paypal' ? 'Pay with PayPal' : shop.payments === 'both' ? 'Pay by card or PayPal' : 'Pay securely by card'
+  return (own.length ? own : ['Pick a piece', pay, shop.shipping !== false ? 'Posted to your door' : 'Sent to your inbox']).slice(0, 4)
+}
+
 export default function Shop() {
   const [params] = useSearchParams()
   const thanks = params.get('thanks') === '1'
@@ -150,11 +158,9 @@ export default function Shop() {
             ))}
           </ul>
         )}
-        {shop.enabled && !thanks && (
+        {shop.enabled && !thanks && shows('shop', 'steps') && (
           <ol className="how-buy">
-            <li><b>01</b>Pick a piece</li>
-            <li><b>02</b>Pay securely with Stripe</li>
-            <li><b>03</b>{shop.shipping !== false ? 'Posted to your door' : 'Sent to your inbox'}</li>
+            {buySteps().map((s, i) => <li key={i}><b>{String(i + 1).padStart(2, '0')}</b>{s}</li>)}
           </ol>
         )}
         {(categories.length > 1 || types.length > 1) && (

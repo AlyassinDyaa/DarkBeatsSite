@@ -156,6 +156,9 @@ function assemble(content) {
     })
   // the pictures given on confirming the email (the confirmation page and email show these)
   accountPage.verifiedIcons = accountPage.rewards.filter((r) => r.kind === 'picture' && r.earnedBy === 'verify')
+  // points (Rewards → Points): the rules the account page can say before the balance arrives
+  const pt = rw.points || {}
+  accountPage.points = { on: pt.on !== false, name: String(pt.name || 'points').trim() || 'points', signup: Math.max(0, Math.round(Number(pt.signup ?? 50) || 0)), news: Math.max(0, Math.round(Number(pt.news ?? 25) || 0)), field: Math.max(0, Math.round(Number(pt.field ?? 10) || 0)) }
   pages = {
     work: { label: 'The work', title: 'Everything so far', ...given({ label: lists.workLabel, title: lists.workTitle, intro: lists.workIntro }) },
     gallery: { label: 'The gallery', title: 'Up on the wall', ...given({ label: lists.galleryLabel, title: lists.galleryTitle, intro: lists.galleryIntro }) },
@@ -241,12 +244,16 @@ function assemble(content) {
     : []
   heroWall = onWall.length ? onWall.map((p) => ({ ...p, column: 'auto' })) : [...placed, ...missing]
 
-  // a section's "also show pieces from Work" choice: none, every piece, or one category
-  const fromWork = (from) => (!from || from === 'none' ? [] : work)
-    .filter((p) => p.src && (from === 'all' || p.category === from))
-    .map((p) => ({ title: p.title, src: p.src, note: p.note, category: p.category, date: p.date, link: p.link, piece: p.slug, slug: p.slug, price: p.price }))
+  // a Shop piece as a Work picture
+  const asPicture = (p) => ({ title: p.title, src: p.src, note: p.note, category: p.category, date: p.date, link: p.link, piece: p.slug, slug: p.slug, price: p.price })
+  // a section's "fill it from the Shop" choice: none, every piece, or one category
+  const fromWork = (from) => (!from || from === 'none' ? [] : work).filter((p) => p.src && (from === 'all' || p.category === from)).map(asPicture)
+  // the pieces the admin picked for the section one by one, in that order
+  const fromPicks = (slugs) => (Array.isArray(slugs) ? slugs : []).map((slug) => work.find((p) => p.slug === slug)).filter((p) => p && p.src).map(asPicture)
+  // a picture once, however many ways it was brought in
+  const onceEach = (list) => { const seen = new Set(); return list.filter((g) => !seen.has(g.src) && seen.add(g.src)) }
   gallerySections = live(folder('gallery-sections'))
-    .map((s) => ({ ...s, items: [...fromWork(s.from), ...(s.items || []).filter((g) => g && g.src)] }))
+    .map((s) => ({ ...s, items: onceEach([...fromWork(s.from), ...fromPicks(s.pieces), ...(s.items || []).filter((g) => g && g.src)]) }))
     .filter((s) => s.items.length > 0)
     .sort(byOrder)
   gallery = gallerySections.flatMap((s) => s.items)

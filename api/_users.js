@@ -99,6 +99,13 @@ export const makeToken = async (userId, kind, minutes) => {
   await d.collection('tokens').insertOne({ hash: sha(raw), userId, kind, expiresAt: new Date(Date.now() + minutes * 60000) })
   return raw
 }
+// a look at a token without using it up (to refuse a new password before the link is spent)
+export const peekToken = async (raw, kind) => {
+  if (!raw || String(raw).length > 100) return null
+  const d = await db()
+  const token = await d.collection('tokens').findOne({ hash: sha(raw), kind })
+  return token && new Date(token.expiresAt) >= new Date() ? token : null
+}
 export const spendToken = async (raw, kind) => {
   if (!raw || String(raw).length > 100) return null
   const d = await db()
@@ -313,11 +320,15 @@ export const sendMail = async (mail) => {
 
 // ---------- what the browser is told about the customer
 export const publicUser = (u) => (u ? {
+  points: Math.max(0, Math.round(Number(u.points) || 0)), // their points (api/_points.js)
+  pointsEarned: Math.max(Math.round(Number(u.pointsEarned) || 0), Math.round(Number(u.points) || 0)), // everything earned, ever
   email: u.email,
   name: u.name || '',
   phone: u.phone || '',
   verified: Boolean(u.verified),
   marketing: Boolean(u.marketing),
+  locked: Boolean(u.locked), // a protected account: it cannot be deleted
+  newsBonus: u.newsBonus === 'given' || u.newsBonus === 'taken' ? u.newsBonus : '', // the news points: held, or taken back for good (api/_points.js)
   newsAsked: Boolean(u.newsAsked || u.unsubscribedAt), // asked on their Overview already, or unsubscribed from an email: not asked again
   createdAt: u.createdAt,
   lastVisit: u.prevLogin || u.createdAt, // for "new since your last visit"

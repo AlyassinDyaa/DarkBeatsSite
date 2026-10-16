@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import { db, dbReady } from './_db.js'
 import { codeUsed, ours, paidOrder, paidWithOf, piecesNow, readBought, recordOrder, shapeAddress, stripeCodes, takeFromCart, withPiece } from './_orders.js'
 import { ofStripe, paidByStripe, refundedByStripe } from './_commissions.js'
+import { takeOrderPoints } from './_points.js'
 
 /* Stripe tells the site here when something happens to a payment, so the order lands in the
    database (and so in the buyer's account) whether or not they come back to the site.
@@ -107,6 +108,7 @@ export default async function handler(req, res) {
     if (event.type === 'charge.refunded' && o && o.payment_intent && o.refunded) {
       await (await db()).collection('orders').updateOne({ pi: o.payment_intent }, { $set: { status: 'refunded', updatedAt: new Date() } })
       await refundedByStripe(o.payment_intent) // a commission's payment: shown as refunded, with a note
+      try { await takeOrderPoints({ pi: o.payment_intent }) } catch (e) { console.error('points not taken back:', e.message) }
     }
     return res.status(200).json({ received: true })
   } catch (e) {

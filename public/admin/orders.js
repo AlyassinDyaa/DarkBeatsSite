@@ -582,8 +582,8 @@
   crefresh.addEventListener('click', () => load(true))
   const cdownload = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Download CSV', title: 'The customers showing now, as a spreadsheet' })
   cdownload.addEventListener('click', () => csv(`customers-${new Date().toISOString().slice(0, 10)}.csv`, [
-    ['Name', 'Email', 'Phone', 'Orders', 'Spent', 'Support given', 'Currency', 'First order', 'Last order', 'Address'],
-    ...crowd().map((p) => [p.name, p.email, p.phone, p.bought, p.spent, p.given, p.currency, new Date(p.first * 1000).toISOString().slice(0, 10), new Date(p.last * 1000).toISOString().slice(0, 10), addressLines(p.address).join(', ')]),
+    ['Name', 'Email', 'Phone', 'Member no.', 'Gets news', 'Points', 'Orders', 'Spent', 'Support given', 'Currency', 'First order', 'Last order', 'Address'],
+    ...crowd().map((p) => [p.name, p.email, p.phone, p.member ? memberNo(p.member.memberNo) : '', p.member ? (p.member.news ? 'yes' : 'no') : '', p.member ? p.member.points || 0 : '', p.bought, p.spent, p.given, p.currency, p.first ? new Date(p.first * 1000).toISOString().slice(0, 10) : '', p.last ? new Date(p.last * 1000).toISOString().slice(0, 10) : '', addressLines(p.address).join(', ')]),
   ]))
   const cscreen = el('main', { className: 'ia-orders is-customers' }, [
     el('div', { className: 'ia-home-inner' }, [
@@ -611,7 +611,7 @@
     const buyers = all.filter((p) => p.bought > 0)
     const shopOrders = state.orders.filter((o) => o.kind === 'shop')
     cstats.replaceChildren(
-      statCard(String(all.length), 'Customers', `${many(buyers.length, 'buyer')}, ${many(all.filter((p) => p.supported > 0).length, 'supporter')}`),
+      statCard(String(all.length), 'Customers', `${many(buyers.length, 'buyer')}, ${all.filter((p) => p.member && p.member.news).length} get news`),
       statCard(String(all.filter((p) => p.bought > 1).length), 'Came back', 'bought more than once'),
       statCard(shopOrders.length ? money(Math.round(shopOrders.reduce((n, o) => n + o.amount, 0) / shopOrders.length), code) : '—', 'Average order'),
       statCard(buyers.length ? money(Math.max(...buyers.map((p) => p.spent)), code) : '—', 'Biggest spender', buyers.length ? [...buyers].sort((a, b) => b.spent - a.spent)[0].name || '' : ''),
@@ -1086,8 +1086,22 @@
     askScope({
       title: `Delete ${p.name || p.email || 'this customer'}?`,
       many: true,
-      lines: [`Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} leave your lists${codes.length ? '; the codes stop working' : ''}.`, LEFT_IN_STRIPE],
-      run: async (scope, copy) => { await dropOrders(p.orders, scope, copy); if (codes.length) await dropCodes(codes); people.open.delete(p.key); after(); return '' },
+      lines: [
+        `Their ${many(p.orders.length, 'order')}${codes.length ? ` and ${many(codes.length, 'discount code')}` : ''} leave your lists${codes.length ? '; the codes stop working' : ''}.`,
+        p.member && p.member.locked ? `Their account (member ${memberNo(p.member.memberNo)}) is protected: it stays either way, with its points and rewards.`
+          : p.member ? `"From my admin and their account" also deletes their account on the site (member ${memberNo(p.member.memberNo)}): they can no longer log in, and their points${p.member.points ? ` (${p.member.points})` : ''}, rewards and saved prints go with it.` : '',
+        LEFT_IN_STRIPE,
+      ].filter(Boolean),
+      run: async (scope, copy) => {
+        await dropOrders(p.orders, scope, copy)
+        if (codes.length) await dropCodes(codes)
+        if (scope === 'everywhere' && p.member && !p.member.locked) {
+          const r = await ask('/api/members', { method: 'POST', body: JSON.stringify({ action: 'adminDeleteMember', email: p.member.email }) })
+          if (!r.ok) return r.said.message || 'Their orders went, but the account was not deleted. Try again.'
+          memb.byEmail.delete(String(p.member.email).toLowerCase())
+        }
+        people.open.delete(p.key); after(); return ''
+      },
     })
   }
 
@@ -1143,20 +1157,79 @@
     }
     return el('span', { className: 'io-rthumb is-off', textContent: `${r.percent}%` })
   }
+  /* A member's points in their window: the balance, the rewards they spent points on (a gift to send
+     is marked as sent here; a code is shown), the last changes, and points added or taken by hand
+     with a note they see. */
+  const PWHY = { order: 'order', commission: 'commission', signup: 'email confirmed', detail: 'detail added', news: 'said yes to news', 'news-off': 'unsubscribed', refund: 'refunded', redeem: 'spent on', admin: 'from you' }
+  const pointsFor = (p) => {
+    const box = el('div', { className: 'io-points' })
+    let busy = false, said = '', bad = false, amount = '', why = ''
+    const act = async (body, done) => {
+      busy = true; said = ''; draw()
+      try {
+        const r = await ask('/api/members', { method: 'POST', body: JSON.stringify(body) })
+        if (r.ok && r.said.member) { memb.byEmail.set(String(r.said.member.email).toLowerCase(), r.said.member); p.member = r.said.member; bad = false; said = done(r.said.member); amount = ''; why = '' }
+        else { bad = true; said = r.said.message || 'That did not work. Try again.' }
+      } catch { bad = true; said = 'Could not reach the site. Try again.' }
+      busy = false; draw()
+    }
+    const draw = () => {
+      const m = p.email ? memb.byEmail.get(p.email.toLowerCase()) : null
+      if (!m) return box.replaceChildren(el('p', { className: 'io-dim-line', textContent: memb.loaded ? 'No account with this email, so no points.' : 'Fetching their account…' }))
+      const kids = [el('p', { className: 'io-points-balance' }, [el('strong', { textContent: String(m.points || 0) }), el('span', { textContent: m.points === 1 ? ' point' : ' points' }), m.pointsEarned > (m.points || 0) ? el('small', { textContent: ` · ${m.pointsEarned} earned in all` }) : null])]
+      const claims = m.claims || []
+      if (claims.length) {
+        kids.push(el('ul', { className: 'io-claims' }, claims.map((c) => {
+          const li = el('li', {}, [
+            el('span', {}, [el('strong', { textContent: c.name }), el('small', { textContent: ` · ${c.cost} points · ${when(Math.round(c.at / 1000))}${c.code ? ` · code ${c.code.code}` : ''}` })]),
+            el('span', { className: `io-pill ${c.kind === 'gift' ? (c.status === 'sent' ? 'is-delivered' : 'is-new') : 'is-member'}`, textContent: c.kind === 'gift' ? (c.status === 'sent' ? 'Sent' : 'To send') : 'Code' }),
+          ])
+          if (c.kind === 'gift' && c.status !== 'sent') {
+            const b = el('button', { type: 'button', className: 'ia-btn ghost io-claim-btn', textContent: 'Mark as sent', disabled: busy })
+            b.addEventListener('click', () => act({ action: 'adminClaimSent', email: m.email, claim: c.id }, () => 'Marked as sent.'))
+            li.append(b)
+          }
+          return li
+        })))
+      }
+      const log = m.pointsLog || []
+      if (log.length) kids.push(el('p', { className: 'io-dim-line io-points-log', textContent: `Lately: ${log.slice(0, 6).map((x) => `${x.delta > 0 ? '+' : ''}${x.delta} ${PWHY[x.why] || x.why}${x.ref ? ` (${x.ref})` : ''}`).join(' · ')}` }))
+      const n = el('input', { className: 'io-input', type: 'number', step: '1', placeholder: '100, or -50 to take', ariaLabel: 'Points to add; a minus takes them', value: amount })
+      n.addEventListener('input', () => { amount = n.value })
+      const note = el('input', { className: 'io-input', type: 'text', maxLength: 120, placeholder: 'Why, in a few words: they see it ("Instagram post", "came to the signing")', value: why })
+      note.addEventListener('input', () => { why = note.value })
+      const give = el('button', { type: 'button', className: 'ia-btn', textContent: busy ? 'Saving…' : 'Add points', disabled: busy })
+      give.addEventListener('click', () => {
+        const d = Math.round(Number(amount))
+        if (!d) { bad = true; said = 'Type how many points: a minus sign takes them.'; return draw() }
+        act({ action: 'adminPoints', email: m.email, delta: d, note: why.trim() }, (fresh) => `${d > 0 ? '+' : ''}${d} points for ${fresh.name || fresh.email}: they have ${fresh.points || 0} now.`)
+      })
+      kids.push(el('div', { className: 'io-points-adjust' }, [n, note, give]))
+      if (said) kids.push(el('p', { className: `io-gift-note ${bad ? 'is-bad' : ''}`, role: 'status', textContent: said }))
+      box.replaceChildren(...kids)
+    }
+    draw()
+    return box
+  }
   const giftsFor = (p) => {
     const box = el('div', { className: 'io-gifts' })
-    let picking = false, chosen = '', tell = true, busy = false, note = ''
-    const send = async (action, r) => {
+    let picking = false, chosen = new Set(), tell = true, busy = false, note = ''
+    // one or more rewards, one after the other (a problem with one is said, and the rest still go)
+    const send = async (action, list) => {
       const m = memb.byEmail.get(p.email.toLowerCase())
       busy = true; note = ''; draw()
-      try {
-        const { ok, said } = await ask('/api/members', { method: 'POST', body: JSON.stringify({ action, email: m.email, reward: r.id, tell }) })
-        if (ok && said.member) {
-          memb.byEmail.set(String(m.email).toLowerCase(), said.member); p.member = said.member
-          note = action === 'gift' ? `${r.name} gifted${said.told ? ' · they have been emailed' : ''}` : `${r.name} taken back`
-          picking = false; chosen = ''
-        } else note = said.message || 'Not saved. Try again.'
-      } catch { note = 'Could not reach the site. Try again.' }
+      const done = [], waits = [], bad = []
+      for (const r of [].concat(list)) {
+        try {
+          const { ok, said } = await ask('/api/members', { method: 'POST', body: JSON.stringify({ action, email: m.email, reward: r.id, tell }) })
+          if (ok && said.member) { memb.byEmail.set(String(m.email).toLowerCase(), said.member); p.member = said.member; (said.pending ? waits : done).push(r.name) }
+          else bad.push(said.message || `${r.name}: not saved`)
+        } catch { bad.push(`${r.name}: could not reach the site`) }
+      }
+      note = action === 'gift'
+        ? [done.length ? `${done.join(', ')} gifted` : '', waits.length ? `${waits.join(', ')} emailed: waiting for them to accept` : '', ...bad].filter(Boolean).join(' · ')
+        : (bad.length ? bad.join(' · ') : `${[].concat(list).map((r) => r.name).join(', ')} taken back`)
+      if (!bad.length) { picking = false; chosen = new Set() }
       busy = false; draw()
     }
     const draw = () => {
@@ -1166,31 +1239,34 @@
       if (!m) return box.replaceChildren(el('p', { className: 'io-dim-line', textContent: 'No account with this email yet, so nothing can be gifted.' }))
       const byId = new Map(memb.rewards.map((r) => [r.id, r]))
       const gifted = (m.gifts || []).map((id) => byId.get(id)).filter(Boolean)
-      const open = memb.rewards.filter((r) => !(m.gifts || []).includes(r.id))
+      const waiting = (m.pending || []).map((id) => byId.get(id)).filter(Boolean)
+      const open = memb.rewards.filter((r) => !(m.gifts || []).includes(r.id) && !(m.pending || []).includes(r.id))
       // what they have: chips, each with a cross to take it back
-      const chips = gifted.length
-        ? el('div', { className: 'io-gift-chips' }, gifted.map((r) => {
-          const x = el('button', { type: 'button', className: 'io-gift-x', ariaLabel: `Take back ${r.name}`, title: 'Take back', disabled: busy, textContent: '×' })
-          x.addEventListener('click', () => send('ungift', r))
-          return el('span', { className: 'io-gift-chip' }, [rewardThumb(r), el('span', { textContent: r.name }), x])
-        }))
+      const chip = (r, wait) => {
+        const x = el('button', { type: 'button', className: 'io-gift-x', ariaLabel: `Take back ${r.name}`, title: 'Take back', disabled: busy, textContent: '×' })
+        x.addEventListener('click', () => send('ungift', r))
+        return el('span', { className: `io-gift-chip ${wait ? 'is-waiting' : ''}`, title: wait ? 'Emailed: waiting for them to accept it' : '' }, [rewardThumb(r), el('span', { textContent: r.name }), wait ? el('small', { textContent: 'Waiting to be accepted' }) : null, x])
+      }
+      const chips = gifted.length || waiting.length
+        ? el('div', { className: 'io-gift-chips' }, [...gifted.map((r) => chip(r, false)), ...waiting.map((r) => chip(r, true))])
         : el('p', { className: 'io-dim-line', textContent: 'Nothing gifted yet.' })
       const add = el('button', { type: 'button', className: 'ia-btn ghost io-gift-add', disabled: busy || !open.length, textContent: open.length ? '+ Gift a reward' : 'Every reward gifted' })
-      add.addEventListener('click', () => { picking = true; chosen = ''; note = ''; draw() })
+      add.addEventListener('click', () => { picking = true; chosen = new Set(); note = ''; draw() })
       const kids = [chips]
       if (picking) {
-        const tiles = el('div', { className: 'io-rpick', role: 'radiogroup', ariaLabel: 'Reward to gift' }, open.map((r) => {
-          const t = el('button', { type: 'button', role: 'radio', ariaChecked: String(chosen === r.id), className: `io-rtile ${chosen === r.id ? 'on' : ''}` }, [rewardThumb(r), el('strong', { textContent: r.name }), el('small', { textContent: r.kind === 'discount' ? `${r.percent}% off` : KIND[r.kind] })])
-          t.addEventListener('click', () => { chosen = r.id; draw() })
+        const tiles = el('div', { className: 'io-rpick', role: 'group', ariaLabel: 'Rewards to gift (one or more)' }, open.map((r) => {
+          const on = chosen.has(r.id)
+          const t = el('button', { type: 'button', ariaPressed: String(on), className: `io-rtile ${on ? 'on' : ''}` }, [rewardThumb(r), el('strong', { textContent: r.name }), el('small', { textContent: r.kind === 'discount' ? `${r.percent}% off` : KIND[r.kind] })])
+          t.addEventListener('click', () => { if (on) chosen.delete(r.id); else chosen.add(r.id); draw() })
           return t
         }))
         const tellBox = el('input', { type: 'checkbox', checked: tell })
         tellBox.addEventListener('change', () => { tell = tellBox.checked })
         const cancel = el('button', { type: 'button', className: 'ia-btn ghost', textContent: 'Cancel', disabled: busy })
-        cancel.addEventListener('click', () => { picking = false; chosen = ''; draw() })
-        const give = el('button', { type: 'button', className: 'ia-btn', disabled: busy || !chosen, textContent: busy ? 'Gifting…' : 'Gift it' })
-        give.addEventListener('click', () => send('gift', byId.get(chosen)))
-        kids.push(el('div', { className: 'io-gift-picker' }, [tiles, el('div', { className: 'io-gift-foot' }, [el('label', { className: 'io-gift-tell' }, [tellBox, el('span', { textContent: 'Email them about it' })]), el('span', { className: 'io-gift-grow' }), cancel, give])]))
+        cancel.addEventListener('click', () => { picking = false; chosen = new Set(); draw() })
+        const give = el('button', { type: 'button', className: 'ia-btn', disabled: busy || !chosen.size, textContent: busy ? 'Gifting…' : chosen.size > 1 ? `Gift these ${chosen.size}` : 'Gift it' })
+        give.addEventListener('click', () => send('gift', [...chosen].map((id) => byId.get(id)).filter(Boolean)))
+        kids.push(el('div', { className: 'io-gift-picker' }, [tiles, el('div', { className: 'io-gift-foot' }, [el('label', { className: 'io-gift-tell' }, [tellBox, el('span', { textContent: 'Email them (they accept it from the email)' })]), el('span', { className: 'io-gift-grow' }), cancel, give])]))
       } else kids.push(add)
       if (note) kids.push(el('p', { className: 'io-gift-note', role: 'status', textContent: note }))
       box.replaceChildren(...kids)
@@ -1261,11 +1337,13 @@
             el('span', { className: 'io-profile-tags' }, [
               p.member ? el('span', { className: 'io-pill is-member', textContent: `Member ${memberNo(p.member.memberNo)}` }) : el('span', { className: 'io-pill', textContent: 'No account' }),
               p.member ? el('span', { className: `io-pill ${p.member.verified ? 'is-delivered' : ''}`, textContent: p.member.verified ? 'Email confirmed' : 'Email not confirmed' }) : null,
+              p.member && p.member.locked ? el('span', { className: 'io-pill is-locked', title: 'This account cannot be deleted', textContent: 'Protected' }) : null,
               p.member ? el('span', { className: `io-pill ${p.member.news ? 'is-news' : ''}`, title: p.member.news ? 'They said yes to news emails (Orders → Emails reaches them)' : p.member.unsubscribedAt ? 'They unsubscribed from a news email' : 'They have not said yes to news emails', textContent: p.member.news ? 'Gets news' : p.member.unsubscribedAt ? `Unsubscribed ${new Date(p.member.unsubscribedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No news' }) : null,
             ]),
           ]),
         ]),
         block('Rewards gifted', [giftsFor(p)]),
+        p.member ? block('Points', [pointsFor(p)]) : null,
         el('div', { className: 'io-mgrid' }, [
           block('Contact', [el('p', { className: 'io-lines' }, [p.name || '—', p.email ? el('br') : null, p.email ? el('a', { href: `mailto:${p.email}`, textContent: p.email }) : null, p.phone ? el('br') : null, p.phone || null])]),
           block(addresses.length > 1 ? `Addresses (${addresses.length})` : 'Address', addresses.length ? addresses.map((a) => el('div', { className: 'io-maddress' }, [el('p', { className: 'io-lines' }, a.flatMap((l, i) => (i ? [el('br'), l] : [l]))), copyBtn(a.join('\n'), 'address')])) : [el('p', { className: 'io-lines io-dim', textContent: 'No postal address (support, or nothing posted yet).' })]),
@@ -1297,7 +1375,7 @@
   const cardModal = (p) => {
     const m = p.member
     const prints = p.orders.filter((o) => o.kind !== 'support' && o.kind !== 'other' && !o.fullyRefunded).reduce((n, o) => n + o.items.reduce((k, i) => k + (i.qty || 1), 0), 0)
-    const q = new URLSearchParams({ name: m.name || p.name || (p.email || '').split('@')[0], no: String(m.memberNo || ''), since: String(new Date(m.createdAt || Date.now()).getFullYear()), card: m.card || '', prints: String(prints), points: '0' })
+    const q = new URLSearchParams({ name: m.name || p.name || (p.email || '').split('@')[0], no: String(m.memberNo || ''), since: String(new Date(m.createdAt || Date.now()).getFullYear()), card: m.card || '', prints: String(prints), points: String(m.points || 0), earned: String(m.pointsEarned || m.points || 0) })
     const frame = el('iframe', { className: 'io-cardframe', src: `/card-view?${q}`, title: `${m.name || p.email}'s collector card` })
     modal({
       title: 'Their card',
@@ -1333,10 +1411,13 @@
   const count = el('span', { className: 'io-count', hidden: true })
   const link = el('a', { href: ROUTE, className: 'io-nav' }, [svg(BOX), el('span', { textContent: 'Orders' }), count])
   const clink = el('a', { href: CROUTE, className: 'io-nav' }, [svg(PEOPLE), el('span', { textContent: 'Customers' })])
-  const dlink = el('a', { href: DROUTE, className: 'io-nav' }, [svg(TAG), el('span', { textContent: 'Discounts' })])
+  const dlink = el('a', { href: DROUTE, className: 'io-nav' }, [svg(TAG), el('span', { textContent: 'Discount codes' })])
   const badge = () => {
     const n = state.orders.filter((o) => inView(o, 'topost')).length
     count.hidden = !n; count.textContent = n > 99 ? '99+' : String(n)
+    // the Overview's strip (shell.js): to ship, and how many customers
+    window.iaGlance = { ...(window.iaGlance || {}), ordersReady: state.loaded, ordersProblem: !state.loaded && Boolean(state.problem), toShip: n, customers: state.loaded ? everyone().length : null }
+    dispatchEvent(new Event('ia-glance'))
   }
   const shown = () => location.hash === ROUTE || location.hash === CROUTE || location.hash === DROUTE
   const sync = () => {
@@ -1365,17 +1446,35 @@
     const scroll = document.querySelector('.ia-side .ia-scroll')
     if (!scroll) return
     clearInterval(place)
-    const ours = [el('div', { className: 'ia-label', textContent: 'Orders' }), el('nav', { ariaLabel: 'Orders and customers' }, [link, clink, dlink])]
+    // Orders and Customers in the shell's "Orders & customers" group; Discount codes in Shop, after Price cuts
+    const mine = scroll.querySelector('nav[data-group="orders"]')
     const shopNav = scroll.querySelector('nav[data-group="shop"]')
-    if (shopNav) shopNav.after(...ours)
-    else scroll.append(el('div', { className: 'io-divider', role: 'separator' }), ...ours)
+    if (mine) {
+      mine.prepend(link, clink)
+      const cuts = shopNav && shopNav.querySelector('a[href$="/entries/sales"]')
+      if (cuts) cuts.after(dlink); else if (shopNav) shopNav.append(dlink); else mine.append(dlink)
+    } else {
+      const ours = [el('div', { className: 'ia-label', textContent: 'Orders' }), el('nav', { ariaLabel: 'Orders and customers' }, [link, clink, dlink])]
+      if (shopNav) shopNav.after(...ours)
+      else scroll.append(el('div', { className: 'io-divider', role: 'separator' }), ...ours)
+    }
     document.body.append(screen, cscreen, dscreen)
     // the Overview: the same two, as tiles at the end
     const overview = document.querySelector('.ia-home-inner')
     if (overview) {
       const tile = (icon, title, text, href, action) => el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [svg(icon)]), el('h3', { textContent: title }), el('p', { textContent: text }), el('div', { className: 'ia-tile-actions' }, [el('a', { className: 'ia-btn', href, textContent: action })])])
       const groupsShown = overview.querySelectorAll(':scope > .ia-group')
-      const section = (el('section', { className: 'ia-group' }, [
+      const ordersTiles = overview.querySelector('.ia-group[data-group="orders"] .ia-tiles')
+      const shopTiles = overview.querySelector('.ia-group[data-group="shop"] .ia-tiles')
+      if (ordersTiles) {
+        ordersTiles.prepend(
+          tile(BOX, 'Orders', 'Every payment, newest first. Mark orders packed and shipped, add tracking, download a spreadsheet.', ROUTE, 'Open orders'),
+          tile(PEOPLE, 'Customers', 'Everyone who has bought or has an account: their orders, codes, points and rewards.', CROUTE, 'Open customers'),
+        )
+        const discountTile = tile(TAG, 'Discount codes', 'Codes buyers type at the checkout: one per chosen customer, or one to share.', DROUTE, 'Open discount codes');
+        (shopTiles || ordersTiles).append(discountTile)
+      }
+      const section = ordersTiles ? null : (el('section', { className: 'ia-group' }, [
         el('h2', { textContent: 'Orders, customers and discounts' }),
         el('p', { textContent: 'What has been bought through the Shop, who bought it, the posting of each order, and discount codes.' }),
         el('div', { className: 'ia-tiles' }, [
@@ -1384,8 +1483,7 @@
           tile(TAG, 'Discounts', 'Make a discount code: a percentage off, for chosen customers or anyone with the code, for as long as you like.', DROUTE, 'Open discounts'),
         ]),
       ]))
-      if (groupsShown[0]) groupsShown[0].after(section)
-      else overview.append(section)
+      if (section) { if (groupsShown[0]) groupsShown[0].after(section); else overview.append(section) }
     }
     sync()
     // once logged in, a quiet first look so the number beside Orders is right from the start

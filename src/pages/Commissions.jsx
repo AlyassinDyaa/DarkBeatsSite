@@ -217,7 +217,7 @@ export default function Commissions() {
         <p className="lead">{intro}</p>
       </header>
 
-      {tiers.length > 0 && (
+      {tiers.length > 0 && shows('commissions', 'tiers') && (
         <section className="section tight">
           <div className="container tiers">
             {tiers.map((t, i) => (
@@ -239,7 +239,7 @@ export default function Commissions() {
         </section>
       )}
 
-      {steps.length > 0 && (
+      {steps.length > 0 && shows('commissions', 'process') && (
         <section className="section tight">
           <div className="container">
             <div className="section-head"><div><div className="label accent">{processLabel}</div><h2 className="display h-lg">{processTitle}</h2></div></div>
@@ -270,7 +270,7 @@ export default function Commissions() {
               <h2 className="cmr-title">{open ? requestTitle : closedTitle}</h2>
             </header>
             <div className="cmr-body">
-              {notes.length > 0 && (
+              {notes.length > 0 && shows('commissions', 'notes') && (
                 <aside className="cmr-notes" aria-labelledby="cmr-notes-title">
                   <h3 id="cmr-notes-title">Good to know</h3>
                   <ul>{notes.map((x) => <li key={x}>{x}</li>)}</ul>

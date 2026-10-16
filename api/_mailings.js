@@ -317,7 +317,14 @@ export const mailingAction = async (req, d, action, body) => {
   if (action === 'adminMailPreview') {
     const f = cleanFields(body.fields)
     const mail = mailFor(f, { first: 'Alex', unsubscribe: `${site}/account?tab=details`, site, audience })
-    return [200, { subject: mail.subject, html: emailHtml(mail) }]
+    let html = emailHtml(mail)
+    /* On this computer the preview shows the email's own pictures (the background, the logo) as they are
+       here, written into the page: a real email takes them from the live site, and the admin's locked-down
+       preview cannot load from this computer. */
+    if (!process.env.VERCEL) html = html.replace(/https?:\/\/[^/'"]+\/email\/([\w.-]+\.(jpe?g|png))/g, (url, name, ext) => {
+      try { return `data:image/${ext === 'png' ? 'png' : 'jpeg'};base64,${readFileSync(`public/email/${name}`).toString('base64')}` } catch { return url }
+    })
+    return [200, { subject: mail.subject, html }]
   }
   if (action === 'adminMailTest') {
     const f = cleanFields(body.fields)

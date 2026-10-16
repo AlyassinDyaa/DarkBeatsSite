@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
 import { emailsToArtist, sendMail } from './_users.js'
+import { awardOrderPoints } from './_points.js'
 
 /* Orders in the database. Each is kept under `ref`: the Stripe checkout's id (cs_...) or "pp_"
    and the PayPal order's id. Stripe orders arrive through api/stripe-webhook.js once paid; PayPal
@@ -170,6 +171,7 @@ export const tellBuyer = async (ref, siteUrl) => {
           ? 'Your support means a lot. Here is your receipt.'
           : `Thank you for your order. Your order number is ${no}${owner && owner.memberNo ? ` (member #${pad(owner.memberNo, 4)})` : ''}: keep it for any question about this order.`,
         ...(!support ? [owner ? 'Each step shows in your account as it happens: packed, posted, and the tracking number once it is on its way.' : 'We will be in touch once it is posted. Questions? Just reply to this email.'] : []),
+        ...(order.points > 0 ? [`You earned ${order.points} points with this order. They add up under Rewards in your account.`] : []),
       ],
       orders: [orderCopy(order)],
       ...(owner && site ? { button: { label: support ? 'Open your account' : 'See your order', url: `${site}/account` } } : {}),
@@ -183,6 +185,7 @@ export const tellBuyer = async (ref, siteUrl) => {
 // a paid order: numbered, then the admin and the buyer each hear of it (once)
 export const paidOrder = async (ref, siteUrl) => {
   try { await numberOrder(ref) } catch (e) { console.error('order not numbered:', e.message) }
+  try { await awardOrderPoints(ref) } catch (e) { console.error('points not given:', e.message) }
   await tellAdmin(ref, siteUrl)
   await tellBuyer(ref, siteUrl)
 }

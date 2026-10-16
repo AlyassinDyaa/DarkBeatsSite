@@ -113,7 +113,7 @@ collections:
         widget: select
         default: none
         options:
-          - { label: 'No, only the pictures added below', value: none }
+          - { label: 'No: only the pieces picked and the pictures added below', value: none }
           - { label: 'Every piece in the Shop', value: all }
           - { label: 'Heroes', value: Heroes }
           - { label: 'Villains', value: Villains }
@@ -121,7 +121,8 @@ collections:
           - { label: 'Games', value: Games }
           - { label: 'Original', value: Original }
           - { label: 'Commissions', value: Commissions }
-        hint: 'Saves uploading a finished piece twice: the section shows those pieces first, then the pictures below.'
+        hint: 'Saves uploading a finished piece twice: the section shows those pieces first, then the ones picked below, then the pictures added below.'
+      - { name: pieces, label: 'Pieces from the Shop (your pick)', widget: relation, collection: work, multiple: true, value_field: '{{slug}}', search_fields: [title], display_fields: [title], required: false, hint: 'Type a title to find a piece; pick as many as you like, in the order they should show. Different sections can show different pieces this way, and a piece shows once even if it is also brought in above.' }
       - name: items
         label: Pictures
         label_singular: picture
@@ -181,8 +182,18 @@ collections:
       - { name: name, label: Event, widget: string }
       - { name: when, label: When, widget: string, hint: 'Written the way it should read: "14–15 Nov 2026", or "Dates to be announced".' }
       - { name: role, label: Where to find you there, widget: string, required: false, hint: 'For example "Artist Alley, table 42".' }
-      - { name: place, label: City or venue, widget: string, required: false }
-      - { name: url, label: Link, widget: string, required: false }
+      - { name: place, label: City or venue, widget: string, required: false, hint: 'For example "Melbourne Showgrounds".' }
+      - { name: url, label: Link, widget: string, required: false, hint: 'The event’s site or the tickets page. The whole line becomes a link to it, with an arrow.' }
+      - { name: linkLabel, label: Words on the link, widget: string, required: false, hint: 'Shown at the end of the line, for example "Tickets" or "Event page". Without them, only the arrow.' }
+      - name: pictures
+        label: Pictures
+        label_singular: picture
+        widget: list
+        required: false
+        collapsed: false
+        max: 3
+        field: { name: picture, label: Picture, widget: image, choose_url: false }
+        hint: 'Up to three: the poster, your table, a photo from last time. Shown small beside the event on the home page.'
       - { name: order, label: Order on site, widget: number, value_type: int, default: 10, required: false, hint: 'Lower numbers come first.' }
       - { name: hidden, label: Hide from the site, widget: boolean, default: false, required: false }
 
@@ -503,6 +514,41 @@ collections:
                   - { label: 'A number of prints collected', value: pieces }
                   - { label: 'A number of commissions', value: commissions }
               - { name: count, label: How many, widget: number, value_type: int, min: 1, default: 3, required: false, hint: 'The orders, prints or commissions it takes: 1 for their first, 3, 6, 10... A commission counts once it is paid. Refunded, cancelled and deleted ones do not count, and commissions never count as shop orders or prints.' }
+          - name: points
+            label: Points
+            widget: object
+            collapsed: false
+            hint: 'Orders and commissions earn points for what was paid; a few one-off bonuses on top; points are spent on the ladder below.'
+            fields:
+              - { name: on, label: Points are running, widget: boolean, default: true, required: false, hint: 'Off hides points everywhere on the site, and nothing is lost: balances are kept, and orders and commissions paid while it is off earn their points when you switch it back on.' }
+              - { name: perUnit, label: Per $1 paid, widget: number, value_type: float, min: 0, default: 1, required: false, hint: '1: a $40 order earns 40.' }
+              - { name: signup, label: Confirming the email, widget: number, value_type: int, min: 0, default: 50, required: false, hint: 'Once.' }
+              - { name: field, label: Each detail filled in, widget: number, value_type: int, min: 0, default: 10, required: false, hint: 'Name, phone, email; the password counts twice.' }
+              - { name: news, label: Saying yes to news, widget: number, value_type: int, min: 0, default: 25, required: false, hint: 'Once ever; taken back on unsubscribing.' }
+              - { name: name, label: What they are called, widget: string, default: points, required: false, hint: 'For example "points" or "stars".' }
+              - { name: intro, label: A line about them, widget: string, required: false, hint: 'Shown over the rewards road in the account, for example "Every order earns points. Spend them on prints and discounts."' }
+              - name: rewards
+                label: The ladder (what points buy)
+                label_singular: reward
+                widget: list
+                collapsed: false
+                required: false
+                summary: '{{fields.name}} — {{fields.cost}}'
+                hint: 'A discount makes a code of their own (like the earned discounts, through Stripe). A gift is something you arrange and send (a free print, a sketch): they claim it, you are emailed, and you mark it as sent in their window under Customers.'
+                fields:
+                  - { name: name, label: Name, widget: string, hint: 'Shown to customers, for example "A free A4 print". Keep it once claimed: the name is how the site knows it.' }
+                  - { name: cost, label: Points it takes, widget: number, value_type: int, min: 1, default: 500 }
+                  - name: kind
+                    label: What it is
+                    widget: select
+                    default: gift
+                    options:
+                      - { label: 'A gift you send (a print, a sketch...)', value: gift }
+                      - { label: 'A discount code', value: discount }
+                  - { name: percent, label: Percent off (discounts), widget: number, value_type: int, min: 1, max: 100, default: 10, required: false }
+                  - { name: days, label: Days the code lasts (discounts), widget: number, value_type: int, min: 1, default: 60, required: false }
+                  - { name: text, label: A few words about it, widget: string, required: false, hint: 'For example "Any print up to A4, posted to you."' }
+                  - { name: hidden, label: Hide (not offered for now), widget: boolean, default: false, required: false }
               - { name: hidden, label: Hide (not offered for now), widget: boolean, default: false, required: false, hint: 'Customers no longer earn it; codes already made keep working.' }
 
       - name: support
@@ -624,12 +670,12 @@ collections:
           - { name: footerFine, label: Small print after the © line, widget: string, required: false }
 
       - name: sales
-        label: Sales
+        label: Price cuts
         file: content/site/sales.json
         fields:
           - name: sales
-            label: Sales
-            label_singular: sale
+            label: Price cuts
+            label_singular: price cut
             widget: list
             collapsed: false
             required: false
@@ -680,6 +726,7 @@ collections:
             hint: 'An account keeps the cart on every device and shows the buyer their orders and tracking. Needs the database: MONGODB_URI in the Vercel project settings (and RESEND_API_KEY + MAIL_FROM for the password and confirmation emails).'
           - { name: currency, label: Currency, widget: select, default: aud, options: [{ label: 'Australian dollar (AUD)', value: aud }, { label: 'US dollar (USD)', value: usd }, { label: 'Euro (EUR)', value: eur }, { label: 'British pound (GBP)', value: gbp }, { label: 'New Zealand dollar (NZD)', value: nzd }, { label: 'Canadian dollar (CAD)', value: cad }] }
           - { name: buttonLabel, label: Wording of the Buy button, widget: string }
+          - { name: steps, label: The steps on the Shop page, widget: list, required: false, max: 4, field: { name: step, label: Step, widget: string }, hint: 'Shown as 01, 02, 03 under the introduction: for example "Pick a print", "Pay by card or PayPal", "Posted to your door". Left empty, the usual three are used, worded for how buyers pay and whether you post.' }
           - name: cartIcon
             label: Cart button icon
             widget: select
@@ -791,6 +838,7 @@ collections:
             widget: object
             collapsed: false
             fields:
+              - { name: steps, label: The steps, widget: boolean, default: true, hint: 'The numbered steps under the introduction (Pick a piece, Pay, Posted to your door).' }
               - { name: redraws, label: Then and now, widget: boolean, default: true, hint: 'The before-and-after drawings under the pieces.' }
           - name: commissions
             label: Commissions
@@ -798,6 +846,9 @@ collections:
             collapsed: false
             hint: 'The Commissions page itself is switched on and off under Pages above; "Commissions are open" (Page text → Commissions) says whether you are taking new ones right now.'
             fields:
+              - { name: tiers, label: What I offer, widget: boolean, default: true, required: false, hint: 'The cards with what you draw and what it costs, each with its quote button.' }
+              - { name: process, label: How it works, widget: boolean, default: true, required: false, hint: 'The numbered steps from asking to the finished piece.' }
+              - { name: notes, label: Good to know, widget: boolean, default: true, required: false, hint: 'The short notes beside the request form.' }
               - { name: request, label: Request form, widget: boolean, default: true, required: false, hint: 'Customers ask for a commission from the Commissions page. Off: the page keeps your offers and how it works, without the request card, and no new requests come in. Commissions already asked for carry on.' }
               - { name: account, label: In customer accounts, widget: boolean, default: true, required: false, hint: 'Orders → Commissions in each customer account. Off: hidden for customers who have none; anyone with a commission keeps seeing theirs.' }
           - name: artwork

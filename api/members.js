@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { configured, goodPass } from './_session.js'
 import { db, dbReady } from './_db.js'
-import { sendMail, siteUrl } from './_users.js'
+import { newId, sendMail, siteUrl } from './_users.js'
 import { mailingAction } from './_mailings.js'
+import { adjustPoints, catchUpPoints, claimSent, pointsRules } from './_points.js'
 
 /* The admin's view of customer accounts, and gifting rewards. A reward the admin gifts counts as
    earned, whatever the customer's orders: its picture or card design opens up, and a discount
@@ -11,8 +12,13 @@ import { mailingAction } from './_mailings.js'
 
    GET  /api/members                     every account: who, member number, confirmed, gifts; and the
                                         rewards on offer (from Shop → Rewards)
-   POST /api/members { action: 'gift', email, reward, tell }   gifts a reward (tell: email them)
+   POST /api/members { action: 'gift', email, reward, tell }   gifts a reward. tell: email them, and then it waits
+                                        (pendingGifts) until they accept it from the email; not
+                                        emailed, it is theirs at once
    POST /api/members { action: 'ungift', email, reward }       takes a gift back
+   POST /api/members { action: 'adminPoints', email, delta, note }  points added (or taken, below zero) by hand
+   POST /api/members { action: 'adminClaimSent', email, claim }     a gift bought with points, marked as sent
+   POST /api/members { action: 'adminDeleteMember', email }         the account deleted (its orders stay, without an owner)
 
    For the logged-in admin only, like api/orders.js. Needs MONGODB_URI. */
 const readJson = (path) => { try { return JSON.parse(readFileSync(join(process.cwd(), path), 'utf8')) } catch { return null } }
@@ -37,7 +43,11 @@ const pictureOf = (avatar) => {
   const piece = readJson(`content/work/${avatar}.json`)
   return piece && piece.src ? { src: piece.src, face: String(piece.face || '') } : null
 }
-const shape = (u) => ({ email: u.email, name: u.name || '', memberNo: Number(u.memberNo) || null, verified: Boolean(u.verified), news: Boolean(u.marketing), unsubscribedAt: u.unsubscribedAt || null, createdAt: u.createdAt, gifts: Array.isArray(u.gifts) ? u.gifts : [], card: typeof u.card === 'string' ? u.card : '', picture: pictureOf(typeof u.avatar === 'string' ? u.avatar : '') })
+const shape = (u) => ({ email: u.email, name: u.name || '', memberNo: Number(u.memberNo) || null, verified: Boolean(u.verified), news: Boolean(u.marketing), unsubscribedAt: u.unsubscribedAt || null, createdAt: u.createdAt, locked: Boolean(u.locked), gifts: Array.isArray(u.gifts) ? u.gifts : [], pending: (Array.isArray(u.pendingGifts) ? u.pendingGifts : []).map((g) => g && g.id).filter(Boolean), card: typeof u.card === 'string' ? u.card : '',
+  points: Math.round(Number(u.points) || 0), // their balance (api/_points.js)
+  pointsEarned: Math.max(Math.round(Number(u.pointsEarned) || 0), Math.round(Number(u.points) || 0)), // everything earned, ever
+  claims: (Array.isArray(u.claims) ? u.claims : []).slice(-20).reverse(), // rewards they spent points on, newest first
+  pointsLog: (Array.isArray(u.pointsLog) ? u.pointsLog : []).slice(-10).reverse(), picture: pictureOf(typeof u.avatar === 'string' ? u.avatar : '') })
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
@@ -54,6 +64,12 @@ export default async function handler(req, res) {
       return res.status(status).json(answer)
     }
     if (req.method === 'GET') {
+      // every account caught up on its points first (those not looked at for a while, a hundred at a time), so the balances are right
+      if (pointsRules().on) {
+        const d = await db()
+        const due = await users.find({ $or: [{ pointsCheckedAt: { $exists: false } }, { pointsCheckedAt: { $lt: Date.now() - 5 * 60000 } }] }).limit(100).toArray()
+        for (const u of due) { try { await catchUpPoints(d, u) } catch (e) { console.error('points not caught up:', e.message) } }
+      }
       const list = await users.find({}).sort({ memberNo: 1 }).limit(2000).toArray()
       const members = list.map(shape)
       // a print taken off the site since: the picture its order kept
@@ -70,6 +86,24 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Read with GET, gift with POST.' })
     const body = req.body && typeof req.body === 'object' ? req.body : {}
     const email = String(body.email || '').trim().toLowerCase().slice(0, 254)
+    // points by hand, a claimed gift marked as sent, and the account deleted: no reward of the lists involved
+    if (['adminPoints', 'adminClaimSent', 'adminDeleteMember'].includes(body.action)) {
+      const d = await db()
+      const who = email && await users.findOne({ email })
+      if (!who) return res.status(404).json({ message: 'There is no account with that email.' })
+      if (body.action === 'adminDeleteMember') {
+        // a protected account (locked: true in the database, the site's own) is never deleted
+        if (who.locked) return res.status(403).json({ message: `${who.name || who.email}'s account is protected and cannot be deleted.`, locked: true })
+        // logins and links gone, the orders kept for the shop's records (as when they delete it themselves)
+        await d.collection('sessions').deleteMany({ userId: who._id })
+        await d.collection('tokens').deleteMany({ userId: who._id })
+        await d.collection('orders').updateMany({ userId: who._id }, { $set: { userId: null } })
+        await users.deleteOne({ _id: who._id, locked: { $ne: true } })
+        return res.status(200).json({ ok: true, deleted: true })
+      }
+      const [status, answer] = body.action === 'adminPoints' ? await adjustPoints(d, who, body.delta, body.note) : await claimSent(d, who, body.claim)
+      return res.status(status).json(status === 200 ? { ok: true, member: shape(await users.findOne({ _id: who._id })) } : answer)
+    }
     const reward = rewardsOnOffer().find((r) => r.id === String(body.reward || ''))
     if (!reward) return res.status(400).json({ message: 'That reward is not on offer any more. Reload the page.' })
     const user = email && await users.findOne({ email })
@@ -77,12 +111,22 @@ export default async function handler(req, res) {
     const gifts = Array.isArray(user.gifts) ? user.gifts : []
 
     if (body.action === 'gift') {
-      const next = gifts.includes(reward.id) ? gifts : [...gifts, reward.id]
-      // new to them: their account page says so until they have seen it
-      const fresh = (Array.isArray(user.newGifts) ? user.newGifts : []).filter((g) => g !== reward.id).concat(gifts.includes(reward.id) ? [] : [reward.id])
-      await users.updateOne({ _id: user._id }, { $set: { gifts: next, newGifts: fresh } })
+      const waiting = Array.isArray(user.pendingGifts) ? user.pendingGifts : []
+      if (gifts.includes(reward.id) || waiting.some((g) => g && g.id === reward.id)) return res.status(409).json({ message: `${user.name || user.email} already has "${reward.name}"${waiting.some((g) => g && g.id === reward.id) ? ' (waiting for them to accept it from the email)' : ''}.` })
+      // theirs at once: in their gifts, and new to them until they have seen it
+      const giveNow = async () => {
+        const now = await users.findOne({ _id: user._id })
+        const have = Array.isArray(now.gifts) ? now.gifts : []
+        const next = have.includes(reward.id) ? have : [...have, reward.id]
+        const fresh = (Array.isArray(now.newGifts) ? now.newGifts : []).filter((g) => g !== reward.id).concat([reward.id])
+        await users.updateOne({ _id: user._id }, { $set: { gifts: next, newGifts: fresh, pendingGifts: (Array.isArray(now.pendingGifts) ? now.pendingGifts : []).filter((g) => g && g.id !== reward.id) } })
+      }
+      // emailed: it waits for them to accept it from the email (a link carrying the gift's own token)
+      const token = newId('g')
+      if (body.tell) await users.updateOne({ _id: user._id }, { $set: { pendingGifts: [...waiting, { id: reward.id, token, at: Date.now() }] } })
+      else await giveNow()
       let told = false
-      if (body.tell && !gifts.includes(reward.id)) {
+      if (body.tell) {
         const first = (user.name || '').split(' ')[0]
         const what = reward.kind === 'discount' ? `${reward.percent}% off one order` : reward.kind === 'card' ? `the ${reward.name} membership card design` : `the ${reward.name} profile picture`
         // worded as the account notice it is (a subject like "A gift for you" is what spam filters look for)
@@ -91,21 +135,25 @@ export default async function handler(req, res) {
             to: user.email,
             subject: `New in your JBeatsArt account: ${reward.name}`,
             kicker: 'Your account',
-            title: 'A new reward',
-            lines: [`Hi${first ? ` ${first}` : ''},`, `Jordan has added a reward to your account: ${what}.`, reward.kind === 'discount' ? 'Your code is under Rewards in your account, ready for your next order.' : 'You can use it from Details in your account.'],
+            title: 'A reward is waiting for you',
+            lines: [`Hi${first ? ` ${first}` : ''},`, `Jordan has set aside a reward for you: ${what}.`, 'Press the button to accept it, and it goes straight into your account.', reward.kind === 'discount' ? 'A discount gets its own code under Rewards in your account, ready for your next order.' : 'Then you can use it from Details in your account.'],
             ...(reward.kind === 'picture' && reward.picture ? { picture: { src: reward.picture, title: reward.name, text: 'Now one of your profile pictures.' } } : {}),
-            button: { label: 'See your gift', url: `${siteUrl(req)}/account?tab=rewards` },
+            button: { label: 'Accept the gift', url: `${siteUrl(req)}/account/gift?u=${encodeURIComponent(user._id)}&t=${encodeURIComponent(token)}` },
             after: 'You are getting this because you have an account on JBeatsArt.',
           })
         } catch (e) { console.error('gift email not sent:', e.message) }
+        // the email could not go, so there is nothing to accept it from: theirs at once
+        if (!told) await giveNow()
       }
-      return res.status(200).json({ member: shape({ ...user, gifts: next }), told })
+      return res.status(200).json({ member: shape(await users.findOne({ _id: user._id })), told, pending: Boolean(body.tell && told) })
     }
 
     if (body.action === 'ungift') {
+      // taken back, whether theirs or still waiting to be accepted (its link stops working)
       const next = gifts.filter((g) => g !== reward.id)
-      await users.updateOne({ _id: user._id }, { $set: { gifts: next, newGifts: (Array.isArray(user.newGifts) ? user.newGifts : []).filter((g) => g !== reward.id) } })
-      return res.status(200).json({ member: shape({ ...user, gifts: next }) })
+      const waiting = (Array.isArray(user.pendingGifts) ? user.pendingGifts : []).filter((g) => g && g.id !== reward.id)
+      await users.updateOne({ _id: user._id }, { $set: { gifts: next, pendingGifts: waiting, newGifts: (Array.isArray(user.newGifts) ? user.newGifts : []).filter((g) => g !== reward.id) } })
+      return res.status(200).json({ member: shape({ ...user, gifts: next, pendingGifts: waiting }) })
     }
 
     return res.status(400).json({ message: 'Nothing to do.' })

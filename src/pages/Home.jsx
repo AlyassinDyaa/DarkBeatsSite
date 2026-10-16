@@ -235,16 +235,21 @@ export default function Home() {
               <div><div className="label accent">{home.eventsLabel}</div><h2 className="display h-lg">{home.eventsTitle}</h2></div>
             </div>
             <ul className="events">
-              {events.map((e, i) => (
-                <Reveal as="li" key={e.slug} delay={i * 0.06} y={20}>
-                  <a className="event" href={e.url || undefined} target={e.url ? '_blank' : undefined} rel="noreferrer">
-                    <span className="event-when">{e.when}</span>
-                    <span className="event-name">{e.name}</span>
-                    <span className="event-where">{[e.role, e.place].filter(Boolean).join(' · ')}</span>
-                    {e.url && <span className="arrow" aria-hidden="true">↗</span>}
-                  </a>
-                </Reveal>
-              ))}
+              {events.map((e, i) => {
+                // up to three pictures (the admin's): the poster, the table, last time, as a small mosaic
+                const pics = (Array.isArray(e.pictures) ? e.pictures : []).filter((p) => typeof p === 'string' && p).slice(0, 3)
+                return (
+                  <Reveal as="li" key={e.slug} delay={i * 0.06} y={20}>
+                    <a className={`event ${pics.length ? 'has-pics' : ''}`} href={e.url || undefined} target={e.url ? '_blank' : undefined} rel="noreferrer">
+                      {pics.length > 0 && <span className="event-pics" data-n={pics.length} aria-hidden="true">{pics.map((p, k) => <img key={k} src={asset(p)} alt="" loading="lazy" draggable="false" />)}</span>}
+                      <span className="event-when">{e.when}</span>
+                      <span className="event-name">{e.name}</span>
+                      <span className="event-where">{[e.role, e.place].filter(Boolean).join(' · ')}</span>
+                      {e.url && <span className="event-go">{e.linkLabel ? <span>{e.linkLabel}</span> : null}<span className="arrow" aria-hidden="true">↗</span></span>}
+                    </a>
+                  </Reveal>
+                )
+              })}
             </ul>
           </div>
         </section>

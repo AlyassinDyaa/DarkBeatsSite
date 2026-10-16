@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { db, dbReady } from './_db.js'
 import { SITE, codeUsed, shapeAddress } from './_orders.js'
 import { artistInbox, clean, emailsToArtist, sendMail } from './_users.js'
+import { awardCommissionPoints, takeCommissionPoints } from './_points.js'
 
 /* Commissions: a customer asks for a piece, talks it over with the artist, gets a quote, pays it,
    and follows the piece from sketch to delivery (the leading underscore keeps Vercel from serving
@@ -37,7 +38,17 @@ export const currencyNow = () => String((read('content/site/shop.json') || {}).c
 
 /* The currencies a quote can be in: ones both Stripe and PayPal take, written in cents (two decimals),
    so the amount charged is exactly the quote. The shop's own currency comes first and is the default. */
-export const QUOTE_CURRENCIES = ['AUD', 'NZD', 'USD', 'CAD', 'GBP', 'EUR', 'SGD', 'HKD']
+// the currencies a quote can be in: ones both Stripe and PayPal take, with cents
+export const QUOTE_CURRENCIES = ['AUD', 'NZD', 'USD', 'CAD', 'GBP', 'EUR', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'MXN', 'SGD', 'HKD']
+/* Where a customer is, to their currency (the quote form offers it; the shop's own stays the default):
+   a country (two letters) to its currency, elsewhere in the world US dollars, unknown: none. */
+const EURO = new Set('AT BE CY DE EE ES FI FR GR HR IE IT LT LU LV MT NL PT SI SK AD MC SM VA ME XK GP MQ GF RE YT PM BL MF'.split(' '))
+const LOCAL = { US: 'USD', PR: 'USD', GU: 'USD', VI: 'USD', GB: 'GBP', IM: 'GBP', JE: 'GBP', GG: 'GBP', GI: 'GBP', CA: 'CAD', AU: 'AUD', NZ: 'NZD', CH: 'CHF', LI: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', GL: 'DKK', FO: 'DKK', PL: 'PLN', CZ: 'CZK', MX: 'MXN', SG: 'SGD', HK: 'HKD' }
+export const currencyFor = (country) => {
+  const k = String(country || '').toUpperCase()
+  if (!/^[A-Z]{2}$/.test(k)) return ''
+  return EURO.has(k) ? 'EUR' : LOCAL[k] || 'USD'
+}
 export const quoteCurrencies = () => [...new Set([currencyNow(), ...QUOTE_CURRENCIES])]
 
 export const STATUSES = ['requested', 'discussing', 'quoted', 'paid', 'sketch', 'inks', 'colours', 'delivered', 'complete', 'cancelled']
@@ -154,7 +165,7 @@ export const forAdmin = (c, full = false) => ({
   ...summary(c),
   unread: (c.unread && c.unread.artist) || 0,
   userId: c.userId || null, email: c.email || '', name: c.name || '', test: Boolean(c.payment && c.payment.test),
-  ...(full ? { details: c.details || {}, quote: c.quote || null, messages: c.messages || [], payment: c.payment || null, pending: c.pending || null, address: c.address || null, suggestedStages: guessStages(c.details && c.details.kind) } : {}),
+  ...(full ? { details: c.details || {}, quote: c.quote || null, messages: c.messages || [], payment: c.payment || null, pending: c.pending || null, address: c.address || null, suggestedStages: guessStages(c.details && c.details.kind), country: c.country || '', theirCurrency: currencyFor(c.country) } : {}),
 })
 
 /* ---------- adding to the thread ----------
@@ -289,6 +300,7 @@ export const markPaid = async (id, payment, address, site) => {
     { returnDocument: 'after' },
   ))
   if (!got) return null // already paid (Stripe says so more than once)
+  try { await awardCommissionPoints(got) } catch (e) { console.error('points not given:', e.message) }
   // a discount code: a reward or a gift shows as used in their account; a PayPal use is counted here (Stripe counts its own)
   if (payment.code) { try { await codeUsed({ code: payment.code, promoId: payment.promoId, viaPaypal: payment.provider === 'paypal', userId: got.userId, ref: payment.ref }) } catch (e) { console.error('code use not noted:', e.message) } }
   const base = quoteBox(got)
@@ -337,6 +349,7 @@ export const refundedByStripe = async (pi) => {
   const found = await c.findOne({ 'payment.pi': pi })
   if (!found || found.payment.refunded) return
   await c.updateOne({ _id: found._id }, { $set: { 'payment.refunded': true, updatedAt: new Date() }, $push: { messages: message('system', 'The payment was refunded.') }, $inc: { 'unread.customer': 1 } })
+  try { await takeCommissionPoints(found._id) } catch (e) { console.error('points not taken back:', e.message) }
 }
 
 /* ---------- PayPal (the same keys and live switch as api/checkout.js: PAYPAL_MODE=live) ---------- */

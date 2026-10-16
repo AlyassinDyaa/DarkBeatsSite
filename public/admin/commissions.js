@@ -155,7 +155,8 @@
   // the currencies a quote can be in, the shop's own first (api/_commissions.js)
   let cCurrencies = ['AUD', 'NZD', 'USD', 'CAD', 'GBP', 'EUR', 'SGD', 'HKD']
   let cHome = 'AUD'
-  const CURRENCY_NAMES = { AUD: 'Australian dollars', NZD: 'New Zealand dollars', USD: 'US dollars', CAD: 'Canadian dollars', GBP: 'British pounds', EUR: 'Euros', SGD: 'Singapore dollars', HKD: 'Hong Kong dollars' }
+  const CURRENCY_NAMES = { AUD: 'Australian dollars', NZD: 'New Zealand dollars', USD: 'US dollars', CAD: 'Canadian dollars', GBP: 'British pounds', EUR: 'Euros', CHF: 'Swiss francs', SEK: 'Swedish kronor', NOK: 'Norwegian kroner', DKK: 'Danish kroner', PLN: 'Polish zloty', CZK: 'Czech koruna', MXN: 'Mexican pesos', SGD: 'Singapore dollars', HKD: 'Hong Kong dollars' }
+  const countryName = (code) => { try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code } catch { return code } }
   const cState = { loaded: false, loading: false, list: [], problem: '', chip: 'all', q: '', open: null, detail: null, detailProblem: '', drafts: {}, said: '', saidBad: false, stick: true, deliver: {} }
   const cUnread = () => cState.list.reduce((n, c) => n + (c.unread || 0), 0)
 
@@ -447,6 +448,10 @@
     const curSel = el('select', { className: 'io-select ic-cur', ariaLabel: 'Currency' }, cCurrencies.map((k) => el('option', { value: k, textContent: `${k}${k === cHome ? ' (your currency)' : CURRENCY_NAMES[k] ? ` · ${CURRENCY_NAMES[k]}` : ''}`, selected: k === curWant })))
     curSel.addEventListener('change', () => { draft.currency = curSel.value; curNote.hidden = curSel.value === cHome })
     const curNote = el('small', { className: 'ic-cur-note', textContent: 'They pay in this currency; Stripe or PayPal pays it out to you in yours.', hidden: curWant === cHome })
+    // where they asked from, and their currency, one tap away (yours stays the default)
+    const theirs = c.theirCurrency && c.theirCurrency !== cHome && cCurrencies.includes(c.theirCurrency) ? c.theirCurrency : ''
+    const useTheirs = theirs ? el('button', { type: 'button', className: 'ic-cur-theirs', textContent: `Asked from ${countryName(c.country)}: quote in ${theirs}` }) : null
+    if (useTheirs) useTheirs.addEventListener('click', () => { curSel.value = theirs; draft.currency = theirs; curNote.hidden = false })
     const includes = input('includes', { rows: 3, maxLength: 1000, value: q ? q.includes : '', placeholder: 'For example: A3 full colour, signed, high-resolution file' }, 'textarea')
     const stageWant = draft.stages ?? ((q && q.stages) || c.suggestedStages || 'full')
     const stageSel = el('select', { className: 'io-select' }, C_SETS.map(([k, t]) => el('option', { value: k, textContent: t, selected: k === stageWant })))
@@ -472,7 +477,7 @@
     }, 'ia-btn ic-go')
     const field = (label, control, req = false, hint = '') => el('label', { className: 'ic-field' }, [el('span', {}, [label, req ? el('b', { className: 'ic-req', textContent: ' *', ariaHidden: 'true' }) : null]), control, hint ? el('small', { textContent: hint }) : null])
     const quoteForm = el('div', { className: 'ic-quote-form' }, [
-      el('div', { className: 'ic-pair' }, [el('div', { className: 'ic-field' }, [el('span', {}, ['Price', el('b', { className: 'ic-req', textContent: ' *', ariaHidden: 'true' })]), el('div', { className: 'ic-price' }, [price, curSel]), curNote]), field('Ready by (optional)', due)]),
+      el('div', { className: 'ic-pair' }, [el('div', { className: 'ic-field' }, [el('span', {}, ['Price', el('b', { className: 'ic-req', textContent: ' *', ariaHidden: 'true' })]), el('div', { className: 'ic-price' }, [price, curSel]), useTheirs, curNote]), field('Ready by (optional)', due)]),
       field('What is included', includes, true),
       field('What the piece goes through', stageSel, true, `Their tracker shows only these stages. Picked from what they asked for (${d.kind || 'the kind of piece'}); change it if needed.`),
       el('div', { className: 'ic-field' }, [el('span', {}, ['How it reaches them', el('b', { className: 'ic-req', textContent: ' *', ariaHidden: 'true' })]), wayRow]),
@@ -888,7 +893,12 @@
   const count = el('span', { className: 'io-count', hidden: true })
   const comLink = el('a', { href: CROUTE, className: 'io-nav' }, [svg(CHAT), el('span', { textContent: 'Commissions' }), count])
   const mailLink = el('a', { href: EROUTE, className: 'io-nav' }, [svg(MAIL), el('span', { textContent: 'Emails' })])
-  const badge = () => { const n = cUnread(); count.hidden = !n; count.textContent = n > 99 ? '99+' : String(n) }
+  const badge = () => {
+    const n = cUnread(); count.hidden = !n; count.textContent = n > 99 ? '99+' : String(n)
+    // the Overview's strip (shell.js): unread messages, and requests waiting for a quote
+    window.iaGlance = { ...(window.iaGlance || {}), comReady: cState.loaded && !cState.problem, unread: n, toQuote: cState.list.filter((c) => ['requested', 'discussing'].includes(c.status)).length }
+    dispatchEvent(new Event('ia-glance'))
+  }
   const sync = () => {
     const at = location.hash.startsWith(CROUTE) ? 'commissions' : location.hash.startsWith(EROUTE) ? 'emails' : ''
     if (at) document.documentElement.dataset.iaOrders = at
@@ -915,17 +925,20 @@
     const nav = document.querySelector('.ia-side nav[aria-label="Orders and customers"]')
     if (!nav) return
     clearInterval(place)
-    nav.append(comLink, mailLink)
+    // Commissions right after Customers; Emails at the end of the group
+    const people = nav.querySelector('a[href="#/customers"]')
+    if (people) people.after(comLink); else nav.append(comLink)
+    nav.append(mailLink)
     document.body.append(comScreen, emailScreen, shade, panel)
     // the Overview: two more tiles beside Orders, Customers and Discounts
-    const tiles = [...document.querySelectorAll('.ia-home-inner .ia-group')].find((g) => /Orders, customers/.test(g.textContent))
+    const tiles = document.querySelector('.ia-home-inner .ia-group[data-group="orders"]') || [...document.querySelectorAll('.ia-home-inner .ia-group')].find((g) => /Orders, customers/.test(g.textContent))
     const holder = tiles && tiles.querySelector('.ia-tiles')
     if (holder) {
       const tile = (icon, title, text, href, action) => el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [svg(icon)]), el('h3', { textContent: title }), el('p', { textContent: text }), el('div', { className: 'ia-tile-actions' }, [el('a', { className: 'ia-btn', href, textContent: action })])])
-      holder.append(
-        tile(CHAT, 'Commissions', 'Requests from the Commissions page: talk them over, send a quote, move the piece through its stages and send the finished file.', CROUTE, 'Open commissions'),
-        tile(MAIL, 'Emails', 'Write to your customers at once: news, a discount, new prints, a convention. Preview it, test it, send.', EROUTE, 'Open emails'),
-      )
+      const comTile = tile(CHAT, 'Commissions', 'Requests from the Commissions page: talk them over, send a quote, move the piece through its stages and send the finished file.', CROUTE, 'Open commissions')
+      const peopleTile = [...holder.children].find((t) => /Customers/.test((t.querySelector('h3') || {}).textContent || ''))
+      if (peopleTile) peopleTile.after(comTile); else holder.append(comTile)
+      holder.append(tile(MAIL, 'Emails', 'Write to your customers at once: news, a discount, new prints, a convention. Preview it, test it, send.', EROUTE, 'Open emails'))
     }
     sync()
     // a quiet first look, so the number beside Commissions is right from the start

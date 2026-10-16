@@ -14,6 +14,7 @@ export default function CardView() {
         number={memberNumber(Number(q.get('no')) || null)}
         prints={`${prints} ${prints === 1 ? 'print' : 'prints'}`}
         points={Number(q.get('points')) || 0}
+        earned={Number(q.get('earned')) || Number(q.get('points')) || 0}
         design={designOf(q.get('card') || '')}
       />
     </main>

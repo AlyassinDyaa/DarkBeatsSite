@@ -68,28 +68,34 @@
     },
     'site/brand': { groups: { name: 'Name', hue: 'Look', email: 'Contact details', social: 'Social links', footerLine: 'Footer' }, half: ['name', 'artist', 'email', 'location'] },
     'site/shop': { groups: { enabled: 'Selling online', currency: 'What you sell', signedChoice: 'Signed prints', pricePlace: 'On the cards', shipping: 'Delivery', thanksTitle: 'After a purchase', emails: 'Emails to you' }, half: ['currency', 'buttonLabel', 'cartIcon', 'pricePlace', 'tagPlace', 'thanksTitle', 'thanksText'] },
-    'pages/rewards': { groups: { rewardText: 'Before they confirm', pictures: 'Profile pictures', cards: 'Membership card designs', discounts: 'Discounts' }, half: [], inner: ['earnedBy', 'count', 'percent', 'days', 'cardLook'] },
+    'pages/rewards': { groups: { rewardText: 'Before they confirm', pictures: 'Profile pictures', cards: 'Membership card designs', discounts: 'Discounts', points: 'Points' }, half: [], inner: ['earnedBy', 'count', 'percent', 'days', 'cardLook', 'cost', 'kind', 'on', 'perUnit', 'signup', 'news'] },
     'site/sales': { groups: {}, half: [], inner: ['on', 'percent', 'starts', 'ends'] },
     'site/visibility': { groups: {}, half: [], inner: ['work', 'gallery', 'commissions', 'about', 'contact', 'support', 'ticker', 'latest', 'redraws', 'events'] },
   }
 
-  /* The navigation and the Home screen list the sections in these groups, in this order, each
-     group's sections in the order given. The Orders group (orders.js) goes in right after Shop.
+  /* The navigation and the Overview list the sections in these groups, in this order, each group's
+     sections in the order given. "Orders & customers" is filled by orders.js and commissions.js
+     (Orders, Customers, Commissions, Emails), and they put Discount codes in Shop after Price cuts.
      A section not named here lands in the last group, so nothing new ever goes missing. */
   const GROUPS = [
-    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, how it is sorted, and how buyers pay.', keys: ['work', 'site/categories', 'site/sales', 'site/shop', 'pages/rewards'] },
-    { id: 'art', label: 'Your art', short: 'Your art', lead: 'The Work page, before-and-afters, conventions, and every picture you have uploaded.', keys: ['gallery_sections', 'redraws', 'events'], media: true },
-    { id: 'pages', label: 'Words on each page', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', keys: ['pages/home', 'pages/lists', 'pages/commissions', 'pages/about', 'pages/contact', 'pages/support', 'pages/account'] },
-    { id: 'site', label: 'Whole site', short: 'Site', lead: 'Your name and colour, and which parts are switched on.', keys: ['site/brand', 'site/visibility'] },
+    { id: 'orders', label: 'Orders & customers', short: 'Orders & customers', lead: 'Who bought what, commissions, members and their rewards, and writing to your customers.', keys: ['pages/rewards', 'pages/account'], slot: true },
+    { id: 'art', label: 'Your art', short: 'Your art', lead: 'What you add to over time: the Work page, before-and-afters and conventions.', keys: ['gallery_sections', 'redraws', 'events'] },
+    { id: 'shop', label: 'Shop', short: 'Shop', lead: 'What you sell, what it costs, and how buyers pay.', keys: ['work', 'site/sales', 'site/categories', 'site/shop'] },
+    { id: 'pages', label: 'Page text', short: 'Page text', lead: 'Headings, introductions and buttons, one short form per page.', keys: ['pages/home', 'pages/lists', 'pages/commissions', 'pages/about', 'pages/contact', 'pages/support'] },
+    { id: 'site', label: 'Site', short: 'Site', lead: 'Your name and colour, what is switched on, and every picture.', keys: ['site/brand', 'site/visibility'], media: true },
   ]
   const named = new Set(GROUPS.flatMap((g) => g.keys))
   GROUPS.forEach((g, i) => { g.has = (s) => g.keys.includes(s.key) || (i === GROUPS.length - 1 && !named.has(s.key)) })
   const inOrder = (g, list) => list.filter(g.has).sort((a, b) => (g.keys.indexOf(a.key) + 1 || 99) - (g.keys.indexOf(b.key) + 1 || 99))
   /* The navigation is narrow, and under "Page text" every name would end in "page": there the
      pages go by these shorter names. Tiles and form headings keep the full ones. */
-  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'site/sales': 'Sales', 'pages/rewards': 'Rewards', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Customer account', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
-  /* One line about each single page, for its tile on the Home screen. */
+  const SHORT = { work: 'Pieces', 'site/categories': 'Categories', 'site/shop': 'Shop settings', 'site/sales': 'Price cuts', 'pages/rewards': 'Rewards', 'pages/home': 'Home', 'pages/lists': 'Shop & Work', 'pages/commissions': 'Commissions', 'pages/about': 'About', 'pages/contact': 'Contact', 'pages/support': 'Support', 'pages/account': 'Member page', 'site/brand': 'Brand & contact', 'site/visibility': 'Show / hide' }
+  /* One line about each part: its tile on the Overview, and the line over its form. */
   const ABOUT = {
+    work: 'Your pieces for sale. A new one shows in the Shop, on the home page and on the Work page.',
+    gallery_sections: 'The Work page, in sections you name yourself. Open a section to add pictures.',
+    redraws: 'The same subject drawn again years later; visitors drag a line across to compare.',
+    events: 'Conventions, markets and signings where people can meet you.',
     'pages/home': 'The top of the home page, the character beside the name, and the heading of each part below it.',
     'pages/lists': 'The heading and introduction above the Shop page and the Work page.',
     'pages/commissions': 'Open or closed, what you offer and what it costs, how it works.',
@@ -97,12 +103,12 @@
     'pages/contact': 'The heading, the introduction and what visitors can say their message is about.',
     'pages/support': 'Your own project: what it is, its art, and the payment links fans use to back it.',
     'pages/account': 'What customers read on their account page: your note to them, its headings, and the free profile pictures.',
-    'pages/rewards': 'Profile pictures, membership card designs and discounts customers earn: by confirming their email, every few orders, or the prints they collect.',
+    'pages/rewards': 'Profile pictures, card designs and discounts customers earn; and points: what earns them and what they buy.',
     'site/brand': 'Site name, tagline, brand colour, logo, email, social links and the footer.',
-    'site/shop': 'Switch online purchases on or off, and set the currency and delivery.',
-    'site/sales': 'A percentage off everything, or off one category, type or universe: running now, or between two dates.',
+    'site/shop': 'Shop on or off, how buyers pay, currency, what you sell, delivery, and emails to you.',
+    'site/sales': 'Automatic price cuts with a start and an end: 10% off everything, 25% off a category. No code needed.',
     'site/categories': 'The Shop’s lists: categories (Heroes, Villains...), types (Posters, Stickers...) and universes (DC, Marvel...).',
-    'site/visibility': 'Switch whole pages, or parts of the home page, on and off.',
+    'site/visibility': 'Switch pages, parts of pages, the watermark and test data on or off.',
   }
   Object.assign(ICONS, {
     'pages/home': 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -129,6 +135,7 @@
   /* Collections that are a fixed set of single pages rather than a list that grows. */
   const singles = new Set()
   let known = [] // every section, once config.yml has been read
+  let groupOf = () => '' // the group a section sits in ("Shop" for "work"), once the navigation is built
 
   // ---------- read the sections out of config.yml ----------
   // A list that grows is one section. A collection of single pages gives one section per page.
@@ -157,7 +164,8 @@
   const build = async () => {
     const sections = known = await readSections()
     const hrefOf = (s) => (s.file ? `#/collections/${s.name}/entries/${s.file}` : `#/collections/${s.name}`)
-    const groups = GROUPS.map((g) => ({ ...g, sections: inOrder(g, sections) })).filter((g) => g.sections.length)
+    const groups = GROUPS.map((g) => ({ ...g, sections: inOrder(g, sections) })).filter((g) => g.slot || g.sections.length || g.media)
+    groupOf = (key) => (groups.find((g) => g.sections.some((s) => s.key === key)) || {}).label || ''
 
     // ---- left navigation
     const search = el('input', { type: 'search', placeholder: 'Search everything', ariaLabel: 'Search everything' })
@@ -188,7 +196,8 @@
       el('div', { className: 'ia-scroll' }, [
         el('nav', { ariaLabel: 'Admin' }, [home]),
         ...groups.flatMap((g) => {
-          const nav = el('nav', { ariaLabel: g.label }, [...g.sections.map(linkTo), ...(g.media ? [media] : [])])
+          // the Orders group's nav keeps the name orders.js and commissions.js look for
+          const nav = el('nav', { ariaLabel: g.id === 'orders' ? 'Orders and customers' : g.label }, [...g.sections.map(linkTo), ...(g.media ? [media] : [])])
           nav.dataset.group = g.id
           return [el('div', { className: 'ia-label', textContent: g.short }), nav]
         }),
@@ -209,24 +218,56 @@
         s.canAdd ? el('a', { className: 'ia-btn ghost', href: `#/collections/${s.name}/new`, textContent: `+ New ${s.singular.toLowerCase()}` }) : null,
       ]),
     ])
+    /* At a glance, over the tiles: what needs doing, each opening the list it counts. orders.js and
+       commissions.js fill window.iaGlance and say so with an "ia-glance" event. */
+    const glance = el('div', { className: 'ia-glance', role: 'group', ariaLabel: 'At a glance' })
+    const fact = (label, n, href, hot, note) => el('a', { className: `ia-fact${hot ? ' is-hot' : ''}`, href }, [el('span', { textContent: label }), el('strong', { textContent: n == null ? '–' : String(n) }), el('small', { textContent: note })])
+    const paintGlance = () => {
+      const c = window.iaGlance || {}
+      glance.replaceChildren(
+        fact('To ship', c.ordersReady ? c.toShip : null, '#/orders', c.toShip > 0, c.ordersReady ? (c.toShip ? 'paid, waiting to be posted' : 'nothing waiting') : c.ordersProblem ? 'could not be read' : 'loading…'),
+        fact('Unread messages', c.comReady ? c.unread : null, '#/commissions', c.unread > 0, c.comReady ? 'on commissions' : 'loading…'),
+        fact('To quote', c.comReady ? c.toQuote : null, '#/commissions', c.toQuote > 0, c.comReady ? 'commissions asked for' : 'loading…'),
+        fact('Customers', c.ordersReady ? c.customers : null, '#/customers', false, c.ordersReady ? 'buyers and members' : c.ordersProblem ? 'could not be read' : 'loading…'),
+      )
+    }
+    paintGlance()
+    addEventListener('ia-glance', paintGlance)
     const mediaTile = el('div', { className: 'ia-tile' }, [el('div', { className: 'ia-tile-icon' }, [icon('pictures')]), el('h3', { textContent: 'Pictures' }), el('p', { textContent: 'Every picture uploaded to the site. Upload new ones or remove old ones.' }), el('div', { className: 'ia-tile-actions' }, [(() => { const b = el('button', { type: 'button', className: 'ia-btn', textContent: 'Open the library' }); b.addEventListener('click', () => openMedia()); return b })()])])
     const homeScreen = el('main', { className: 'ia-home' }, [
       el('div', { className: 'ia-home-inner' }, [
-        el('div', { className: 'ia-kicker', textContent: 'JBeatsArt admin' }),
+        el('div', { className: 'ia-kicker', textContent: 'Overview' }),
         el('h1', { textContent: 'What do you want to update?' }),
         el('p', { className: 'ia-lead', textContent: 'Pick a part of the site. Changes go live when you press Save.' }),
-        ...groups.map((g) => el('section', { className: 'ia-group' }, [
-          el('h2', { textContent: g.label }),
-          el('p', { textContent: g.lead }),
-          el('div', { className: 'ia-tiles' }, [...g.sections.map(tile), ...(g.media ? [mediaTile] : [])]),
-        ])),
+        glance,
+        ...groups.map((g) => {
+          const box = el('section', { className: 'ia-group' }, [
+            el('h2', { textContent: g.label }),
+            el('p', { textContent: g.lead }),
+            el('div', { className: 'ia-tiles' }, [...g.sections.map(tile), ...(g.media ? [mediaTile] : [])]),
+          ])
+          box.dataset.group = g.id
+          return box
+        }),
       ]),
     ])
     // ---- phones and small tablets: the navigation is a drawer, opened from a bar across the top
     const menu = el('button', { type: 'button', className: 'ia-menu', ariaLabel: 'Menu' }, [icon('menu')])
-    const top = el('div', { className: 'ia-top' }, [menu, el('a', { className: 'ia-top-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('strong', { textContent: 'JBeatsArt' }), el('small', { textContent: 'Admin' })])])
+    const where = el('span', { className: 'ia-top-where' })
+    const top = el('div', { className: 'ia-top' }, [menu, el('a', { className: 'ia-top-brand', href: HOME }, [el('img', { src: '../favicon.png', alt: '' }), el('strong', { textContent: 'JBeatsArt' })]), where])
+    // the name of the screen open now (the Orders screens mark their own links; asked a moment after they have)
+    const sayWhere = () => setTimeout(() => {
+      const on = document.querySelector('.ia-side nav a.on')
+      where.textContent = location.hash === HOME ? 'Overview' : on ? ((on.querySelector('span') || on).textContent || '').trim() : /^#\/search\//.test(location.hash) ? 'Search' : ''
+    }, 80)
+    addEventListener('hashchange', sayWhere)
     const shade = el('div', { className: 'ia-shade' })
-    const drawer = (open) => { document.documentElement.toggleAttribute('data-ia-menu', open); menu.setAttribute('aria-expanded', String(open)) }
+    const drawer = (open) => {
+      document.documentElement.toggleAttribute('data-ia-menu', open)
+      menu.setAttribute('aria-expanded', String(open))
+      // opening: the entry for this screen in view
+      if (open) (side.querySelector('nav a.on') || home).scrollIntoView({ block: 'nearest' })
+    }
     menu.addEventListener('click', () => drawer(!document.documentElement.hasAttribute('data-ia-menu')))
     shade.addEventListener('click', () => drawer(false))
     side.addEventListener('click', (e) => { if (e.target.closest('a, button')) drawer(false) })
@@ -243,6 +284,7 @@
       document.documentElement.toggleAttribute('data-ia-home', onHome)
       home.classList.toggle('on', onHome)
       links.forEach((a) => a.classList.toggle('on', !onHome && a.section === currentSection() && (!a.file || a.file === currentFile())))
+      sayWhere()
     }
     addEventListener('hashchange', sync)
     sync()
@@ -438,8 +480,62 @@
     }
   }
 
+  /* Every screen is headed the same way: its group in small capitals over the title, and a line
+     about it. The Orders screens draw their own; on Decap's screens the group goes on the list's
+     heading panel and on the form's heading bar, the line on top of the form. */
+  const headers = () => {
+    const name = currentSection()
+    const here = known.find((s) => s.name === name && (s.file ? s.file === currentFile() : true))
+    const kicker = here ? groupOf(here.key) : ''
+    const set = (node, key, value) => { if (node && (node.dataset[key] || '') !== value) { if (value) node.dataset[key] = value; else delete node.dataset[key] } }
+    set(document.querySelector('[class*="CollectionTopContainer"]'), 'iaKicker', kicker)
+    set(document.querySelector('[class*="ToolbarContainer"] [class*="BackCollection"]'), 'iaKicker', kicker)
+    set(document.querySelector('[class*="ControlPaneContainer"]:not([class*="PreviewPaneContainer"])'), 'iaLead', (here && ABOUT[here.key]) || '')
+  }
+  /* ---- the lists of pieces, sections, sets and events: a page at a time, like the site's Shop.
+     10 to 50 to a page (the choice kept in this browser), and a bar under the list: which these are,
+     the pages, and how many to a page. Decap draws the list; this only hides the cards off the page
+     and keeps the bar under it, so a list drawn again (another sort, the other view) is paged at once. */
+  const PER = [10, 15, 20, 25, 50]
+  const perList = () => { let n = 0; try { n = Number(localStorage.getItem('ia-per')) } catch { /* nothing kept */ } return PER.includes(n) ? n : 20 }
+  const NOUNS = { work: ['piece', 'pieces'], gallery_sections: ['section', 'sections'], redraws: ['set', 'sets'], events: ['event', 'events'] }
+  const pageAt = {} // collection -> the page it is on
+  const pageList = () => {
+    const m = location.hash.match(/^#\/collections\/([^/?]+)\/?(\?.*)?$/)
+    const old = document.querySelector('.ia-pager')
+    const grid = m && document.querySelector('ul[class*="CardsGrid"]')
+    if (!grid) { if (old) old.remove(); return }
+    const name = m[1]
+    const items = [...grid.children]
+    const per = perList(), pages = Math.max(1, Math.ceil(items.length / per))
+    const page = Math.min(Math.max(1, pageAt[name] || 1), pages)
+    pageAt[name] = page
+    items.forEach((li, i) => { const want = i >= (page - 1) * per && i < page * per ? '' : 'none'; if (li.style.display !== want) li.style.display = want })
+    const key = `${name}:${items.length}:${page}:${per}`
+    if (old && old.dataset.key === key && old.previousElementSibling === grid) return
+    if (old) old.remove()
+    if (items.length <= PER[0]) return // few enough to see at once: no bar
+    const [one, many] = NOUNS[name] || ['entry', 'entries']
+    const from = (page - 1) * per + 1, to = Math.min(items.length, page * per)
+    const go = (p) => { pageAt[name] = p; grid.scrollIntoView({ block: 'start' }); pageList() }
+    const pageBtn = (p) => { const b = el('button', { type: 'button', className: `ia-page ${p === page ? 'on' : ''}`, textContent: String(p) }); if (p === page) b.setAttribute('aria-current', 'page'); b.addEventListener('click', () => go(p)); return b }
+    const arrow = (label, p, off) => { const b = el('button', { type: 'button', className: 'ia-page is-arrow', textContent: label, ariaLabel: p < page ? 'Previous page' : 'Next page' }); b.disabled = off; b.addEventListener('click', () => go(p)); return b }
+    // the pages: all of them up to seven, else the first, the last, and the ones around this one
+    const shown = pages <= 7 ? Array.from({ length: pages }, (_, i) => i + 1) : [...new Set([1, page - 1, page, page + 1, pages].filter((p) => p >= 1 && p <= pages))]
+    const nav = el('nav', { className: 'ia-pager-pages', ariaLabel: 'Pages' }, [arrow('‹', page - 1, page === 1), ...shown.flatMap((p, i) => (i && p - shown[i - 1] > 1 ? [el('span', { className: 'ia-page-gap', textContent: '…' }), pageBtn(p)] : [pageBtn(p)])), arrow('›', page + 1, page === pages)])
+    const sel = el('select', { className: 'ia-pager-sel', ariaLabel: 'How many to a page' }, PER.map((n) => el('option', { value: String(n), textContent: String(n), selected: n === per })))
+    sel.addEventListener('change', () => { try { localStorage.setItem('ia-per', sel.value) } catch { /* fine */ } pageAt[name] = 1; pageList() })
+    const bar = el('div', { className: 'ia-pager' }, [
+      el('span', { className: 'ia-pager-count', textContent: `${from}–${to} of ${items.length} ${items.length === 1 ? one : many}` }),
+      nav,
+      el('label', { className: 'ia-pager-per' }, [el('span', { textContent: 'Per page' }), sel]),
+    ])
+    bar.dataset.key = key
+    grid.after(bar)
+  }
+  setInterval(pageList, 300)
   let tagTimer
-  const scheduleTag = () => { clearTimeout(tagTimer); tagTimer = setTimeout(() => { tagFields(); syncViews(); paintThumbs() }, 60) }
+  const scheduleTag = () => { clearTimeout(tagTimer); tagTimer = setTimeout(() => { tagFields(); headers(); syncViews(); paintThumbs() }, 60) }
 
   /* ---------- list views ----------
      Decap offers rows or cards, one choice for the whole admin. Here every list gets four views

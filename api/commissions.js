@@ -274,6 +274,7 @@ const customerAction = async (req, user, action, body) => {
       title: clean(body.title, 80) || titleFrom(kind, idea), details, status: 'requested', quote: null,
       messages: [{ from: 'customer', text: idea, links: refs, at: now }], unread: { customer: 0, artist: 1 },
       pending: null, payment: null, createdAt: now, updatedAt: now, mailed: { artist: now },
+      country: /^[A-Z]{2}$/.test(String(req.headers['x-vercel-ip-country'] || '')) ? req.headers['x-vercel-ip-country'] : '', // where they asked from: their currency is offered on the quote
     }
     await c.insertOne(doc)
     await mailArtistRequest(doc, site)

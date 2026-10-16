@@ -17,9 +17,13 @@
     "support": false
   },
   "shop": {
+    "steps": true,
     "redraws": false
   },
   "commissions": {
+    "tiers": true,
+    "process": true,
+    "notes": true,
     "request": true,
     "account": true
   },
